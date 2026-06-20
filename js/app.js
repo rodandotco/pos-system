@@ -30,8 +30,9 @@ function initApp() {
 }
 initApp();
 
-// ===================== DOUBLE TAP BACK BUTTON =====================
-let backPressedTime = 0;
+// ===================== 4X BACK BUTTON TO EXIT =====================
+let backPressCount = 0;
+let backPressTimer = null;
 let warningToast = null;
 
 // Push initial state to prevent immediate back
@@ -42,103 +43,109 @@ window.addEventListener('popstate', function(e) {
   // Always push state back to prevent navigation
   history.pushState(null, null, location.href);
   
-  // Handle double tap logic
+  // Handle multi-tap logic
   handleBackPress();
 });
 
 function handleBackPress() {
-  const currentTime = new Date().getTime();
+  backPressCount++;
   
-  if (currentTime - backPressedTime < 2000) {
-    // Double tap detected - allow exit
-    if (warningToast) {
-      warningToast.remove();
-      warningToast = null;
-    }
-    // Go back twice to exit
+  // Clear previous timer
+  if (backPressTimer) {
+    clearTimeout(backPressTimer);
+  }
+  
+  // Remove previous toast
+  if (warningToast) {
+    warningToast.remove();
+    warningToast = null;
+  }
+  
+  if (backPressCount >= 4) {
+    // 4 presses reached - exit
+    resetBackPress();
     history.back();
     history.back();
     return;
   }
   
-  // First tap - show warning
-  backPressedTime = currentTime;
+  // Show warning
   showBackWarning();
   
-  // Reset after 2 seconds
-  setTimeout(() => {
-    backPressedTime = 0;
-    if (warningToast) {
-      warningToast.remove();
-      warningToast = null;
-    }
-  }, 2000);
+  // Reset counter after 3 seconds of inactivity
+  backPressTimer = setTimeout(() => {
+    resetBackPress();
+  }, 3000);
+}
+
+function resetBackPress() {
+  backPressCount = 0;
+  if (backPressTimer) {
+    clearTimeout(backPressTimer);
+    backPressTimer = null;
+  }
+  if (warningToast) {
+    warningToast.remove();
+    warningToast = null;
+  }
 }
 
 function showBackWarning() {
-  // Remove existing warning
-  if (warningToast) {
-    warningToast.remove();
-  }
-  
   // Create warning toast
   warningToast = document.createElement('div');
   warningToast.id = 'backWarning';
+  
+  // Different message based on press count
+  let message = '';
+  let bgColor = '';
+  let borderColor = '';
+  
+  if (backPressCount === 1) {
+    message = 'Harap gunakan tombol <b>LOGOUT</b><br>untuk keluar dari aplikasi';
+    bgColor = '#e3f2fd';
+    borderColor = '#2196f3';
+  } else if (backPressCount === 2) {
+    message = '⚠️ Tombol BACK tidak disarankan!<br>Silakan tekan <b>LOGOUT</b> di pojok kanan atas';
+    bgColor = '#fff3e0';
+    borderColor = '#ff9800';
+  } else if (backPressCount === 3) {
+    message = '⛔ Aplikasi akan keluar paksa!<br>Gunakan <b>LOGOUT</b> untuk keluar dengan benar';
+    bgColor = '#fce4ec';
+    borderColor = '#f44336';
+  }
+  
   warningToast.innerHTML = `
-    <div style="
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    ">
-      <span style="font-size: 24px;">⚠️</span>
-      <div>
-        <div style="font-weight: bold; margin-bottom: 2px;">Konfirmasi Keluar</div>
-        <div style="font-size: 13px; opacity: 0.9;">Tekan BACK sekali lagi untuk keluar dari aplikasi</div>
+    <div style="display: flex; align-items: flex-start; gap: 10px;">
+      <span style="font-size: 22px;">${backPressCount === 3 ? '⛔' : backPressCount === 2 ? '⚠️' : 'ℹ️'}</span>
+      <div style="flex: 1;">
+        <div style="font-size: 13px; line-height: 1.5;">${message}</div>
       </div>
     </div>
   `;
+  
   warningToast.style.cssText = `
     position: fixed;
     bottom: 20px;
-    left: 20px;
-    right: 20px;
-    background: #fff3e0;
-    color: #e65100;
+    left: 16px;
+    right: 16px;
+    background: ${bgColor};
+    color: #333;
     padding: 14px 18px;
     border-radius: 12px;
-    font-size: 14px;
     z-index: 9999;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-    border-left: 4px solid #ff9800;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    border-left: 4px solid ${borderColor};
     animation: slideUp 0.3s ease;
     max-width: 400px;
     margin: 0 auto;
   `;
   
   document.body.appendChild(warningToast);
-  
-  // Auto remove after 2 seconds
-  setTimeout(() => {
-    if (warningToast) {
-      warningToast.style.animation = 'slideDown 0.3s ease';
-      setTimeout(() => {
-        if (warningToast) {
-          warningToast.remove();
-          warningToast = null;
-        }
-      }, 300);
-    }
-  }, 2000);
 }
 
-// Handle page visibility (when app goes to background)
+// Reset when app goes to background
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
-    // App went to background - reset back timer
-    backPressedTime = 0;
-    if (warningToast) {
-      warningToast.remove();
-      warningToast = null;
-    }
+    resetBackPress();
   }
 });
