@@ -36,59 +36,44 @@ initApp();
   let backTimer = null;
   let toastElement = null;
 
-  // Push 4 states onto history so we have room to intercept
-  for (let i = 0; i < 4; i++) {
-    history.pushState({ pos: i }, '', location.href);
+  // Add initial history entry
+  if (window.history && window.history.pushState) {
+    history.pushState({ page: 'app' }, document.title, location.href);
   }
 
-  // Go back to the first state so we're at position 0
-  history.go(-4);
-
-  // Now push states again to build up
-  history.pushState({ pos: 0 }, '', location.href);
-  history.pushState({ pos: 1 }, '', location.href);
-  history.pushState({ pos: 2 }, '', location.href);
-  history.pushState({ pos: 3 }, '', location.href);
-
+  // Listen for back button
   window.addEventListener('popstate', function(event) {
-    // Prevent actual navigation
-    history.pushState({ pos: 3 }, '', location.href);
+    // Push state again to prevent navigation
+    history.pushState({ page: 'app' }, document.title, location.href);
     
-    // Increment back press count
+    // Increment counter
     backCount++;
     
-    // Clear existing timer and toast
+    // Clear old timer and toast
     clearTimeout(backTimer);
     if (toastElement) {
       toastElement.remove();
       toastElement = null;
     }
     
-    // Check if should exit
+    // Check if should exit (after 4 presses)
     if (backCount >= 4) {
-      // Reset
+      // Clean up
       backCount = 0;
+      clearTimeout(backTimer);
       if (toastElement) {
         toastElement.remove();
         toastElement = null;
       }
-      // Try to close the app
-      if (navigator.app && navigator.app.exitApp) {
-        navigator.app.exitApp();
-      } else if (navigator.device && navigator.device.exitApp) {
-        navigator.device.exitApp();
-      } else {
-        window.close();
-      }
-      // Fallback: go back in history
-      history.go(-5);
+      // Go back for real
+      history.back();
       return;
     }
     
-    // Show warning message
+    // Show warning
     showBackToast(backCount);
     
-    // Reset counter after 3 seconds of no back presses
+    // Reset after 3 seconds of no activity
     backTimer = setTimeout(function() {
       backCount = 0;
       if (toastElement) {
@@ -139,9 +124,22 @@ initApp();
     `;
 
     document.body.appendChild(toastElement);
+    
+    // Auto-remove toast after 2.5 seconds
+    setTimeout(function() {
+      if (toastElement && toastElement.parentNode) {
+        toastElement.style.animation = 'slideDown 0.3s ease';
+        setTimeout(function() {
+          if (toastElement && toastElement.parentNode) {
+            toastElement.remove();
+            toastElement = null;
+          }
+        }, 300);
+      }
+    }, 2500);
   }
 
-  // Reset counter when app goes to background
+  // Reset when app goes to background
   document.addEventListener('visibilitychange', function() {
     if (document.hidden) {
       backCount = 0;
