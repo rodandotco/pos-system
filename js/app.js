@@ -30,57 +30,68 @@ function initApp() {
 }
 initApp();
 
-// ===================== BACK BUTTON HANDLER =====================
+// ===================== BACK BUTTON - HASH APPROACH =====================
 (function() {
   let backCount = 0;
   let backTimer = null;
   let toastElement = null;
+  let isHandling = false;
 
-  // Add initial history entry
-  if (window.history && window.history.pushState) {
-    history.pushState({ page: 'app' }, document.title, location.href);
+  // Use hash to track state
+  if (!location.hash) {
+    location.hash = '#app';
   }
 
-  // Listen for back button
-  window.addEventListener('popstate', function(event) {
-    // Push state again to prevent navigation
-    history.pushState({ page: 'app' }, document.title, location.href);
+  // Listen for hash changes (back button changes hash)
+  window.addEventListener('hashchange', function() {
+    if (isHandling) return;
+    isHandling = true;
     
-    // Increment counter
-    backCount++;
-    
-    // Clear old timer and toast
-    clearTimeout(backTimer);
-    if (toastElement) {
-      toastElement.remove();
-      toastElement = null;
-    }
-    
-    // Check if should exit (after 4 presses)
-    if (backCount >= 4) {
-      // Clean up
-      backCount = 0;
+    // If hash was removed (back button)
+    if (!location.hash || location.hash === '') {
+      // Put it back
+      location.hash = '#app';
+      
+      // Increment counter
+      backCount++;
+      
+      // Clear old timer and toast
       clearTimeout(backTimer);
       if (toastElement) {
         toastElement.remove();
         toastElement = null;
       }
-      // Go back for real
-      history.back();
-      return;
+      
+      // Check exit condition
+      if (backCount >= 4) {
+        backCount = 0;
+        clearTimeout(backTimer);
+        if (toastElement) {
+          toastElement.remove();
+          toastElement = null;
+        }
+        // Remove hash and go back
+        location.hash = '';
+        history.go(-2);
+        return;
+      }
+      
+      // Show warning
+      showBackToast(backCount);
+      
+      // Reset after 3 seconds
+      backTimer = setTimeout(function() {
+        backCount = 0;
+        if (toastElement) {
+          toastElement.remove();
+          toastElement = null;
+        }
+      }, 3000);
     }
     
-    // Show warning
-    showBackToast(backCount);
-    
-    // Reset after 3 seconds of no activity
-    backTimer = setTimeout(function() {
-      backCount = 0;
-      if (toastElement) {
-        toastElement.remove();
-        toastElement = null;
-      }
-    }, 3000);
+    setTimeout(function() {
+      isHandling = false;
+    }, 100);
   });
 
   function showBackToast(count) {
@@ -89,21 +100,21 @@ initApp();
     let borderColor = '';
 
     if (count === 1) {
-      message = 'ℹ️ Harap gunakan tombol <b>LOGOUT</b> untuk keluar dari aplikasi';
+      message = 'ℹ️ Harap gunakan tombol LOGOUT untuk keluar';
       bgColor = '#e3f2fd';
       borderColor = '#2196f3';
     } else if (count === 2) {
-      message = '⚠️ Tombol BACK tidak disarankan! Silakan tekan <b>LOGOUT</b> di pojok kanan atas';
+      message = '⚠️ Tombol BACK tidak disarankan! Gunakan LOGOUT';
       bgColor = '#fff3e0';
       borderColor = '#ff9800';
     } else if (count === 3) {
-      message = '⛔ Aplikasi akan keluar paksa! Gunakan <b>LOGOUT</b> untuk keluar dengan benar';
+      message = '⛔ Satu kali lagi aplikasi akan keluar!';
       bgColor = '#fce4ec';
       borderColor = '#f44336';
     }
 
     toastElement = document.createElement('div');
-    toastElement.innerHTML = message;
+    toastElement.textContent = message;
     toastElement.style.cssText = `
       position: fixed;
       bottom: 20px;
@@ -116,8 +127,8 @@ initApp();
       z-index: 9999;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
       border-left: 4px solid ${borderColor};
-      font-size: 13px;
-      line-height: 1.5;
+      font-size: 14px;
+      font-weight: 500;
       max-width: 400px;
       margin: 0 auto;
       animation: slideUp 0.3s ease;
@@ -125,21 +136,15 @@ initApp();
 
     document.body.appendChild(toastElement);
     
-    // Auto-remove toast after 2.5 seconds
     setTimeout(function() {
       if (toastElement && toastElement.parentNode) {
-        toastElement.style.animation = 'slideDown 0.3s ease';
-        setTimeout(function() {
-          if (toastElement && toastElement.parentNode) {
-            toastElement.remove();
-            toastElement = null;
-          }
-        }, 300);
+        toastElement.remove();
+        toastElement = null;
       }
     }, 2500);
   }
 
-  // Reset when app goes to background
+  // Reset on visibility change
   document.addEventListener('visibilitychange', function() {
     if (document.hidden) {
       backCount = 0;
