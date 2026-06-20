@@ -524,3 +524,26 @@ input:disabled, select:disabled, textarea:disabled {
 .nominal-btn-popup:hover {
   background: #dcedc8;
 }
+
+/* ===================== BACK WARNING ANIMATIONS ===================== */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
