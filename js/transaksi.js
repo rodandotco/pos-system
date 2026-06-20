@@ -7,7 +7,7 @@ let totalDiskonValue = 0;
 let bayarValue = 0;
 
 // Cache settings untuk mempercepat loading
-let cachedSettings = null;
+// window.cachedSettings defined in supabase-config.js
 
 async function setupTransaksi() {
   isAdmin = (currentUser && currentUser.role === 'admin');
