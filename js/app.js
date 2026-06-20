@@ -1,4 +1,4 @@
-// ===================== APP.JS =====================
+// ===================== APP.JS (SIMPLE VERSION) =====================
 let activeTab = 'transaksi';
 
 // Service Worker
@@ -30,129 +30,33 @@ function initApp() {
 }
 initApp();
 
-// ===================== BACK BUTTON - HASH APPROACH =====================
-(function() {
-  let backCount = 0;
-  let backTimer = null;
-  let toastElement = null;
-  let isHandling = false;
+// ===================== BACK BUTTON - SIMPLE =====================
+let backCount = 0;
+let backTimer = null;
 
-  // Use hash to track state
-  if (!location.hash) {
-    location.hash = '#app';
+// Block back button by pushing state
+history.pushState(null, '', location.href);
+
+window.onpopstate = function() {
+  // Push state again immediately
+  history.pushState(null, '', location.href);
+  
+  backCount++;
+  
+  clearTimeout(backTimer);
+  
+  if (backCount === 1) {
+    alert('ℹ️ Harap gunakan tombol LOGOUT untuk keluar dari aplikasi');
+  } else if (backCount === 2) {
+    alert('⚠️ Tombol BACK tidak disarankan! Gunakan tombol LOGOUT');
+  } else if (backCount === 3) {
+    alert('⛔ Satu kali lagi aplikasi akan keluar!');
+  } else if (backCount >= 4) {
+    // Exit
+    history.go(-2);
   }
-
-  // Listen for hash changes (back button changes hash)
-  window.addEventListener('hashchange', function() {
-    if (isHandling) return;
-    isHandling = true;
-    
-    // If hash was removed (back button)
-    if (!location.hash || location.hash === '') {
-      // Put it back
-      location.hash = '#app';
-      
-      // Increment counter
-      backCount++;
-      
-      // Clear old timer and toast
-      clearTimeout(backTimer);
-      if (toastElement) {
-        toastElement.remove();
-        toastElement = null;
-      }
-      
-      // Check exit condition
-      if (backCount >= 4) {
-        backCount = 0;
-        clearTimeout(backTimer);
-        if (toastElement) {
-          toastElement.remove();
-          toastElement = null;
-        }
-        // Remove hash and go back
-        location.hash = '';
-        history.go(-2);
-        return;
-      }
-      
-      // Show warning
-      showBackToast(backCount);
-      
-      // Reset after 3 seconds
-      backTimer = setTimeout(function() {
-        backCount = 0;
-        if (toastElement) {
-          toastElement.remove();
-          toastElement = null;
-        }
-      }, 3000);
-    }
-    
-    setTimeout(function() {
-      isHandling = false;
-    }, 100);
-  });
-
-  function showBackToast(count) {
-    let message = '';
-    let bgColor = '';
-    let borderColor = '';
-
-    if (count === 1) {
-      message = 'ℹ️ Harap gunakan tombol LOGOUT untuk keluar';
-      bgColor = '#e3f2fd';
-      borderColor = '#2196f3';
-    } else if (count === 2) {
-      message = '⚠️ Tombol BACK tidak disarankan! Gunakan LOGOUT';
-      bgColor = '#fff3e0';
-      borderColor = '#ff9800';
-    } else if (count === 3) {
-      message = '⛔ Satu kali lagi aplikasi akan keluar!';
-      bgColor = '#fce4ec';
-      borderColor = '#f44336';
-    }
-
-    toastElement = document.createElement('div');
-    toastElement.textContent = message;
-    toastElement.style.cssText = `
-      position: fixed;
-      bottom: 20px;
-      left: 16px;
-      right: 16px;
-      background: ${bgColor};
-      color: #333;
-      padding: 14px 18px;
-      border-radius: 12px;
-      z-index: 9999;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-      border-left: 4px solid ${borderColor};
-      font-size: 14px;
-      font-weight: 500;
-      max-width: 400px;
-      margin: 0 auto;
-      animation: slideUp 0.3s ease;
-    `;
-
-    document.body.appendChild(toastElement);
-    
-    setTimeout(function() {
-      if (toastElement && toastElement.parentNode) {
-        toastElement.remove();
-        toastElement = null;
-      }
-    }, 2500);
-  }
-
-  // Reset on visibility change
-  document.addEventListener('visibilitychange', function() {
-    if (document.hidden) {
-      backCount = 0;
-      clearTimeout(backTimer);
-      if (toastElement) {
-        toastElement.remove();
-        toastElement = null;
-      }
-    }
-  });
-})();
+  
+  backTimer = setTimeout(function() {
+    backCount = 0;
+  }, 3000);
+};
