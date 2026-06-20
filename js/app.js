@@ -30,72 +30,65 @@ function initApp() {
 }
 initApp();
 
-// ===================== BACK BUTTON - INTERCEPT CLICKS =====================
+// ===================== BACK BUTTON - WORKING APPROACH =====================
 (function() {
   let backCount = 0;
   let backTimer = null;
-  let toastElement = null;
-  let blockExit = true;
+  let allowExit = false;
 
-  // Method 1: Intercept popstate
-  history.pushState({page: 'pos'}, '', location.href);
-  
-  window.addEventListener('popstate', function(e) {
-    if (blockExit) {
-      // Push state again to block navigation
-      history.pushState({page: 'pos'}, '', location.href);
+  // Listen for beforeunload - this fires before the page unloads
+  window.addEventListener('beforeunload', function(e) {
+    if (!allowExit) {
+      // Block exit
+      e.preventDefault();
+      e.returnValue = '';
       
-      handleBackPress();
-    }
-  });
-
-  // Method 2: Also handle pagehide (some Android browsers)
-  window.addEventListener('pagehide', function(e) {
-    if (blockExit) {
-      handleBackPress();
-    }
-  });
-
-  function handleBackPress() {
-    backCount++;
-    
-    clearTimeout(backTimer);
-    
-    // Remove old toast
-    if (toastElement) {
-      toastElement.remove();
-      toastElement = null;
-    }
-    
-    if (backCount >= 4) {
-      // Allow exit
-      blockExit = false;
-      backCount = 0;
+      // Increment counter
+      backCount++;
+      
+      // Clear old timer
       clearTimeout(backTimer);
-      if (toastElement) {
-        toastElement.remove();
-        toastElement = null;
+      
+      // Remove old toast
+      const oldToast = document.getElementById('backToast');
+      if (oldToast) oldToast.remove();
+      
+      if (backCount >= 4) {
+        // Allow exit on 4th press
+        allowExit = true;
+        backCount = 0;
+        
+        // Remove any toast
+        const toast = document.getElementById('backToast');
+        if (toast) toast.remove();
+        
+        // Exit
+        setTimeout(function() {
+          window.close();
+        }, 100);
+        
+        return;
       }
       
-      // Remove the blocking states and go back
-      history.back();
-      return;
+      // Show warning
+      showToast(backCount);
+      
+      // Reset counter after 3 seconds
+      backTimer = setTimeout(function() {
+        backCount = 0;
+        const toast = document.getElementById('backToast');
+        if (toast) toast.remove();
+      }, 3000);
+      
+      return '';
     }
-    
-    // Show colored toast based on count
-    showToast(backCount);
-    
-    // Reset after 3 seconds
-    backTimer = setTimeout(function() {
-      backCount = 0;
-      if (toastElement) {
-        toastElement.remove();
-        toastElement = null;
-      }
-    }, 3000);
-  }
+  });
 
   function showToast(count) {
+    // Remove existing toast
+    const oldToast = document.getElementById('backToast');
+    if (oldToast) oldToast.remove();
+    
     let message = '';
     let bgColor = '';
     let borderColor = '';
@@ -107,69 +100,72 @@ initApp();
       borderColor = '#2196f3';
       icon = 'ℹ️';
     } else if (count === 2) {
-      message = '⚠️ Tombol BACK tidak disarankan! Silakan tekan <b>LOGOUT</b> di pojok kanan atas';
+      message = '⚠️ Tombol BACK tidak disarankan!<br>Silakan tekan <b>LOGOUT</b> di pojok kanan atas';
       bgColor = '#fff3e0';
       borderColor = '#ff9800';
       icon = '⚠️';
     } else if (count === 3) {
-      message = '⛔ Tekan BACK sekali lagi akan keluar paksa! Gunakan <b>LOGOUT</b> untuk keluar dengan benar';
+      message = '⛔ Tekan BACK sekali lagi akan keluar paksa!<br>Gunakan <b>LOGOUT</b> untuk keluar dengan benar';
       bgColor = '#fce4ec';
       borderColor = '#f44336';
       icon = '⛔';
     }
 
-    toastElement = document.createElement('div');
-    toastElement.id = 'backToast';
-    toastElement.innerHTML = `
+    const toast = document.createElement('div');
+    toast.id = 'backToast';
+    toast.innerHTML = `
       <div style="display: flex; align-items: flex-start; gap: 10px;">
         <span style="font-size: 22px;">${icon}</span>
         <div style="flex: 1; font-size: 13px; line-height: 1.5;">${message}</div>
       </div>
     `;
-    toastElement.style.cssText = `
+    toast.style.cssText = `
       position: fixed;
       bottom: 20px;
       left: 16px;
       right: 16px;
       background: ${bgColor};
-      color: #263238;
+      color: #333;
       padding: 14px 18px;
       border-radius: 12px;
       z-index: 9999;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
       border-left: 4px solid ${borderColor};
       max-width: 400px;
       margin: 0 auto;
-      font-family: 'Segoe UI', system-ui, sans-serif;
       animation: slideUp 0.3s ease;
     `;
 
-    document.body.appendChild(toastElement);
+    document.body.appendChild(toast);
     
-    // Auto dismiss after 2.5 seconds
+    // Auto remove after 2.5 seconds
     setTimeout(function() {
-      if (toastElement && toastElement.parentNode) {
-        toastElement.style.animation = 'slideDown 0.3s ease';
+      const t = document.getElementById('backToast');
+      if (t) {
+        t.style.animation = 'slideDown 0.3s ease';
         setTimeout(function() {
-          if (toastElement && toastElement.parentNode) {
-            toastElement.remove();
-            toastElement = null;
-          }
+          const t2 = document.getElementById('backToast');
+          if (t2) t2.remove();
         }, 300);
       }
     }, 2500);
   }
 
-  // Reset on visibility change
+  // Reset when app goes to background
   document.addEventListener('visibilitychange', function() {
     if (document.hidden) {
       backCount = 0;
       clearTimeout(backTimer);
-      blockExit = true;
-      if (toastElement) {
-        toastElement.remove();
-        toastElement = null;
-      }
+      allowExit = false;
+      const toast = document.getElementById('backToast');
+      if (toast) toast.remove();
+    }
+  });
+  
+  // Reset allowExit when app comes back
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+      allowExit = false;
     }
   });
 })();
