@@ -24,36 +24,52 @@ document.querySelectorAll('.tab-btn').forEach(b => {
   });
 });
 
-/// Check session on load
+// Check session on load
 function initApp() {
   checkSession();
 }
 initApp();
 
-// ===================== 4X BACK BUTTON TO EXIT =====================
+// ===================== PREVENT ACCIDENTAL BACK EXIT =====================
 let backPressCount = 0;
 let backPressTimer = null;
 let warningToast = null;
 
-// Push initial state to prevent immediate back
-history.pushState(null, null, location.href);
-
-// Handle back button press
-window.addEventListener('popstate', function(e) {
-  // Always push state back to prevent navigation
-  history.pushState(null, null, location.href);
-  
-  // Handle multi-tap logic
-  handleBackPress();
+// Override the back button behavior
+window.addEventListener('beforeunload', function(e) {
+  // This won't prevent exit but can show a message
 });
+
+// Main back button handler
+window.addEventListener('popstate', function(event) {
+  // Prevent the actual back navigation
+  event.preventDefault();
+  event.stopPropagation();
+  
+  // Push a new state immediately
+  history.pushState(null, document.title, location.href);
+  
+  // Handle the back press
+  handleBackPress();
+  
+  return false;
+});
+
+// Push initial state
+if (window.history && history.pushState) {
+  history.pushState(null, document.title, location.href);
+}
 
 function handleBackPress() {
   // Increment counter
   backPressCount++;
   
+  console.log('Back pressed:', backPressCount);
+  
   // Clear previous timer
   if (backPressTimer) {
     clearTimeout(backPressTimer);
+    backPressTimer = null;
   }
   
   // Remove previous toast
@@ -62,18 +78,29 @@ function handleBackPress() {
     warningToast = null;
   }
   
-  // Check if should exit (4 presses)
-  if (backPressCount >= 4) {
+  if (backPressCount === 1) {
+    showToast('ℹ️ Harap gunakan tombol LOGOUT untuk keluar dari aplikasi', '#e3f2fd', '#2196f3');
+  } else if (backPressCount === 2) {
+    showToast('⚠️ Tombol BACK tidak disarankan! Silakan tekan LOGOUT di pojok kanan atas', '#fff3e0', '#ff9800');
+  } else if (backPressCount === 3) {
+    showToast('⛔ Aplikasi akan keluar paksa! Gunakan LOGOUT untuk keluar dengan benar', '#fce4ec', '#f44336');
+  } else if (backPressCount >= 4) {
+    // Exit the app
     resetBackPress();
-    // Actually exit the app
-    history.go(-2);
+    // Try multiple methods to close
+    if (navigator.app && navigator.app.exitApp) {
+      navigator.app.exitApp();
+    } else if (navigator.device && navigator.device.exitApp) {
+      navigator.device.exitApp();
+    } else {
+      window.close();
+      // Fallback
+      history.go(-(backPressCount + 1));
+    }
     return;
   }
   
-  // Show warning based on current count
-  showBackWarning();
-  
-  // Reset counter after 3 seconds of inactivity
+  // Reset counter after 3 seconds
   backPressTimer = setTimeout(() => {
     resetBackPress();
   }, 3000);
@@ -91,37 +118,17 @@ function resetBackPress() {
   }
 }
 
-function showBackWarning() {
-  // Create warning toast
-  warningToast = document.createElement('div');
-  warningToast.id = 'backWarning';
-  
-  // Different message based on press count
-  let message = '';
-  let bgColor = '';
-  let borderColor = '';
-  let icon = '';
-  
-  if (backPressCount === 1) {
-    message = 'Harap gunakan tombol <b>LOGOUT</b><br>untuk keluar dari aplikasi';
-    bgColor = '#e3f2fd';
-    borderColor = '#2196f3';
-    icon = 'ℹ️';
-  } else if (backPressCount === 2) {
-    message = '⚠️ Tombol BACK tidak disarankan!<br>Silakan tekan <b>LOGOUT</b> di pojok kanan atas';
-    bgColor = '#fff3e0';
-    borderColor = '#ff9800';
-    icon = '⚠️';
-  } else if (backPressCount === 3) {
-    message = '⛔ Aplikasi akan keluar paksa!<br>Gunakan <b>LOGOUT</b> untuk keluar dengan benar';
-    bgColor = '#fce4ec';
-    borderColor = '#f44336';
-    icon = '⛔';
+function showToast(message, bgColor, borderColor) {
+  // Remove existing toast
+  if (warningToast) {
+    warningToast.remove();
   }
   
+  // Create toast element
+  warningToast = document.createElement('div');
+  warningToast.id = 'backWarning';
   warningToast.innerHTML = `
     <div style="display: flex; align-items: flex-start; gap: 10px;">
-      <span style="font-size: 22px;">${icon}</span>
       <div style="flex: 1;">
         <div style="font-size: 13px; line-height: 1.5;">${message}</div>
       </div>
@@ -146,6 +153,14 @@ function showBackWarning() {
   `;
   
   document.body.appendChild(warningToast);
+  
+  // Auto remove after 2.5 seconds
+  setTimeout(() => {
+    if (warningToast === document.getElementById('backWarning')) {
+      warningToast.remove();
+      warningToast = null;
+    }
+  }, 2500);
 }
 
 // Reset when app goes to background
@@ -154,3 +169,10 @@ document.addEventListener('visibilitychange', () => {
     resetBackPress();
   }
 });
+
+// Additional: Prevent swipe back on iOS
+document.addEventListener('touchmove', function(e) {
+  if (e.target === document.body && e.touches[0].clientX < 30) {
+    e.preventDefault();
+  }
+}, { passive: false });
