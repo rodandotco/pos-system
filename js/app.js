@@ -24,7 +24,7 @@ document.querySelectorAll('.tab-btn').forEach(b => {
   });
 });
 
-// Check session on load
+/// Check session on load
 function initApp() {
   checkSession();
 }
@@ -48,6 +48,7 @@ window.addEventListener('popstate', function(e) {
 });
 
 function handleBackPress() {
+  // Increment counter
   backPressCount++;
   
   // Clear previous timer
@@ -61,15 +62,15 @@ function handleBackPress() {
     warningToast = null;
   }
   
+  // Check if should exit (4 presses)
   if (backPressCount >= 4) {
-    // 4 presses reached - exit
     resetBackPress();
-    history.back();
-    history.back();
+    // Actually exit the app
+    history.go(-2);
     return;
   }
   
-  // Show warning
+  // Show warning based on current count
   showBackWarning();
   
   // Reset counter after 3 seconds of inactivity
@@ -99,24 +100,28 @@ function showBackWarning() {
   let message = '';
   let bgColor = '';
   let borderColor = '';
+  let icon = '';
   
   if (backPressCount === 1) {
     message = 'Harap gunakan tombol <b>LOGOUT</b><br>untuk keluar dari aplikasi';
     bgColor = '#e3f2fd';
     borderColor = '#2196f3';
+    icon = 'ℹ️';
   } else if (backPressCount === 2) {
     message = '⚠️ Tombol BACK tidak disarankan!<br>Silakan tekan <b>LOGOUT</b> di pojok kanan atas';
     bgColor = '#fff3e0';
     borderColor = '#ff9800';
+    icon = '⚠️';
   } else if (backPressCount === 3) {
     message = '⛔ Aplikasi akan keluar paksa!<br>Gunakan <b>LOGOUT</b> untuk keluar dengan benar';
     bgColor = '#fce4ec';
     borderColor = '#f44336';
+    icon = '⛔';
   }
   
   warningToast.innerHTML = `
     <div style="display: flex; align-items: flex-start; gap: 10px;">
-      <span style="font-size: 22px;">${backPressCount === 3 ? '⛔' : backPressCount === 2 ? '⚠️' : 'ℹ️'}</span>
+      <span style="font-size: 22px;">${icon}</span>
       <div style="flex: 1;">
         <div style="font-size: 13px; line-height: 1.5;">${message}</div>
       </div>
