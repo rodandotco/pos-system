@@ -498,21 +498,7 @@ input:disabled, select:disabled, textarea:disabled {
   object-fit: cover;
 }
 
-/* ===================== RESPONSIVE ===================== */
-@media (max-width: 480px) {
-  .tab-btn {
-    font-size: 11px;
-    padding: 10px 4px;
-  }
-
-  .page {
-    padding: 12px;
-  }
-
-  .total-box {
-    font-size: 20px;
-  }
-}
+/* ===================== NOMINAL POPUP BUTTONS ===================== */
 .nominal-btn-popup {
   padding: 8px 4px;
   font-size: 13px;
@@ -521,6 +507,7 @@ input:disabled, select:disabled, textarea:disabled {
   border-radius: 4px;
   cursor: pointer;
 }
+
 .nominal-btn-popup:hover {
   background: #dcedc8;
 }
@@ -545,5 +532,21 @@ input:disabled, select:disabled, textarea:disabled {
   to {
     opacity: 0;
     transform: translateY(20px);
+  }
+}
+
+/* ===================== RESPONSIVE ===================== */
+@media (max-width: 480px) {
+  .tab-btn {
+    font-size: 11px;
+    padding: 10px 4px;
+  }
+
+  .page {
+    padding: 12px;
+  }
+
+  .total-box {
+    font-size: 20px;
   }
 }
