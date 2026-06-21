@@ -91,10 +91,16 @@
       <div class="form-group"><label>Keterangan</label><input type="text" id="prodKeterangan"></div>
       <div class="form-group"><label>Harga Beli</label><input type="number" id="prodHargaBeli" step="1"></div>
       <div class="form-group"><label>Harga Jual</label><input type="number" id="prodHargaJual" step="1"></div>
-      <div class="stok-info">Stok Saat Ini: <span id="stokSaatIni">0</span><br>
-        <label>Tambah/Kurangi Stok</label><input type="number" id="perubahanStok" value="0" oninput="hitungStokAkhir()"><br>
-        Stok Akhir: <span id="stokAkhir">0</span>
-      </div>
+      <div class="stok-info">
+  <div class="form-group">
+    <label>Minimum Stok</label>
+    <input type="number" id="prodMinStok" value="10" min="0" step="1">
+    <small style="color:#666;">Peringatan jika stok ≤ nilai ini</small>
+  </div>
+  Stok Saat Ini: <span id="stokSaatIni">0</span><br>
+  <label>Tambah/Kurangi Stok</label><input type="number" id="perubahanStok" value="0" oninput="hitungStokAkhir()"><br>
+  Stok Akhir: <span id="stokAkhir">0</span>
+</div>
       <div class="form-group"><label>Foto</label><input type="file" id="prodFoto" accept="image/*" onchange="previewFoto()"></div>
       <button class="btn" id="btnSimpanProduk">Simpan</button>
       <button class="btn btn-danger" id="btnHapusProduk" style="display:none;">Hapus Produk</button>
