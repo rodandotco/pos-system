@@ -343,3 +343,30 @@ function getWeekNumber(d) {
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
 }
+
+// ========== LOW STOCK BANNER FOR TRANSAKSI PAGE ==========
+async function checkLowStockBanner() {
+  try {
+    const { data: products } = await supabaseClient
+      .from('products')
+      .select('*')
+      .order('stok');
+    
+    const lowStockProducts = (products || []).filter(p => p.stok <= (p.min_stok || 10));
+    const banner = document.getElementById('lowStockBanner');
+    const text = document.getElementById('lowStockBannerText');
+    
+    if (!banner || !text) return;
+    
+    if (lowStockProducts.length === 0) {
+      banner.style.display = 'none';
+      return;
+    }
+    
+    banner.style.display = 'block';
+    const names = lowStockProducts.map(p => `${p.nama} (${p.stok})`).join(', ');
+    text.textContent = names;
+  } catch (e) {
+    console.error('Banner check failed:', e);
+  }
+}

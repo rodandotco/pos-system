@@ -20,7 +20,10 @@ document.querySelectorAll('.tab-btn').forEach(b => {
     if (activeTab === 'laporan') { setDefaultDateFilter(); muatLaporan(); }
     if (activeTab === 'setting') { muatProfilToko(); tampilkanUserList(); aturHakAkses(); }
     if (activeTab === 'inventory') refreshProductList();
-    if (activeTab === 'transaksi') document.getElementById('scanInputTrans').focus();
+    if (activeTab === 'transaksi') {
+      document.getElementById('scanInputTrans').focus();
+      setTimeout(() => { if (typeof checkLowStockBanner === 'function') checkLowStockBanner(); }, 500);
+    }
   });
 });
 
@@ -28,18 +31,15 @@ document.querySelectorAll('.tab-btn').forEach(b => {
 function initApp() {
   checkSession();
 }
-
 initApp();
 
 // ===================== BACK BUTTON - SIMPLE ALERT =====================
 let backCount = 0;
 let backTimer = null;
 
-// Push initial state
 history.pushState(null, '', location.href);
 
 window.addEventListener('popstate', function(event) {
-  // Push state back immediately
   history.pushState(null, '', location.href);
   
   backCount++;
@@ -52,20 +52,17 @@ window.addEventListener('popstate', function(event) {
   } else if (backCount === 3) {
     alert('⛔ Satu kali lagi aplikasi akan keluar paksa!\nGunakan LOGOUT untuk keluar dengan benar');
   } else if (backCount >= 4) {
-    // Allow exit
     backCount = 0;
     clearTimeout(backTimer);
     history.back();
     return;
   }
   
-  // Reset after 3 seconds
   backTimer = setTimeout(function() {
     backCount = 0;
   }, 3000);
 });
 
-// Reset when app goes to background
 document.addEventListener('visibilitychange', function() {
   if (document.hidden) {
     backCount = 0;

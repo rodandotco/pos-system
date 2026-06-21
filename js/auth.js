@@ -47,6 +47,11 @@ async function login() {
   setTimeout(() => {
     if (typeof checkAutoEmailReport === 'function') checkAutoEmailReport();
   }, 2000);
+
+  // Check low stock banner
+  setTimeout(() => {
+    if (typeof checkLowStockBanner === 'function') checkLowStockBanner();
+  }, 1500);
 }
 
 function logout() {
@@ -100,21 +105,25 @@ function logout() {
     topProductsChart = null;
   }
 
+  // Clear low stock banner
+  const lowStockBanner = document.getElementById('lowStockBanner');
+  if (lowStockBanner) lowStockBanner.style.display = 'none';
+  
+  const lowStockAlert = document.getElementById('lowStockAlert');
+  if (lowStockAlert) lowStockAlert.style.display = 'none';
+
   // Clear all inputs
-  const scanInput = document.getElementById('scanInputTrans');
-  if (scanInput) scanInput.value = '';
+  const inputsToClear = [
+    'scanInputTrans', 'custName', 'invSearch', 'searchProduct',
+    'prodBarcode', 'prodNama', 'prodKategori', 'prodKeterangan',
+    'prodHargaBeli', 'prodHargaJual', 'perubahanStok', 'bayar',
+    'newUsername', 'newPassword'
+  ];
 
-  const custName = document.getElementById('custName');
-  if (custName) custName.value = '';
-
-  const invSearch = document.getElementById('invSearch');
-  if (invSearch) invSearch.value = '';
-
-  const searchProduct = document.getElementById('searchProduct');
-  if (searchProduct) searchProduct.value = '';
-
-  const prodBarcode = document.getElementById('prodBarcode');
-  if (prodBarcode) prodBarcode.value = '';
+  inputsToClear.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
 
   // Reset settings cache
   if (typeof invalidateSettingsCache === 'function') invalidateSettingsCache();
@@ -166,6 +175,11 @@ function checkSession() {
         if (typeof checkAutoEmailReport === 'function') checkAutoEmailReport();
       }, 2000);
 
+      // Check low stock banner
+      setTimeout(() => {
+        if (typeof checkLowStockBanner === 'function') checkLowStockBanner();
+      }, 1500);
+
       return true;
     } catch(e) {
       clearSession();
@@ -212,6 +226,13 @@ function clearAllDisplayedData() {
     topProductsChart = null;
   }
 
+  // Clear low stock banner
+  const lowStockBanner = document.getElementById('lowStockBanner');
+  if (lowStockBanner) lowStockBanner.style.display = 'none';
+  
+  const lowStockAlert = document.getElementById('lowStockAlert');
+  if (lowStockAlert) lowStockAlert.style.display = 'none';
+
   // Clear all input fields
   const inputsToClear = [
     'scanInputTrans', 'custName', 'invSearch', 'searchProduct',
@@ -254,7 +275,6 @@ async function tambahUser() {
   if (!u||!p) return alert('Isi username dan password');
   await supabaseClient.from('users').upsert({ username: u, password_hash: await hashPassword(p), role: r });
   tampilkanUserList();
-  // Clear input
   document.getElementById('newUsername').value = '';
   document.getElementById('newPassword').value = '';
 }
