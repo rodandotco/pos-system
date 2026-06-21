@@ -24,7 +24,6 @@
 
   <!-- ================== TRANSAKSI ================== -->
   <div id="page-transaksi" class="page active">
-    <!-- Nama Customer -->
     <div class="form-group">
       <label>Nama Customer (opsional)</label>
       <div style="position:relative; display:inline-block; width:200px;">
@@ -33,18 +32,15 @@
       </div>
     </div>
 
-    <!-- Cari Produk -->
     <div class="form-group">
       <label>Cari Produk</label>
       <div style="position:relative; display:inline-block; width:200px;">
         <input type="text" id="searchProduct" placeholder="Nama / Barcode..." oninput="searchProductFn(this.value)" onfocus="searchProductFn(this.value)" autocomplete="off" maxlength="25" style="width:100%; padding-right:25px; box-sizing:border-box;">
         <button class="clear-btn" onclick="var s=document.getElementById('searchProduct'); if(s)s.value=''; var sr=document.getElementById('searchResults'); if(sr)sr.style.display='none';" style="position:absolute; right:0; top:50%; transform:translateY(-50%); border:none; background:transparent; cursor:pointer; padding:0 5px;">✕</button>
       </div>
-      <!-- PENTING: div untuk hasil pencarian, diletakkan di luar wrapper tetapi masih di dalam form-group -->
       <div class="search-results" id="searchResults" style="display:none;"></div>
     </div>
 
-    <!-- Scan Barcode -->
     <div class="form-group">
       <label>Scan Barcode</label>
       <div style="position:relative; display:inline-block; width:200px;">
@@ -58,7 +54,6 @@
       <tbody></tbody>
     </table>
 
-    <!-- Area Pembayaran (akan dirombak oleh transaksi.js) -->
     <div class="form-group" id="pembayaranGroup">
       <label>Pembayaran</label>
       <div class="nominal-grid" id="nominalButtons"></div>
@@ -67,12 +62,13 @@
     </div>
     <div>Kembalian: Rp <span id="kembalian">0</span></div>
     <button class="btn" onclick="bayarDanCetak()" style="font-size:16px; padding:12px 24px; margin-top:8px;">💳 BAYAR & CETAK</button>
-  </div>
+
     <div id="printerStatusTrans" class="printer-status" style="margin-top:8px;">
       <span class="led led-red" id="ledTrans"></span>
       <span id="printerStatusText">Printer tidak terhubung</span>
       <button class="btn btn-sm btn-danger" id="btnPutusTrans" onclick="putusPrinter()" style="display:none;">Putus</button>
     </div>
+  </div>
 
   <!-- ================== INVENTORY ================== -->
   <div id="page-inventory" class="page">
@@ -131,10 +127,14 @@
     </div>
     <table class="report-table" id="reportTable"><thead><tr><th>No Invoice</th><th>Tanggal</th><th>Customer</th><th>Total</th><th>Aksi</th></tr></thead><tbody></tbody></table>
     <button class="btn" onclick="exportCSV()">📥 Export CSV</button>
+    <button class="btn" onclick="emailLaporanHarian()">📧 Email Hari Ini</button>
+    <button class="btn" onclick="emailLaporanPeriode()">📧 Email Periode</button>
   </div>
 
   <!-- ================== SETTING ================== -->
   <div id="page-setting" class="page">
+    
+    <!-- Manajemen Profil -->
     <div id="manajemenProfilSection">
       <h3>Manajemen Profil</h3>
       <div id="logoPreviewContainer" style="margin-bottom:12px; display:none;">
@@ -146,22 +146,97 @@
       <div class="form-group"><label>Telepon</label><input type="text" id="tokoTelp"></div>
       <div class="form-group"><label>Logo Toko</label><input type="file" id="tokoLogo" accept="image/*" onchange="previewLogoToko()"></div>
       <div class="form-group"><label>Footer Struk</label><textarea id="tokoFooter" rows="2" placeholder="Contoh: Terima kasih..."></textarea></div>
-
-<div class="form-group"><label>Email Laporan</label><input type="email" id="tokoEmail" placeholder="contoh@gmail.com"></div>
-
-<div class="form-group">
-  <label>Kirim Laporan Otomatis</label>
-  <select id="reportSchedule">
-    <option value="none">Manual (tidak otomatis)</option>
-    <option value="daily">Setiap Hari (jam 21:00)</option>
-    <option value="weekly">Setiap Minggu (Senin 21:00)</option>
-    <option value="monthly">Setiap Bulan (tanggal 1, 21:00)</option>
-  </select>
-</div>
       <button class="btn" id="btnSimpanProfil" onclick="simpanProfil()">Simpan Profil</button>
       <hr>
     </div>
 
+    <!-- Manajemen Laporan -->
+    <h3>📊 Manajemen Laporan</h3>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">📧 Email Laporan Otomatis</div>
+      
+      <div class="form-group">
+        <label>Email Tujuan</label>
+        <input type="email" id="reportEmail" placeholder="contoh@email.com">
+      </div>
+      
+      <div class="form-group">
+        <label>Frekuensi Laporan</label>
+        <select id="reportFrequency" onchange="toggleReportOptions()">
+          <option value="none">Matikan</option>
+          <option value="daily">Setiap Hari</option>
+          <option value="weekly">Setiap Minggu</option>
+          <option value="monthly">Setiap Bulan</option>
+        </select>
+      </div>
+      
+      <div id="dailyOptions" style="display:none;">
+        <div class="form-group">
+          <label>Jam Kirim</label>
+          <select id="dailyTime">
+            <option value="20">20:00</option>
+            <option value="21" selected>21:00</option>
+            <option value="22">22:00</option>
+            <option value="23">23:00</option>
+            <option value="0">00:00</option>
+          </select>
+        </div>
+      </div>
+      
+      <div id="weeklyOptions" style="display:none;">
+        <div class="form-group">
+          <label>Hari Kirim</label>
+          <select id="weeklyDay">
+            <option value="1" selected>Senin</option>
+            <option value="2">Selasa</option>
+            <option value="3">Rabu</option>
+            <option value="4">Kamis</option>
+            <option value="5">Jumat</option>
+            <option value="6">Sabtu</option>
+            <option value="0">Minggu</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Jam Kirim</label>
+          <select id="weeklyTime">
+            <option value="20">20:00</option>
+            <option value="21" selected>21:00</option>
+            <option value="22">22:00</option>
+            <option value="23">23:00</option>
+          </select>
+        </div>
+      </div>
+      
+      <div id="monthlyOptions" style="display:none;">
+        <div class="form-group">
+          <label>Tanggal Kirim</label>
+          <select id="monthlyDate">
+            <option value="1" selected>Tanggal 1</option>
+            <option value="2">Tanggal 2</option>
+            <option value="3">Tanggal 3</option>
+            <option value="5">Tanggal 5</option>
+            <option value="10">Tanggal 10</option>
+            <option value="15">Tanggal 15</option>
+            <option value="28">Tanggal 28</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Jam Kirim</label>
+          <select id="monthlyTime">
+            <option value="20">20:00</option>
+            <option value="21" selected>21:00</option>
+            <option value="22">22:00</option>
+            <option value="23">23:00</option>
+          </select>
+        </div>
+      </div>
+      
+      <button class="btn" onclick="simpanPengaturanLaporan()">💾 Simpan Pengaturan Laporan</button>
+      <button class="btn btn-sm" onclick="tesKirimLaporan()" style="margin-top:8px;">🧪 Tes Kirim Laporan</button>
+    </div>
+    <hr>
+
+    <!-- Manajemen Cetak -->
     <h3>Manajemen Cetak</h3>
     <div class="form-group">
       <label>Printer <button class="info-btn" onclick="alert('Untuk printer Bluetooth:\n1. Nyalakan printer dan pastikan dalam mode pairing.\n2. Buka Pengaturan Android > Bluetooth > pindai dan pasangkan dengan printer.\n3. Setelah terhubung, pilih "Bluetooth Printer" di dropdown.\n4. Saat mencetak, Android akan menanyakan printer tujuan.\n\nUntuk printer USB:\n1. Colokkan kabel OTG ke tablet.\n2. Sambungkan printer.\n3. Pilih "USB Printer".')">ℹ️</button></label>
@@ -202,6 +277,7 @@
     <button class="btn" onclick="simpanPengaturanCetak()">Simpan Pengaturan Cetak</button>
     <hr>
 
+    <!-- Manajemen User -->
     <div id="manajemenUserSection">
       <h3>Manajemen User</h3>
       <table class="user-table"><thead><tr><th>Username</th><th>Role</th><th>Aksi</th></tr></thead><tbody id="userListBody"></tbody></table>
@@ -209,6 +285,7 @@
       <hr>
     </div>
 
+    <!-- Manajemen Data -->
     <div id="manajemenDataSection">
       <h3>Manajemen Data</h3>
       <button class="btn" id="btnPilihFolder" onclick="pilihFolder()">📁 Pilih Folder Kerja</button>
@@ -256,7 +333,6 @@
     <button class="btn" onclick="document.getElementById('productDetailModal').style.display='none'">Tutup</button>
   </div>
 </div>
-
 
 <script src="js/supabase-config.js"></script>
 <script src="js/auth.js"></script>
