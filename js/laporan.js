@@ -54,8 +54,6 @@ async function muatLaporan() {
   document.getElementById('totalPendapatan').textContent = 'Rp' + all.reduce((s, t) => s + t.total, 0).toLocaleString('id');
   renderChart(all, 'daily', a, b);
   renderTopProductsChart(all);
-  
-  // Check low stock
   checkLowStock();
 }
 
@@ -81,15 +79,13 @@ async function checkLowStock() {
     
     alertDiv.style.display = 'block';
     listEl.innerHTML = lowStockProducts.map(p => 
-      `<li>${p.nama} - Stok: <b style="color:#e53935;">${p.stok}</b> (Min: ${p.min_stok || 10}) 
-      <button class="btn-sm" onclick="document.querySelector('[data-page=inventory]').click(); document.getElementById('prodBarcode').value='${p.barcode}'; cariAtauTambahProduk();" style="margin-left:8px;">📦 Restock</button></li>`
+      `<li>${p.nama} - Stok: <b style="color:#e53935;">${p.stok}</b> (Min: ${p.min_stok || 10}) <button class="btn-sm" onclick="document.querySelector('[data-page=inventory]').click(); document.getElementById('prodBarcode').value='${p.barcode}'; cariAtauTambahProduk();" style="margin-left:8px;">📦 Restock</button></li>`
     ).join('');
   } catch (e) {
     console.error('Low stock check failed:', e);
   }
 }
 
-// ========== CETAK ULANG VIA BLUETOOTH ==========
 async function cetakUlangBT(noInv) {
   if (!bluetoothDevice || !bluetoothCharacteristic) {
     alert('Printer Bluetooth tidak terhubung. Sambungkan dulu di tab Setting.');
@@ -112,7 +108,6 @@ async function cetakUlangBT(noInv) {
   await cetakStrukKePrinter(toko.logo || null, teks);
 }
 
-// ========== HAPUS TRANSAKSI ==========
 async function hapusTransaksi(noInv) {
   if (!confirm(`Hapus transaksi ${noInv}? Stok akan dikembalikan.`)) return;
   const trx = await getTransaction(noInv);
@@ -131,7 +126,6 @@ async function hapusTransaksi(noInv) {
   } catch (e) { alert('Gagal menghapus: ' + e.message); }
 }
 
-// ========== VIEW & CETAK PDF ==========
 async function viewInvoice(noInv) {
   const url = await getInvoiceURL(noInv);
   if (url) { window.open(url, '_blank'); return; }
@@ -236,7 +230,7 @@ function exportCSV() {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'laporan.csv'; a.click();
 }
 
-// ===================== SEND EMAIL VIA VERCEL API =====================
+// ===================== SEND EMAIL =====================
 async function sendEmailResend(to, subject, message) {
   const response = await fetch('/api/send-email', {
     method: 'POST',
@@ -250,10 +244,9 @@ async function sendEmailResend(to, subject, message) {
   return response.json();
 }
 
-// ===================== EMAIL LAPORAN HARIAN =====================
 async function emailLaporanHarian() {
   const settings = await getSettings();
-  if (!settings.report_email) { alert('Email belum diatur. Silakan isi email di tab Setting → Manajemen Laporan.'); return; }
+  if (!settings.report_email) { alert('Email belum diatur.'); return; }
   const today = new Date();
   const tanggal = today.toISOString().slice(0, 10);
   const tanggalFormat = today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -273,10 +266,9 @@ async function emailLaporanHarian() {
   } catch (error) { alert('❌ Gagal mengirim: ' + error.message); }
 }
 
-// ===================== EMAIL LAPORAN PERIODE =====================
 async function emailLaporanPeriode() {
   const settings = await getSettings();
-  if (!settings.report_email) { alert('Email belum diatur. Silakan isi email di tab Setting → Manajemen Laporan.'); return; }
+  if (!settings.report_email) { alert('Email belum diatur.'); return; }
   const tglAwal = document.getElementById('tglAwal').value;
   const tglAkhir = document.getElementById('tglAkhir').value;
   if (!tglAwal || !tglAkhir) { alert('Pilih tanggal terlebih dahulu.'); return; }
@@ -287,4 +279,67 @@ async function emailLaporanPeriode() {
   transactions.forEach(t => { if (t.items) { t.items.forEach(item => { const key = item.barcode; if (!productSales[key]) { productSales[key] = { nama: item.nama, qty: 0, total: 0 }; } productSales[key].qty += item.qty || 0; productSales[key].total += (item.harga * item.qty) || 0; }); } });
   const topProducts = Object.values(productSales).sort((a, b) => b.qty - a.qty).slice(0, 10);
   let message = `📊 LAPORAN POS\n────────────────────────\nToko: ${settings.nama || 'POS'}\nPeriode: ${tglAwal} s/d ${tglAkhir}\n────────────────────────\n\n📋 RINGKASAN:\nTotal Transaksi: ${totalTransaksi}\nTotal Pendapatan: Rp ${totalPendapatan.toLocaleString('id')}\n`;
-  if (totalTransaksi > 0
+  if (totalTransaksi > 0) { message += `Rata-rata: Rp ${Math.round(totalPendapatan / totalTransaksi).toLocaleString('id')}\n`; }
+  if (topProducts.length > 0) { message += `\n🔥 PRODUK TERLARIS:\n`; topProducts.forEach((p, i) => { message += `${i + 1}. ${p.nama} - ${p.qty} pcs (Rp ${p.total.toLocaleString('id')})\n`; }); }
+  message += `\n────────────────────────\n📱 Dikirim dari POS System\n`;
+  try {
+    await sendEmailResend(settings.report_email, `📊 Laporan POS - ${tglAwal} s/d ${tglAkhir}`, message);
+    alert('✅ Laporan periode berhasil dikirim ke ' + settings.report_email);
+  } catch (error) { alert('❌ Gagal mengirim: ' + error.message); }
+}
+
+async function kirimEmailLaporan(settings) {
+  const today = new Date();
+  const tanggal = today.toISOString().slice(0, 10);
+  const tanggalFormat = today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const transactions = await getAllTransactions(tanggal + 'T00:00:00', tanggal + 'T23:59:59');
+  const totalTransaksi = transactions.length;
+  const totalPendapatan = transactions.reduce((sum, t) => sum + (t.total || 0), 0);
+  const productSales = {};
+  transactions.forEach(t => { if (t.items) { t.items.forEach(item => { const key = item.barcode; if (!productSales[key]) { productSales[key] = { nama: item.nama, qty: 0, total: 0 }; } productSales[key].qty += item.qty || 0; productSales[key].total += (item.harga * item.qty) || 0; }); } });
+  const topProducts = Object.values(productSales).sort((a, b) => b.qty - a.qty).slice(0, 5);
+  let message = `📊 LAPORAN POS - ${tanggalFormat}\n────────────────────────\nToko: ${settings.nama || 'POS'}\n────────────────────────\n\nTotal Transaksi: ${totalTransaksi}\nTotal Pendapatan: Rp ${totalPendapatan.toLocaleString('id')}\n\n`;
+  if (topProducts.length > 0) { message += `🔥 PRODUK TERLARIS:\n`; topProducts.forEach((p, i) => { message += `${i + 1}. ${p.nama} - ${p.qty} pcs\n`; }); }
+  message += `\n────────────────────────\n📱 Dikirim otomatis oleh POS\n`;
+  try { await sendEmailResend(settings.report_email, `📊 Laporan POS - ${tanggal}`, message); console.log('Auto report sent'); }
+  catch (error) { console.error('Auto report failed:', error); }
+}
+
+async function checkAutoEmailReport() {
+  const settings = await getSettings();
+  if (!settings.report_email || !settings.report_frequency || settings.report_frequency === 'none') return;
+  const today = new Date();
+  const currentHour = today.getHours();
+  const lastSent = localStorage.getItem('lastReportSent');
+  let shouldSend = false;
+  if (settings.report_frequency === 'daily') {
+    const th = parseInt(settings.report_daily_time) || 21;
+    const ts = today.toISOString().slice(0, 10);
+    if (lastSent !== ts && currentHour === th) shouldSend = true;
+  } else if (settings.report_frequency === 'weekly') {
+    const th = parseInt(settings.report_weekly_time) || 21;
+    const td = parseInt(settings.report_weekly_day);
+    const tdd = today.getDay();
+    const ws = `${today.getFullYear()}-W${getWeekNumber(today)}`;
+    if (tdd === td && currentHour === th && lastSent !== ws) shouldSend = true;
+  } else if (settings.report_frequency === 'monthly') {
+    const th = parseInt(settings.report_monthly_time) || 21;
+    const tdd = parseInt(settings.report_monthly_date);
+    const tdate = today.getDate();
+    const ms = `${today.getFullYear()}-${today.getMonth() + 1}`;
+    if (tdate === tdd && currentHour === th && lastSent !== ms) shouldSend = true;
+  }
+  if (shouldSend) {
+    await kirimEmailLaporan(settings);
+    if (settings.report_frequency === 'daily') localStorage.setItem('lastReportSent', today.toISOString().slice(0, 10));
+    else if (settings.report_frequency === 'weekly') localStorage.setItem('lastReportSent', `${today.getFullYear()}-W${getWeekNumber(today)}`);
+    else if (settings.report_frequency === 'monthly') localStorage.setItem('lastReportSent', `${today.getFullYear()}-${today.getMonth() + 1}`);
+  }
+}
+
+function getWeekNumber(d) {
+  d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
