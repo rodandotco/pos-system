@@ -25,6 +25,11 @@ async function login() {
   refreshProductList(); setDefaultDateFilter();
   if (activeTab==='laporan') muatLaporan();
   aturHakAkses();
+  
+  // Check auto email report after login
+  setTimeout(() => { 
+    if (typeof checkAutoEmailReport === 'function') checkAutoEmailReport(); 
+  }, 2000);
 }
 
 function logout() {
@@ -40,6 +45,7 @@ function logout() {
 // Session
 function saveSession() { if (currentUser) localStorage.setItem('currentUser', JSON.stringify(currentUser)); }
 function clearSession() { localStorage.removeItem('currentUser'); }
+
 function checkSession() {
   const saved = localStorage.getItem('currentUser');
   if (saved) {
@@ -50,6 +56,12 @@ function checkSession() {
       refreshProductList(); setDefaultDateFilter();
       if (activeTab==='laporan') muatLaporan();
       aturHakAkses();
+      
+      // Check auto email report on session restore
+      setTimeout(() => { 
+        if (typeof checkAutoEmailReport === 'function') checkAutoEmailReport(); 
+      }, 2000);
+      
       return true;
     } catch(e) { clearSession(); }
   }
@@ -70,12 +82,14 @@ async function tambahUser() {
   await supabaseClient.from('users').upsert({ username: u, password_hash: await hashPassword(p), role: r });
   tampilkanUserList();
 }
+
 async function hapusUser(username) {
   if (!currentUser || currentUser.role!=='admin') return;
   if (username==='admin') return alert('Admin tidak bisa dihapus');
   await supabaseClient.from('users').delete().eq('username', username);
   tampilkanUserList();
 }
+
 function editUser(username) {
   if (!currentUser || currentUser.role!=='admin') return;
   supabaseClient.from('users').select('*').eq('username', username).single().then(({data:u})=>{
@@ -86,6 +100,7 @@ function editUser(username) {
     document.getElementById('editUserModal').style.display = 'flex';
   });
 }
+
 async function simpanEditUser() {
   const u = document.getElementById('editUsername').value;
   const p = document.getElementById('editPassword').value;
@@ -96,6 +111,7 @@ async function simpanEditUser() {
   document.getElementById('editUserModal').style.display = 'none';
   tampilkanUserList();
 }
+
 async function tampilkanUserList() {
   if (!currentUser || currentUser.role!=='admin') {
     document.getElementById('userListBody').innerHTML = '<tr><td colspan="3">Admin only</td></tr>'; return;

@@ -8,6 +8,8 @@ async function muatProfilToko() {
     document.getElementById('tokoAlamat').value = s.alamat || '';
     document.getElementById('tokoTelp').value = s.telp || '';
     document.getElementById('tokoFooter').value = s.footer || '';
+document.getElementById('tokoEmail').value = s.email || '';          // ADD THIS
+document.getElementById('reportSchedule').value = s.report_schedule || 'none';  // ADD THIS
     document.getElementById('kertasLebar').value = s.kertas_lebar || '80';
     document.getElementById('jenisKertas').value = s.jenis_kertas || 'thermal';
     document.getElementById('printerPilihan').value = s.printer || 'default';
@@ -27,6 +29,8 @@ async function muatProfilToko() {
     document.getElementById('tokoAlamat').value = '';
     document.getElementById('tokoTelp').value = '';
     document.getElementById('tokoFooter').value = '';
+document.getElementById('tokoEmail').value = '';          // ADD THIS
+document.getElementById('reportSchedule').value = 'none'; // ADD THIS
     document.getElementById('kertasLebar').value = '80';
     document.getElementById('jenisKertas').value = 'thermal';
     document.getElementById('printerPilihan').value = 'default';
@@ -70,6 +74,8 @@ async function simpanProfil() {
   const alamat = document.getElementById('tokoAlamat').value;
   const telp = document.getElementById('tokoTelp').value;
   const footer = document.getElementById('tokoFooter').value;
+const email = document.getElementById('tokoEmail').value;              // ADD THIS
+const reportSchedule = document.getElementById('reportSchedule').value; // ADD THIS
   const kertasLebar = document.getElementById('kertasLebar').value;
   const jenisKertas = document.getElementById('jenisKertas').value;
   const printer = document.getElementById('printerPilihan').value;
@@ -90,7 +96,8 @@ async function simpanProfil() {
   }
 
   await updateSettings({
-    nama, alamat, telp, logo, footer,
+    nama, alamat, telp, logo, footer, email,          // ADD email
+    report_schedule: reportSchedule,                   // ADD THIS
     kertas_lebar: kertasLebar,
     jenis_kertas: jenisKertas,
     printer,

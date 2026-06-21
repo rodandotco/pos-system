@@ -259,3 +259,125 @@ function exportCSV() {
   const blob = new Blob([csv], { type: 'text/csv' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'laporan.csv'; a.click();
 }
+
+// ========== AUTO EMAIL REPORT (runs on app load) ==========
+async function checkAutoEmailReport() {
+  const settings = await getSettings();
+  
+  if (!settings.email || !settings.report_schedule || settings.report_schedule === 'none') {
+    return; // Not configured
+  }
+  
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  const lastSent = localStorage.getItem('lastReportSent');
+  const lastSchedule = localStorage.getItem('lastReportSchedule');
+  
+  // Check if schedule changed (reset)
+  if (lastSchedule !== settings.report_schedule) {
+    localStorage.removeItem('lastReportSent');
+    localStorage.setItem('lastReportSchedule', settings.report_schedule);
+  }
+  
+  let shouldSend = false;
+  
+  if (settings.report_schedule === 'daily') {
+    // Send if not sent today
+    if (lastSent !== todayStr) shouldSend = true;
+    
+  } else if (settings.report_schedule === 'weekly') {
+    // Send on Monday if not sent this week
+    const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon
+    if (dayOfWeek === 1) { // Monday
+      const weekStr = `${today.getFullYear()}-W${getWeekNumber(today)}`;
+      if (lastSent !== weekStr) shouldSend = true;
+    }
+    
+  } else if (settings.report_schedule === 'monthly') {
+    // Send on 1st day of month
+    if (today.getDate() === 1) {
+      const monthStr = `${today.getFullYear()}-${today.getMonth() + 1}`;
+      if (lastSent !== monthStr) shouldSend = true;
+    }
+  }
+  
+  // Check time (only send between 21:00-22:00)
+  const currentHour = today.getHours();
+  if (currentHour < 21 || currentHour >= 22) {
+    shouldSend = false;
+  }
+  
+  if (shouldSend) {
+    // Send the report
+    await kirimEmailLaporan(settings);
+    
+    // Save sent status
+    if (settings.report_schedule === 'daily') {
+      localStorage.setItem('lastReportSent', todayStr);
+    } else if (settings.report_schedule === 'weekly') {
+      localStorage.setItem('lastReportSent', `${today.getFullYear()}-W${getWeekNumber(today)}`);
+    } else if (settings.report_schedule === 'monthly') {
+      localStorage.setItem('lastReportSent', `${today.getFullYear()}-${today.getMonth() + 1}`);
+    }
+  }
+}
+
+function getWeekNumber(d) {
+  d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
+async function kirimEmailLaporan(settings) {
+  const today = new Date();
+  const tanggal = today.toISOString().slice(0, 10);
+  const tanggalFormat = today.toLocaleDateString('id-ID', { 
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' 
+  });
+  
+  // Get transactions
+  const transactions = await getAllTransactions(tanggal + 'T00:00:00', tanggal + 'T23:59:59');
+  
+  const totalTransaksi = transactions.length;
+  const totalPendapatan = transactions.reduce((sum, t) => sum + (t.total || 0), 0);
+  
+  // Top products
+  const productSales = {};
+  transactions.forEach(t => {
+    if (t.items) {
+      t.items.forEach(item => {
+        const key = item.barcode;
+        if (!productSales[key]) {
+          productSales[key] = { nama: item.nama, qty: 0, total: 0 };
+        }
+        productSales[key].qty += item.qty || 0;
+        productSales[key].total += (item.harga * item.qty) || 0;
+      });
+    }
+  });
+  
+  const topProducts = Object.values(productSales)
+    .sort((a, b) => b.qty - a.qty)
+    .slice(0, 5);
+  
+  let body = `📊 LAPORAN POS - ${tanggalFormat}\n`;
+  body += `────────────────────────\n`;
+  body += `Toko: ${settings.nama || 'POS'}\n`;
+  body += `────────────────────────\n\n`;
+  body += `Total Transaksi: ${totalTransaksi}\n`;
+  body += `Total Pendapatan: Rp ${totalPendapatan.toLocaleString('id')}\n\n`;
+  
+  if (topProducts.length > 0) {
+    body += `🔥 PRODUK TERLARIS:\n`;
+    topProducts.forEach((p, i) => {
+      body += `${i + 1}. ${p.nama} - ${p.qty} pcs\n`;
+    });
+  }
+  
+  body += `\n────────────────────────\n📱 Dikirim otomatis oleh POS\n`;
+  
+  // Open email client
+  const subject = `📊 Laporan POS - ${tanggal}`;
+  window.location.href = `mailto:${settings.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}

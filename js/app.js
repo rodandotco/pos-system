@@ -28,144 +28,47 @@ document.querySelectorAll('.tab-btn').forEach(b => {
 function initApp() {
   checkSession();
 }
+
 initApp();
 
-// ===================== BACK BUTTON - WORKING APPROACH =====================
-(function() {
-  let backCount = 0;
-  let backTimer = null;
-  let allowExit = false;
+// ===================== BACK BUTTON - SIMPLE ALERT =====================
+let backCount = 0;
+let backTimer = null;
 
-  // Listen for beforeunload - this fires before the page unloads
-  window.addEventListener('beforeunload', function(e) {
-    if (!allowExit) {
-      // Block exit
-      e.preventDefault();
-      e.returnValue = '';
-      
-      // Increment counter
-      backCount++;
-      
-      // Clear old timer
-      clearTimeout(backTimer);
-      
-      // Remove old toast
-      const oldToast = document.getElementById('backToast');
-      if (oldToast) oldToast.remove();
-      
-      if (backCount >= 4) {
-        // Allow exit on 4th press
-        allowExit = true;
-        backCount = 0;
-        
-        // Remove any toast
-        const toast = document.getElementById('backToast');
-        if (toast) toast.remove();
-        
-        // Exit
-        setTimeout(function() {
-          window.close();
-        }, 100);
-        
-        return;
-      }
-      
-      // Show warning
-      showToast(backCount);
-      
-      // Reset counter after 3 seconds
-      backTimer = setTimeout(function() {
-        backCount = 0;
-        const toast = document.getElementById('backToast');
-        if (toast) toast.remove();
-      }, 3000);
-      
-      return '';
-    }
-  });
+// Push initial state
+history.pushState(null, '', location.href);
 
-  function showToast(count) {
-    // Remove existing toast
-    const oldToast = document.getElementById('backToast');
-    if (oldToast) oldToast.remove();
-    
-    let message = '';
-    let bgColor = '';
-    let borderColor = '';
-    let icon = '';
-
-    if (count === 1) {
-      message = 'Harap gunakan tombol <b>LOGOUT</b> untuk keluar dari aplikasi';
-      bgColor = '#e3f2fd';
-      borderColor = '#2196f3';
-      icon = 'ℹ️';
-    } else if (count === 2) {
-      message = '⚠️ Tombol BACK tidak disarankan!<br>Silakan tekan <b>LOGOUT</b> di pojok kanan atas';
-      bgColor = '#fff3e0';
-      borderColor = '#ff9800';
-      icon = '⚠️';
-    } else if (count === 3) {
-      message = '⛔ Tekan BACK sekali lagi akan keluar paksa!<br>Gunakan <b>LOGOUT</b> untuk keluar dengan benar';
-      bgColor = '#fce4ec';
-      borderColor = '#f44336';
-      icon = '⛔';
-    }
-
-    const toast = document.createElement('div');
-    toast.id = 'backToast';
-    toast.innerHTML = `
-      <div style="display: flex; align-items: flex-start; gap: 10px;">
-        <span style="font-size: 22px;">${icon}</span>
-        <div style="flex: 1; font-size: 13px; line-height: 1.5;">${message}</div>
-      </div>
-    `;
-    toast.style.cssText = `
-      position: fixed;
-      bottom: 20px;
-      left: 16px;
-      right: 16px;
-      background: ${bgColor};
-      color: #333;
-      padding: 14px 18px;
-      border-radius: 12px;
-      z-index: 9999;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-      border-left: 4px solid ${borderColor};
-      max-width: 400px;
-      margin: 0 auto;
-      animation: slideUp 0.3s ease;
-    `;
-
-    document.body.appendChild(toast);
-    
-    // Auto remove after 2.5 seconds
-    setTimeout(function() {
-      const t = document.getElementById('backToast');
-      if (t) {
-        t.style.animation = 'slideDown 0.3s ease';
-        setTimeout(function() {
-          const t2 = document.getElementById('backToast');
-          if (t2) t2.remove();
-        }, 300);
-      }
-    }, 2500);
-  }
-
-  // Reset when app goes to background
-  document.addEventListener('visibilitychange', function() {
-    if (document.hidden) {
-      backCount = 0;
-      clearTimeout(backTimer);
-      allowExit = false;
-      const toast = document.getElementById('backToast');
-      if (toast) toast.remove();
-    }
-  });
+window.addEventListener('popstate', function(event) {
+  // Push state back immediately
+  history.pushState(null, '', location.href);
   
-  // Reset allowExit when app comes back
-  document.addEventListener('visibilitychange', function() {
-    if (!document.hidden) {
-      allowExit = false;
-    }
-  });
-})();
+  backCount++;
+  clearTimeout(backTimer);
+  
+  if (backCount === 1) {
+    alert('ℹ️ Harap gunakan tombol LOGOUT\nuntuk keluar dari aplikasi');
+  } else if (backCount === 2) {
+    alert('⚠️ Tombol BACK tidak disarankan!\nSilakan tekan LOGOUT di pojok kanan atas');
+  } else if (backCount === 3) {
+    alert('⛔ Satu kali lagi aplikasi akan keluar paksa!\nGunakan LOGOUT untuk keluar dengan benar');
+  } else if (backCount >= 4) {
+    // Allow exit
+    backCount = 0;
+    clearTimeout(backTimer);
+    history.back();
+    return;
+  }
+  
+  // Reset after 3 seconds
+  backTimer = setTimeout(function() {
+    backCount = 0;
+  }, 3000);
+});
+
+// Reset when app goes to background
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden) {
+    backCount = 0;
+    clearTimeout(backTimer);
+  }
+});
