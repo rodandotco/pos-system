@@ -99,7 +99,6 @@ async function simpanPengaturanLaporan() {
   
   alert('✅ Pengaturan laporan disimpan!');
   
-  // Reset last sent so new settings take effect
   localStorage.removeItem('lastReportSent');
   localStorage.removeItem('lastReportSchedule');
 }
@@ -112,38 +111,21 @@ async function tesKirimLaporan() {
     return;
   }
   
-  // Simpan dulu pengaturan
   await simpanPengaturanLaporan();
   
-  // Kirim laporan tes
   const settings = await getSettings();
   const today = new Date();
-  const tanggal = today.toISOString().slice(0, 10);
-  const tanggalFormat = today.toLocaleDateString('id-ID', { 
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' 
-  });
   
-  const transactions = await getAllTransactions(tanggal + 'T00:00:00', tanggal + 'T23:59:59');
-  const totalTransaksi = transactions.length;
-  const totalPendapatan = transactions.reduce((sum, t) => sum + (t.total || 0), 0);
-  
-  let body = `📊 LAPORAN POS (TES)\n`;
-  body += `────────────────────────\n`;
-  body += `Toko: ${settings.nama || 'POS'}\n`;
-  body += `Tanggal: ${tanggalFormat}\n`;
-  body += `────────────────────────\n\n`;
-  body += `📋 RINGKASAN:\n`;
-  body += `Total Transaksi: ${totalTransaksi}\n`;
-  body += `Total Pendapatan: Rp ${totalPendapatan.toLocaleString('id')}\n\n`;
-  body += `✅ Ini adalah laporan percobaan.\n`;
-  body += `────────────────────────\n📱 Dikirim oleh POS System\n`;
-  
-  const subject = `📊 TES - Laporan POS - ${tanggal}`;
-  window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  
-  setTimeout(() => {
-    alert('✅ Email client terbuka!\nSilakan kirim email dari aplikasi email Anda.');
-  }, 500);
+  try {
+    await sendEmailResend(
+      email,
+      '📊 TES - Laporan POS',
+      `✅ Ini adalah email percobaan dari POS System.\n\nToko: ${settings.nama || 'POS'}\nTanggal: ${today.toLocaleDateString('id-ID')}\n\nJika Anda menerima email ini, pengaturan laporan otomatis berhasil!`
+    );
+    alert('✅ Email tes berhasil dikirim ke ' + email + '\nSilakan cek inbox (dan folder Spam).');
+  } catch (error) {
+    alert('❌ Gagal mengirim email: ' + error.message);
+  }
 }
 
 // ===================== PROFIL & LOGO =====================
