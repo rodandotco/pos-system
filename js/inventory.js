@@ -19,12 +19,12 @@ async function cariAtauTambahProduk() {
     else document.getElementById('fotoPreviewContainer').style.display = 'none';
   } else {
     if (!isAdmin) { alert('Produk tidak ditemukan'); tutupFormProduk(); return; }
-    isiFormProduk({ barcode, nama: '', kategori: '', keterangan: '', harga_beli: 0, harga_jual: 0, min_stok: 10, stok: 0, foto: null }, true, true);
+    isiFormProduk({ barcode, nama: '', kategori: '', keterangan: '', harga_beli: 0, harga_jual: 0, min_stok: 10, diskon_persen: 0, diskon_min_qty: 0, stok: 0, foto: null }, true, true);
     document.getElementById('fotoPreviewContainer').style.display = 'none';
   }
   if (isAdmin) document.getElementById('prodNama').focus();
   else {
-    ['prodNama', 'prodKategori', 'prodKeterangan', 'prodHargaBeli', 'prodHargaJual', 'prodMinStok', 'perubahanStok'].forEach(id => document.getElementById(id).readOnly = true);
+    ['prodNama', 'prodKategori', 'prodKeterangan', 'prodHargaBeli', 'prodHargaJual', 'prodDiskonPersen', 'prodDiskonMinQty', 'prodMinStok', 'perubahanStok'].forEach(id => document.getElementById(id).readOnly = true);
     document.getElementById('btnSimpanProduk').style.display = 'none';
     document.getElementById('btnHapusProduk').style.display = 'none';
     document.getElementById('btnHapusFoto').style.display = 'none';
@@ -58,6 +58,8 @@ function isiFormProduk(produk, isNew, isAdmin) {
   document.getElementById('prodKeterangan').value = produk.keterangan || '';
   document.getElementById('prodHargaBeli').value = produk.harga_beli || 0;
   document.getElementById('prodHargaJual').value = produk.harga_jual || 0;
+  document.getElementById('prodDiskonPersen').value = produk.diskon_persen || 0;
+  document.getElementById('prodDiskonMinQty').value = produk.diskon_min_qty || 0;
   document.getElementById('prodMinStok').value = produk.min_stok || 10;
   document.getElementById('stokSaatIni').textContent = produk.stok || 0;
   document.getElementById('perubahanStok').value = 0; hitungStokAkhir();
@@ -65,7 +67,7 @@ function isiFormProduk(produk, isNew, isAdmin) {
     document.getElementById('btnHapusProduk').style.display = isNew ? 'none' : 'inline-block';
     document.getElementById('btnSimpanProduk').style.display = 'inline-block';
     document.getElementById('btnHapusFoto').style.display = 'block';
-    ['prodNama', 'prodKategori', 'prodKeterangan', 'prodHargaBeli', 'prodHargaJual', 'prodMinStok', 'perubahanStok', 'prodFoto'].forEach(id => { document.getElementById(id).readOnly = false; document.getElementById(id).disabled = false; });
+    ['prodNama', 'prodKategori', 'prodKeterangan', 'prodHargaBeli', 'prodHargaJual', 'prodDiskonPersen', 'prodDiskonMinQty', 'prodMinStok', 'perubahanStok', 'prodFoto'].forEach(id => { document.getElementById(id).readOnly = false; document.getElementById(id).disabled = false; });
     document.getElementById('btnSimpanProduk').onclick = async () => {
       if (!currentBarcode) return;
       let foto = produk.foto || null;
@@ -78,6 +80,8 @@ function isiFormProduk(produk, isNew, isAdmin) {
         keterangan: document.getElementById('prodKeterangan').value.trim(), 
         harga_beli: parseFloat(document.getElementById('prodHargaBeli').value) || 0, 
         harga_jual: parseFloat(document.getElementById('prodHargaJual').value) || 0, 
+        diskon_persen: parseFloat(document.getElementById('prodDiskonPersen').value) || 0,
+        diskon_min_qty: parseInt(document.getElementById('prodDiskonMinQty').value) || 0,
         min_stok: parseInt(document.getElementById('prodMinStok').value) || 10,
         stok: (parseInt(document.getElementById('stokSaatIni').textContent) || 0) + (parseInt(document.getElementById('perubahanStok').value) || 0), 
         foto 
@@ -93,7 +97,7 @@ function isiFormProduk(produk, isNew, isAdmin) {
 function tutupFormProduk() {
   document.getElementById('productForm').style.display = 'none'; document.getElementById('prodBarcode').value = ''; document.getElementById('prodBarcode').focus(); currentBarcode = null;
   document.getElementById('fotoPreviewContainer').style.display = 'none'; document.getElementById('prodFoto').value = ''; fotoDihapus = false;
-  ['prodNama', 'prodKategori', 'prodKeterangan', 'prodHargaBeli', 'prodHargaJual', 'prodMinStok', 'perubahanStok', 'prodFoto'].forEach(id => { document.getElementById(id).readOnly = false; document.getElementById(id).disabled = false; });
+  ['prodNama', 'prodKategori', 'prodKeterangan', 'prodHargaBeli', 'prodHargaJual', 'prodDiskonPersen', 'prodDiskonMinQty', 'prodMinStok', 'perubahanStok', 'prodFoto'].forEach(id => { document.getElementById(id).readOnly = false; document.getElementById(id).disabled = false; });
   document.getElementById('btnSimpanProduk').style.display = 'inline-block'; document.getElementById('btnHapusProduk').style.display = 'none'; document.getElementById('btnHapusFoto').style.display = 'block';
 }
 
@@ -117,7 +121,15 @@ function renderProductTable(products) {
     const stokStyle = isLowStock ? 'color:#e53935; font-weight:bold;' : 'color:#333;';
     const stokDisplay = `${p.stok || 0}${isLowStock ? ' ⚠️' : ''}`;
     
-    const namaCell = `<td style="display:flex;align-items:center;gap:6px;">${p.foto ? `<img src="${p.foto}" style="width:30px;height:30px;border-radius:4px;object-fit:cover;">` : '<div style="width:30px;height:30px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;">📦</div>'}${p.nama || ''}</td>`;
+    if (isLowStock) {
+      row.style.background = '#fff3e0';
+    }
+
+    const grosirInfo = (p.diskon_persen > 0 && p.diskon_min_qty > 0) 
+      ? `<br><small style="color:#e53935; font-weight:bold;">🔥 Grosir ${p.diskon_persen}% min ${p.diskon_min_qty}pcs</small>` 
+      : '';
+    
+    const namaCell = `<td style="display:flex;align-items:center;gap:6px;">${p.foto ? `<img src="${p.foto}" style="width:30px;height:30px;border-radius:4px;object-fit:cover;">` : '<div style="width:30px;height:30px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;">📦</div>'}<div>${p.nama || ''}${grosirInfo}</div></td>`;
     const aksi = (isAdmin ? `<button class="btn-sm" onclick="editProdukDariDaftar('${p.barcode}')">✏️</button> <button class="btn-sm btn-danger" onclick="hapusProdukDariDaftar('${p.barcode}')">🗑</button> ` : '') + `<button class="btn-sm" onclick="cetakLabelQR('${p.barcode}')">🏷️ QR</button>`;
     row.innerHTML = `<td>${p.barcode || ''}</td>${namaCell}<td>${p.kategori || '-'}</td><td>${p.keterangan || '-'}</td><td>Rp${(p.harga_jual || 0).toLocaleString('id')}</td><td style="${stokStyle}">${stokDisplay}</td><td>${aksi}</td>`;
   });

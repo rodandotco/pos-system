@@ -1,4 +1,4 @@
-// ===================== TRANSAKSI.JS (Final + Stok Validasi) =====================
+// ===================== TRANSAKSI.JS =====================
 let cart = [];
 let searchTimer = null;
 let appSettings = {};
@@ -6,31 +6,27 @@ let isAdmin = false;
 let totalDiskonValue = 0;
 let bayarValue = 0;
 
-// Cache settings untuk mempercepat loading
-// window.cachedSettings defined in supabase-config.js
+let cachedSettings = null;
 
 async function setupTransaksi() {
   isAdmin = (currentUser && currentUser.role === 'admin');
 
-  // Ambil pengaturan (gunakan cache jika ada)
   try {
-    if (window.cachedSettings) {
-      appSettings = window.cachedSettings;
+    if (cachedSettings) {
+      appSettings = cachedSettings;
     } else {
       appSettings = await getSettings();
-      window.cachedSettings = appSettings; // simpan untuk pemakaian berikutnya
+      cachedSettings = appSettings;
     }
   } catch (e) {
     console.warn('Gagal ambil settings, gunakan default:', e);
     appSettings = { diskon_item_enabled: true, diskon_total_enabled: true };
   }
 
-  // Hapus elemen statis yang tidak diperlukan
   const staticTotalBox = document.querySelector('#page-transaksi .total-box');
   if (staticTotalBox) staticTotalBox.remove();
   document.querySelectorAll('#totalCart').forEach(el => el.remove());
 
-  // Sembunyikan area pembayaran lama & kembalian lama
   const oldPembayaranGroup = document.getElementById('pembayaranGroup');
   if (oldPembayaranGroup) oldPembayaranGroup.style.display = 'none';
   const oldKembalian = document.querySelector('#page-transaksi #kembalian');
@@ -40,7 +36,6 @@ async function setupTransaksi() {
   const oldNominal = document.getElementById('nominalButtons');
   if (oldNominal) oldNominal.remove();
 
-  // Buat container ringkasan di bawah cartTable
   let summaryContainer = document.getElementById('summaryContainer');
   if (!summaryContainer) {
     summaryContainer = document.createElement('div');
@@ -66,7 +61,6 @@ async function setupTransaksi() {
   bayarValue = 0;
   updateBayarDisplay();
 
-  // Event listener scan barcode
   document.getElementById('scanInputTrans').onkeydown = e => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -78,7 +72,6 @@ async function setupTransaksi() {
     }
   };
 
-  // Event listener pencarian produk
   const searchInput = document.getElementById('searchProduct');
   if (searchInput) {
     searchInput.oninput = () => searchProductFn(searchInput.value);
@@ -86,7 +79,7 @@ async function setupTransaksi() {
   }
 
   totalDiskonValue = 0;
-  renderCart(); // render awal (keranjang masih kosong)
+  renderCart();
 }
 
 function updateBayarDisplay() {
@@ -203,26 +196,55 @@ async function tambahProdukDariScan(barcode) {
     product = data?.[0] || null;
   }
   if (!product) { alert(`Produk "${clean}" tidak ditemukan.`); return; }
-  if (product.stok <= 0) { 
-  alert(`Stok "${product.nama}" habis.`); 
-  return; 
-}
+  if (product.stok <= 0) { alert(`Stok "${product.nama}" habis.`); return; }
+  
+  // Low stock warning
+  const minStok = product.min_stok || 10;
+  if (product.stok <= minStok) {
+    alert(`⚠️ Stok "${product.nama}" tinggal ${product.stok}!\nMinimum stok: ${minStok}\nSegera lakukan pembelian stok.`);
+  }
 
-// Low stock warning
-const minStok = product.min_stok || 10;
-if (product.stok <= minStok) {
-  alert(`⚠️ Stok "${product.nama}" tinggal ${product.stok}!\nMinimum stok: ${minStok}\nSegera lakukan pembelian stok.`);
-}
   const existing = cart.find(i => i.barcode === product.barcode);
   if (existing) {
-    if (existing.qty < product.stok) existing.qty++;
-    else { alert('Stok tidak mencukupi'); return; }
+    if (existing.qty < product.stok) {
+      existing.qty++;
+      existing.harga = calculateGrosirPrice(product, existing.qty);
+      existing.isGrosir = existing.harga < existing.hargaAsli;
+      existing.diskon = 0;
+    } else { alert('Stok tidak mencukupi'); return; }
   } else {
-    cart.push({ barcode: product.barcode, nama: product.nama, harga: product.harga_jual || 0, qty: 1, stok: product.stok || 0, diskon: 0 });
+    const hargaGrosir = calculateGrosirPrice(product, 1);
+    cart.push({ 
+      barcode: product.barcode, 
+      nama: product.nama, 
+      harga: hargaGrosir,
+      hargaAsli: product.harga_jual || 0,
+      qty: 1, 
+      stok: product.stok || 0, 
+      diskon: 0,
+      isGrosir: hargaGrosir < (product.harga_jual || 0),
+      diskon_persen: product.diskon_persen || 0,
+      diskon_min_qty: product.diskon_min_qty || 0
+    });
   }
   renderCart();
 }
+
 function tambahProdukKeCart(barcode) { tambahProdukDariScan(barcode); }
+
+// ========== CALCULATE GROSIR PRICE ==========
+function calculateGrosirPrice(product, qty) {
+  const hargaNormal = product.harga_jual || product.hargaAsli || 0;
+  const diskonPersen = product.diskon_persen || 0;
+  const minQty = product.diskon_min_qty || 0;
+  
+  if (diskonPersen > 0 && minQty > 0 && qty >= minQty) {
+    const diskon = Math.round((diskonPersen / 100) * hargaNormal);
+    return hargaNormal - diskon;
+  }
+  
+  return hargaNormal;
+}
 
 // ========== DISKON PER ITEM ==========
 function editDiskonItem(index) {
@@ -299,7 +321,11 @@ function renderCart() {
     const row = tbody.insertRow();
     row.innerHTML = `
       <td>${item.nama}</td>
-      <td>Rp${item.harga.toLocaleString('id')}</td>
+      <td>
+        ${item.isGrosir ? '<span style="color:#e53935; font-size:11px; font-weight:bold;">HARGA GROSIR</span><br>' : ''}
+        Rp${item.harga.toLocaleString('id')}
+        ${item.isGrosir ? `<br><small style="color:#999; text-decoration:line-through;">Rp${item.hargaAsli.toLocaleString('id')}</small>` : ''}
+      </td>
       <td>
         <div class="qty-control">
           <button onclick="changeQty(${idx},-1)">−</button>
@@ -349,8 +375,27 @@ function renderCart() {
   hitungKembalian();
 }
 
-function changeQty(i, d) { let q = cart[i].qty + d; if (q < 1) q = 1; if (q > cart[i].stok) { alert('Stok tidak cukup'); q = cart[i].stok; } cart[i].qty = q; renderCart(); }
-function updateQty(i, q) { q = parseInt(q) || 1; if (q > cart[i].stok) { alert('Stok tidak cukup'); q = cart[i].stok; } cart[i].qty = q; renderCart(); }
+function changeQty(i, d) {
+  let q = cart[i].qty + d;
+  if (q < 1) q = 1;
+  if (q > cart[i].stok) { alert('Stok tidak cukup'); q = cart[i].stok; }
+  cart[i].qty = q;
+  cart[i].harga = calculateGrosirPrice(cart[i], q);
+  cart[i].isGrosir = cart[i].harga < cart[i].hargaAsli;
+  cart[i].diskon = 0;
+  renderCart();
+}
+
+function updateQty(i, q) {
+  q = parseInt(q) || 1;
+  if (q > cart[i].stok) { alert('Stok tidak cukup'); q = cart[i].stok; }
+  cart[i].qty = q;
+  cart[i].harga = calculateGrosirPrice(cart[i], q);
+  cart[i].isGrosir = cart[i].harga < cart[i].hargaAsli;
+  cart[i].diskon = 0;
+  renderCart();
+}
+
 function hapusCartItem(i) { cart.splice(i, 1); renderCart(); }
 
 function hitungKembalian() {
@@ -361,17 +406,16 @@ function hitungKembalian() {
   if (el) el.textContent = kembali.toLocaleString('id');
 }
 
-// ========== BAYAR & CETAK (DENGAN VALIDASI STOK) ==========
+// ========== BAYAR & CETAK ==========
 async function bayarDanCetak() {
   if (!cart.length) { alert('Keranjang kosong'); return; }
   const cust = document.getElementById('custName').value.trim();
 
-  // 1. Cek ulang stok saat ini untuk setiap item, batalkan jika kurang
   for (let item of cart) {
     const { data: current } = await supabaseClient.from('products').select('stok').eq('barcode', item.barcode).single();
     if (!current || current.stok < item.qty) {
       alert(`Stok "${item.nama}" tidak mencukupi!\nTersedia: ${current?.stok || 0}\nDiminta: ${item.qty}\n\nSilakan kurangi atau hapus.`);
-      return; // batalkan transaksi
+      return;
     }
   }
 
@@ -402,7 +446,6 @@ async function bayarDanCetak() {
   } catch (e) {}
 
   try {
-    // 2. Kurangi stok setelah transaksi sukses
     for (let i of cart) {
       const { data: prod } = await supabaseClient.from('products').select('stok').eq('barcode', i.barcode).single();
       if (prod) {
@@ -411,7 +454,7 @@ async function bayarDanCetak() {
     }
     await insertTransaction(trx);
 
-    const toko = appSettings; // gunakan settings yang sudah dicache
+    const toko = appSettings;
     const lebarKertas = parseInt(toko.kertas_lebar) || 80;
     const marginKiri = 3, marginKanan = 3;
     const xItem = marginKiri, xQty = lebarKertas * 0.4, xHarga = lebarKertas * 0.65, xSubtotal = lebarKertas - marginKanan;
@@ -599,7 +642,6 @@ function lihatDetailProduk(barcode) {
   })();
 }
 
-// Fungsi untuk dipanggil dari setting.js setelah simpan pengaturan
 function invalidateSettingsCache() {
   cachedSettings = null;
 }
