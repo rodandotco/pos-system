@@ -19,12 +19,12 @@ async function cariAtauTambahProduk() {
     else document.getElementById('fotoPreviewContainer').style.display = 'none';
   } else {
     if (!isAdmin) { alert('Produk tidak ditemukan'); tutupFormProduk(); return; }
-    isiFormProduk({ barcode, nama: '', kategori: '', keterangan: '', harga_beli: 0, harga_jual: 0, stok: 0, foto: null }, true, true);
+    isiFormProduk({ barcode, nama: '', kategori: '', keterangan: '', harga_beli: 0, harga_jual: 0, min_stok: 10, stok: 0, foto: null }, true, true);
     document.getElementById('fotoPreviewContainer').style.display = 'none';
   }
   if (isAdmin) document.getElementById('prodNama').focus();
   else {
-    ['prodNama', 'prodKategori', 'prodKeterangan', 'prodHargaBeli', 'prodHargaJual', 'perubahanStok'].forEach(id => document.getElementById(id).readOnly = true);
+    ['prodNama', 'prodKategori', 'prodKeterangan', 'prodHargaBeli', 'prodHargaJual', 'prodMinStok', 'perubahanStok'].forEach(id => document.getElementById(id).readOnly = true);
     document.getElementById('btnSimpanProduk').style.display = 'none';
     document.getElementById('btnHapusProduk').style.display = 'none';
     document.getElementById('btnHapusFoto').style.display = 'none';
@@ -58,19 +58,30 @@ function isiFormProduk(produk, isNew, isAdmin) {
   document.getElementById('prodKeterangan').value = produk.keterangan || '';
   document.getElementById('prodHargaBeli').value = produk.harga_beli || 0;
   document.getElementById('prodHargaJual').value = produk.harga_jual || 0;
+  document.getElementById('prodMinStok').value = produk.min_stok || 10;
   document.getElementById('stokSaatIni').textContent = produk.stok || 0;
   document.getElementById('perubahanStok').value = 0; hitungStokAkhir();
   if (isAdmin) {
     document.getElementById('btnHapusProduk').style.display = isNew ? 'none' : 'inline-block';
     document.getElementById('btnSimpanProduk').style.display = 'inline-block';
     document.getElementById('btnHapusFoto').style.display = 'block';
-    ['prodNama', 'prodKategori', 'prodKeterangan', 'prodHargaBeli', 'prodHargaJual', 'perubahanStok', 'prodFoto'].forEach(id => { document.getElementById(id).readOnly = false; document.getElementById(id).disabled = false; });
+    ['prodNama', 'prodKategori', 'prodKeterangan', 'prodHargaBeli', 'prodHargaJual', 'prodMinStok', 'perubahanStok', 'prodFoto'].forEach(id => { document.getElementById(id).readOnly = false; document.getElementById(id).disabled = false; });
     document.getElementById('btnSimpanProduk').onclick = async () => {
       if (!currentBarcode) return;
       let foto = produk.foto || null;
       if (fotoDihapus) foto = null;
       else { const fi = document.getElementById('prodFoto'); if (fi.files[0]) foto = await toBase64(fi.files[0]); }
-      const data = { barcode: currentBarcode, nama: document.getElementById('prodNama').value.trim(), kategori: document.getElementById('prodKategori').value.trim(), keterangan: document.getElementById('prodKeterangan').value.trim(), harga_beli: parseFloat(document.getElementById('prodHargaBeli').value) || 0, harga_jual: parseFloat(document.getElementById('prodHargaJual').value) || 0, stok: (parseInt(document.getElementById('stokSaatIni').textContent) || 0) + (parseInt(document.getElementById('perubahanStok').value) || 0), foto };
+      const data = { 
+        barcode: currentBarcode, 
+        nama: document.getElementById('prodNama').value.trim(), 
+        kategori: document.getElementById('prodKategori').value.trim(), 
+        keterangan: document.getElementById('prodKeterangan').value.trim(), 
+        harga_beli: parseFloat(document.getElementById('prodHargaBeli').value) || 0, 
+        harga_jual: parseFloat(document.getElementById('prodHargaJual').value) || 0, 
+        min_stok: parseInt(document.getElementById('prodMinStok').value) || 10,
+        stok: (parseInt(document.getElementById('stokSaatIni').textContent) || 0) + (parseInt(document.getElementById('perubahanStok').value) || 0), 
+        foto 
+      };
       try { await upsertProduct(data); alert('Disimpan'); tutupFormProduk(); refreshProductList(); } catch (e) { alert('Gagal: ' + e.message); }
     };
     document.getElementById('btnHapusProduk').onclick = async () => {
@@ -82,13 +93,13 @@ function isiFormProduk(produk, isNew, isAdmin) {
 function tutupFormProduk() {
   document.getElementById('productForm').style.display = 'none'; document.getElementById('prodBarcode').value = ''; document.getElementById('prodBarcode').focus(); currentBarcode = null;
   document.getElementById('fotoPreviewContainer').style.display = 'none'; document.getElementById('prodFoto').value = ''; fotoDihapus = false;
-  ['prodNama', 'prodKategori', 'prodKeterangan', 'prodHargaBeli', 'prodHargaJual', 'perubahanStok', 'prodFoto'].forEach(id => { document.getElementById(id).readOnly = false; document.getElementById(id).disabled = false; });
+  ['prodNama', 'prodKategori', 'prodKeterangan', 'prodHargaBeli', 'prodHargaJual', 'prodMinStok', 'perubahanStok', 'prodFoto'].forEach(id => { document.getElementById(id).readOnly = false; document.getElementById(id).disabled = false; });
   document.getElementById('btnSimpanProduk').style.display = 'inline-block'; document.getElementById('btnHapusProduk').style.display = 'none'; document.getElementById('btnHapusFoto').style.display = 'block';
 }
 
 function hitungStokAkhir() { const a = parseInt(document.getElementById('stokSaatIni').textContent) || 0, b = parseInt(document.getElementById('perubahanStok').value) || 0; document.getElementById('stokAkhir').textContent = a + b; }
 
-// ========== RENDER TABEL PRODUK (digunakan bersama) ==========
+// ========== RENDER TABEL PRODUK ==========
 function renderProductTable(products) {
   const tbody = document.querySelector('#productListTable tbody');
   tbody.innerHTML = '';
@@ -101,9 +112,14 @@ function renderProductTable(products) {
   document.getElementById('thAksi').style.display = isAdmin ? '' : 'none';
   products.forEach(p => {
     const row = tbody.insertRow();
+    const minStok = p.min_stok || 10;
+    const isLowStock = (p.stok || 0) <= minStok;
+    const stokStyle = isLowStock ? 'color:#e53935; font-weight:bold;' : 'color:#333;';
+    const stokDisplay = `${p.stok || 0}${isLowStock ? ' ⚠️' : ''}`;
+    
     const namaCell = `<td style="display:flex;align-items:center;gap:6px;">${p.foto ? `<img src="${p.foto}" style="width:30px;height:30px;border-radius:4px;object-fit:cover;">` : '<div style="width:30px;height:30px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;">📦</div>'}${p.nama || ''}</td>`;
     const aksi = (isAdmin ? `<button class="btn-sm" onclick="editProdukDariDaftar('${p.barcode}')">✏️</button> <button class="btn-sm btn-danger" onclick="hapusProdukDariDaftar('${p.barcode}')">🗑</button> ` : '') + `<button class="btn-sm" onclick="cetakLabelQR('${p.barcode}')">🏷️ QR</button>`;
-    row.innerHTML = `<td>${p.barcode || ''}</td>${namaCell}<td>${p.kategori || '-'}</td><td>${p.keterangan || '-'}</td><td>Rp${(p.harga_jual || 0).toLocaleString('id')}</td><td>${p.stok || 0}</td><td>${aksi}</td>`;
+    row.innerHTML = `<td>${p.barcode || ''}</td>${namaCell}<td>${p.kategori || '-'}</td><td>${p.keterangan || '-'}</td><td>Rp${(p.harga_jual || 0).toLocaleString('id')}</td><td style="${stokStyle}">${stokDisplay}</td><td>${aksi}</td>`;
   });
 }
 
@@ -112,7 +128,6 @@ async function refreshProductList() {
   try {
     const all = await getAllProducts();
     renderProductTable(all);
-    // Kosongkan kolom pencarian
     document.getElementById('invSearch').value = '';
   } catch (e) {
     console.error(e);
@@ -127,7 +142,6 @@ function filterProductList() {
   filterTimer = setTimeout(async () => {
     const query = document.getElementById('invSearch')?.value.trim();
     if (!query) {
-      // jika kosong, tampilkan semua produk
       await refreshProductList();
       return;
     }
@@ -164,7 +178,7 @@ function generateBarcode() {
   cariAtauTambahProduk();
 }
 
-// ========== CETAK LABEL QR CODE (33x15mm LANDSCAPE) ==========
+// ========== CETAK LABEL QR CODE ==========
 async function cetakLabelQR(barcode) {
   const product = await getProductByBarcode(barcode);
   if (!product) return alert('Produk tidak ditemukan');
@@ -183,22 +197,17 @@ async function cetakLabelQR(barcode) {
   qrImage.crossOrigin = 'Anonymous';
   qrImage.onload = () => {
     doc.addImage(qrImage, 'PNG', 2, 2, 9, 9);
-    
     doc.setFontSize(5);
     const namaLines = doc.splitTextToSize(nama, 23);
     doc.text(namaLines, 12, 3);
-    
     doc.setFontSize(6);
     doc.setFont(undefined, 'bold');
     doc.text(harga, 12, 9);
-    
     doc.setFontSize(3);
     doc.setFont(undefined, 'normal');
     doc.text(barcodeText, 2, 12);
-    
     doc.setFontSize(2);
     doc.text(tglCetak, 12, 12);
-    
     const blob = doc.output('blob');
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');

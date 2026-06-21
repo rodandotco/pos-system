@@ -14,11 +14,11 @@ async function setupTransaksi() {
 
   // Ambil pengaturan (gunakan cache jika ada)
   try {
-    if (cachedSettings) {
-      appSettings = cachedSettings;
+    if (window.cachedSettings) {
+      appSettings = window.cachedSettings;
     } else {
       appSettings = await getSettings();
-      cachedSettings = appSettings; // simpan untuk pemakaian berikutnya
+      window.cachedSettings = appSettings; // simpan untuk pemakaian berikutnya
     }
   } catch (e) {
     console.warn('Gagal ambil settings, gunakan default:', e);
@@ -203,7 +203,16 @@ async function tambahProdukDariScan(barcode) {
     product = data?.[0] || null;
   }
   if (!product) { alert(`Produk "${clean}" tidak ditemukan.`); return; }
-  if (product.stok <= 0) { alert(`Stok "${product.nama}" habis.`); return; }
+  if (product.stok <= 0) { 
+  alert(`Stok "${product.nama}" habis.`); 
+  return; 
+}
+
+// Low stock warning
+const minStok = product.min_stok || 10;
+if (product.stok <= minStok) {
+  alert(`⚠️ Stok "${product.nama}" tinggal ${product.stok}!\nMinimum stok: ${minStok}\nSegera lakukan pembelian stok.`);
+}
   const existing = cart.find(i => i.barcode === product.barcode);
   if (existing) {
     if (existing.qty < product.stok) existing.qty++;
