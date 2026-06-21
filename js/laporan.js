@@ -2,9 +2,6 @@
 let chartInstance = null;
 let topProductsChart = null;
 
-// ========== RESEND CONFIG ==========
-const RESEND_API_KEY = 're_WomMgNn3_P1Tgyk6EAgri3xjCBM5Ckt9B'; // GANTI dengan API key Resend Anda
-
 function setDefaultDateFilter() {
   const t = new Date().toISOString().slice(0,10);
   document.getElementById('tglAwal').value = t;
@@ -36,7 +33,6 @@ function filterYTD() {
 async function muatLaporan() {
   const a = document.getElementById('tglAwal').value, b = document.getElementById('tglAkhir').value;
   if (!a || !b) return;
-
   const all = await getAllTransactions(a + 'T00:00:00', b + 'T23:59:59');
   const tbody = document.querySelector('#reportTable tbody');
   tbody.innerHTML = '';
@@ -138,7 +134,6 @@ function generateInvoicePDF(trx) {
   const tinggiTotalBayar = 15;
   const tinggiFooter = trx.toko_footer ? 12 : 0;
   const tinggiTotal = tinggiHeader + tinggiItem + tinggiTotalBayar + tinggiFooter + 10;
-
   const doc = new jsPDF({ unit: 'mm', format: [lebarKertas, tinggiTotal] });
   let y = 8;
   doc.setFontSize(9);
@@ -149,43 +144,25 @@ function generateInvoicePDF(trx) {
   doc.text('No: ' + trx.no_invoice, marginKiri, y); y += 5;
   doc.text('Tanggal: ' + new Date(trx.tanggal).toLocaleString('id-ID'), marginKiri, y); y += 5;
   doc.text('Customer: ' + (trx.customer || '-'), marginKiri, y); y += 8;
-
   doc.text('Item', xItem, y);
   doc.text('Qty', xQty, y, { align: 'center' });
   doc.text('Harga', xHarga, y, { align: 'right' });
   doc.text('Subtotal', xSubtotal, y, { align: 'right' });
   y += 4; doc.line(marginKiri, y, xSubtotal, y); y += 3;
-
   (trx.items || []).forEach(item => {
     const netto = (item.harga * item.qty) - (item.diskon || 0);
     doc.text(item.nama, xItem, y, { maxWidth: xQty - xItem - 2 });
     doc.text(item.qty.toString(), xQty, y, { align: 'center' });
     doc.text('Rp' + item.harga.toLocaleString('id'), xHarga, y, { align: 'right' });
     doc.text('Rp' + netto.toLocaleString('id'), xSubtotal, y, { align: 'right' });
-    if (item.diskon) {
-      y += 4;
-      doc.setFontSize(6);
-      doc.text('  Diskon item: -Rp' + item.diskon.toLocaleString('id'), xItem + 5, y);
-      doc.setFontSize(7);
-    }
+    if (item.diskon) { y += 4; doc.setFontSize(6); doc.text('  Diskon item: -Rp' + item.diskon.toLocaleString('id'), xItem + 5, y); doc.setFontSize(7); }
     y += 5;
   });
   doc.line(marginKiri, y, xSubtotal, y); y += 4;
-
-  doc.text('Total:', xItem, y);
-  doc.text('Rp' + trx.total.toLocaleString('id'), xSubtotal, y, { align: 'right' });
-  y += 5;
-  doc.text('Bayar:', xItem, y);
-  doc.text('Rp' + trx.bayar.toLocaleString('id'), xSubtotal, y, { align: 'right' });
-  y += 5;
-  doc.text('Kembali:', xItem, y);
-  doc.text('Rp' + trx.kembali.toLocaleString('id'), xSubtotal, y, { align: 'right' });
-  y += 5;
-
-  if (trx.toko_footer) {
-    doc.setFontSize(7);
-    doc.text(trx.toko_footer, lebarKertas / 2, y, { align: 'center' });
-  }
+  doc.text('Total:', xItem, y); doc.text('Rp' + trx.total.toLocaleString('id'), xSubtotal, y, { align: 'right' }); y += 5;
+  doc.text('Bayar:', xItem, y); doc.text('Rp' + trx.bayar.toLocaleString('id'), xSubtotal, y, { align: 'right' }); y += 5;
+  doc.text('Kembali:', xItem, y); doc.text('Rp' + trx.kembali.toLocaleString('id'), xSubtotal, y, { align: 'right' }); y += 5;
+  if (trx.toko_footer) { doc.setFontSize(7); doc.text(trx.toko_footer, lebarKertas / 2, y, { align: 'center' }); }
   return doc.output('blob');
 }
 
@@ -206,11 +183,7 @@ function renderChart(trans, mode, start, end) {
     labels = keys.map(k => new Date(k).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }));
     data = keys.map(k => daily[k]);
   }
-  chartInstance = new Chart(ctx, {
-    type: 'bar',
-    data: { labels, datasets: [{ label: 'Penjualan (Rp)', data, backgroundColor: '#009688', borderRadius: 4 }] },
-    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { callback: v => 'Rp' + v.toLocaleString('id') } } } }
-  });
+  chartInstance = new Chart(ctx, { type: 'bar', data: { labels, datasets: [{ label: 'Penjualan (Rp)', data, backgroundColor: '#009688', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { callback: v => 'Rp' + v.toLocaleString('id') } } } } });
 }
 
 function renderTopProductsChart(trans) {
@@ -220,272 +193,124 @@ function renderTopProductsChart(trans) {
   const sales = {}; trans.forEach(t => { if (t.items) t.items.forEach(i => { const k = i.nama || i.barcode; if (!sales[k]) sales[k] = { nama: i.nama, qty: 0 }; sales[k].qty += i.qty || 1; }); });
   const sorted = Object.values(sales).sort((a, b) => b.qty - a.qty).slice(0, 10);
   const colors = ['#e53935', '#1e88e5', '#fdd835', '#8e24aa', '#fb8c00', '#d81b60', '#00acc1', '#7cb342', '#5e35b1', '#ffb300'];
-  topProductsChart = new Chart(ctx, {
-    type: 'pie',
-    data: { labels: sorted.map(p => p.nama), datasets: [{ data: sorted.map(p => p.qty), backgroundColor: colors.slice(0, sorted.length), borderWidth: 1 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } } }
-  });
+  topProductsChart = new Chart(ctx, { type: 'pie', data: { labels: sorted.map(p => p.nama), datasets: [{ data: sorted.map(p => p.qty), backgroundColor: colors.slice(0, sorted.length), borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } } } });
 }
 
 function exportCSV() {
   const tbody = document.querySelector('#reportTable tbody');
   let csv = 'No Invoice,Tanggal,Customer,Total\n';
-  tbody.querySelectorAll('tr').forEach(row => {
-    const cells = row.querySelectorAll('td');
-    if (cells.length >= 4) {
-      csv += `"${cells[0].textContent}","${cells[1].textContent}","${cells[2].textContent}","${cells[3].textContent.replace('Rp ', '').replace(/\./g, '')}"\n`;
-    }
-  });
+  tbody.querySelectorAll('tr').forEach(row => { const cells = row.querySelectorAll('td'); if (cells.length >= 4) { csv += `"${cells[0].textContent}","${cells[1].textContent}","${cells[2].textContent}","${cells[3].textContent.replace('Rp ', '').replace(/\./g, '')}"\n`; } });
   const blob = new Blob([csv], { type: 'text/csv' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'laporan.csv'; a.click();
 }
 
-// ===================== RESEND EMAIL API =====================
+// ===================== SEND EMAIL VIA VERCEL API =====================
 async function sendEmailResend(to, subject, message) {
-  const response = await fetch('https://api.resend.com/emails', {
+  const response = await fetch('/api/send-email', {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${RESEND_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      from: 'POS Report <onboarding@resend.dev>',
-      to: to,
-      subject: subject,
-      text: message
-    })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ to, subject, message }),
   });
-  
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message || 'Gagal mengirim email');
+    throw new Error(error.error || 'Gagal mengirim email');
   }
-  
   return response.json();
 }
 
-// ===================== EMAIL LAPORAN HARIAN (Resend) =====================
+// ===================== EMAIL LAPORAN HARIAN =====================
 async function emailLaporanHarian() {
   const settings = await getSettings();
-  
-  if (!settings.report_email) {
-    alert('Email belum diatur. Silakan isi email di tab Setting → Manajemen Laporan.');
-    return;
-  }
-  
+  if (!settings.report_email) { alert('Email belum diatur. Silakan isi email di tab Setting → Manajemen Laporan.'); return; }
   const today = new Date();
   const tanggal = today.toISOString().slice(0, 10);
   const tanggalFormat = today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  
   const transactions = await getAllTransactions(tanggal + 'T00:00:00', tanggal + 'T23:59:59');
   const totalTransaksi = transactions.length;
   const totalPendapatan = transactions.reduce((sum, t) => sum + (t.total || 0), 0);
-  
   const productSales = {};
-  transactions.forEach(t => {
-    if (t.items) {
-      t.items.forEach(item => {
-        const key = item.barcode;
-        if (!productSales[key]) { productSales[key] = { nama: item.nama, qty: 0, total: 0 }; }
-        productSales[key].qty += item.qty || 0;
-        productSales[key].total += (item.harga * item.qty) || 0;
-      });
-    }
-  });
-  
+  transactions.forEach(t => { if (t.items) { t.items.forEach(item => { const key = item.barcode; if (!productSales[key]) { productSales[key] = { nama: item.nama, qty: 0, total: 0 }; } productSales[key].qty += item.qty || 0; productSales[key].total += (item.harga * item.qty) || 0; }); } });
   const topProducts = Object.values(productSales).sort((a, b) => b.qty - a.qty).slice(0, 5);
-  
-  let message = `📊 LAPORAN HARIAN POS\n`;
-  message += `────────────────────────\n`;
-  message += `Toko: ${settings.nama || 'POS'}\n`;
-  message += `Tanggal: ${tanggalFormat}\n`;
-  message += `────────────────────────\n\n`;
-  message += `📋 RINGKASAN:\n`;
-  message += `Total Transaksi: ${totalTransaksi}\n`;
-  message += `Total Pendapatan: Rp ${totalPendapatan.toLocaleString('id')}\n`;
-  
-  if (totalTransaksi > 0) {
-    message += `Rata-rata: Rp ${Math.round(totalPendapatan / totalTransaksi).toLocaleString('id')}\n`;
-  }
-  
-  if (topProducts.length > 0) {
-    message += `\n🔥 PRODUK TERLARIS:\n`;
-    topProducts.forEach((p, i) => {
-      message += `${i + 1}. ${p.nama} - ${p.qty} pcs (Rp ${p.total.toLocaleString('id')})\n`;
-    });
-  }
-  
+  let message = `📊 LAPORAN HARIAN POS\n────────────────────────\nToko: ${settings.nama || 'POS'}\nTanggal: ${tanggalFormat}\n────────────────────────\n\n📋 RINGKASAN:\nTotal Transaksi: ${totalTransaksi}\nTotal Pendapatan: Rp ${totalPendapatan.toLocaleString('id')}\n`;
+  if (totalTransaksi > 0) { message += `Rata-rata: Rp ${Math.round(totalPendapatan / totalTransaksi).toLocaleString('id')}\n`; }
+  if (topProducts.length > 0) { message += `\n🔥 PRODUK TERLARIS:\n`; topProducts.forEach((p, i) => { message += `${i + 1}. ${p.nama} - ${p.qty} pcs (Rp ${p.total.toLocaleString('id')})\n`; }); }
   message += `\n────────────────────────\n📱 Dikirim dari POS System\n`;
-  
   try {
     await sendEmailResend(settings.report_email, `📊 Laporan Harian POS - ${tanggal}`, message);
     alert('✅ Laporan harian berhasil dikirim ke ' + settings.report_email);
-  } catch (error) {
-    alert('❌ Gagal mengirim: ' + error.message);
-  }
+  } catch (error) { alert('❌ Gagal mengirim: ' + error.message); }
 }
 
-// ===================== EMAIL LAPORAN PERIODE (Resend) =====================
+// ===================== EMAIL LAPORAN PERIODE =====================
 async function emailLaporanPeriode() {
   const settings = await getSettings();
-  
-  if (!settings.report_email) {
-    alert('Email belum diatur. Silakan isi email di tab Setting → Manajemen Laporan.');
-    return;
-  }
-  
+  if (!settings.report_email) { alert('Email belum diatur. Silakan isi email di tab Setting → Manajemen Laporan.'); return; }
   const tglAwal = document.getElementById('tglAwal').value;
   const tglAkhir = document.getElementById('tglAkhir').value;
-  
-  if (!tglAwal || !tglAkhir) {
-    alert('Pilih tanggal terlebih dahulu.');
-    return;
-  }
-  
+  if (!tglAwal || !tglAkhir) { alert('Pilih tanggal terlebih dahulu.'); return; }
   const transactions = await getAllTransactions(tglAwal + 'T00:00:00', tglAkhir + 'T23:59:59');
   const totalTransaksi = transactions.length;
   const totalPendapatan = transactions.reduce((sum, t) => sum + (t.total || 0), 0);
-  
   const productSales = {};
-  transactions.forEach(t => {
-    if (t.items) {
-      t.items.forEach(item => {
-        const key = item.barcode;
-        if (!productSales[key]) { productSales[key] = { nama: item.nama, qty: 0, total: 0 }; }
-        productSales[key].qty += item.qty || 0;
-        productSales[key].total += (item.harga * item.qty) || 0;
-      });
-    }
-  });
-  
+  transactions.forEach(t => { if (t.items) { t.items.forEach(item => { const key = item.barcode; if (!productSales[key]) { productSales[key] = { nama: item.nama, qty: 0, total: 0 }; } productSales[key].qty += item.qty || 0; productSales[key].total += (item.harga * item.qty) || 0; }); } });
   const topProducts = Object.values(productSales).sort((a, b) => b.qty - a.qty).slice(0, 10);
-  
-  let message = `📊 LAPORAN POS\n`;
-  message += `────────────────────────\n`;
-  message += `Toko: ${settings.nama || 'POS'}\n`;
-  message += `Periode: ${tglAwal} s/d ${tglAkhir}\n`;
-  message += `────────────────────────\n\n`;
-  message += `📋 RINGKASAN:\n`;
-  message += `Total Transaksi: ${totalTransaksi}\n`;
-  message += `Total Pendapatan: Rp ${totalPendapatan.toLocaleString('id')}\n`;
-  
-  if (totalTransaksi > 0) {
-    message += `Rata-rata: Rp ${Math.round(totalPendapatan / totalTransaksi).toLocaleString('id')}\n`;
-  }
-  
-  if (topProducts.length > 0) {
-    message += `\n🔥 PRODUK TERLARIS:\n`;
-    topProducts.forEach((p, i) => {
-      message += `${i + 1}. ${p.nama} - ${p.qty} pcs (Rp ${p.total.toLocaleString('id')})\n`;
-    });
-  }
-  
+  let message = `📊 LAPORAN POS\n────────────────────────\nToko: ${settings.nama || 'POS'}\nPeriode: ${tglAwal} s/d ${tglAkhir}\n────────────────────────\n\n📋 RINGKASAN:\nTotal Transaksi: ${totalTransaksi}\nTotal Pendapatan: Rp ${totalPendapatan.toLocaleString('id')}\n`;
+  if (totalTransaksi > 0) { message += `Rata-rata: Rp ${Math.round(totalPendapatan / totalTransaksi).toLocaleString('id')}\n`; }
+  if (topProducts.length > 0) { message += `\n🔥 PRODUK TERLARIS:\n`; topProducts.forEach((p, i) => { message += `${i + 1}. ${p.nama} - ${p.qty} pcs (Rp ${p.total.toLocaleString('id')})\n`; }); }
   message += `\n────────────────────────\n📱 Dikirim dari POS System\n`;
-  
   try {
     await sendEmailResend(settings.report_email, `📊 Laporan POS - ${tglAwal} s/d ${tglAkhir}`, message);
     alert('✅ Laporan periode berhasil dikirim ke ' + settings.report_email);
-  } catch (error) {
-    alert('❌ Gagal mengirim: ' + error.message);
-  }
+  } catch (error) { alert('❌ Gagal mengirim: ' + error.message); }
 }
 
-// ===================== AUTO EMAIL REPORT =====================
+// ===================== AUTO EMAIL =====================
 async function kirimEmailLaporan(settings) {
   const today = new Date();
   const tanggal = today.toISOString().slice(0, 10);
   const tanggalFormat = today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  
   const transactions = await getAllTransactions(tanggal + 'T00:00:00', tanggal + 'T23:59:59');
   const totalTransaksi = transactions.length;
   const totalPendapatan = transactions.reduce((sum, t) => sum + (t.total || 0), 0);
-  
   const productSales = {};
-  transactions.forEach(t => {
-    if (t.items) {
-      t.items.forEach(item => {
-        const key = item.barcode;
-        if (!productSales[key]) { productSales[key] = { nama: item.nama, qty: 0, total: 0 }; }
-        productSales[key].qty += item.qty || 0;
-        productSales[key].total += (item.harga * item.qty) || 0;
-      });
-    }
-  });
-  
+  transactions.forEach(t => { if (t.items) { t.items.forEach(item => { const key = item.barcode; if (!productSales[key]) { productSales[key] = { nama: item.nama, qty: 0, total: 0 }; } productSales[key].qty += item.qty || 0; productSales[key].total += (item.harga * item.qty) || 0; }); } });
   const topProducts = Object.values(productSales).sort((a, b) => b.qty - a.qty).slice(0, 5);
-  
-  let message = `📊 LAPORAN POS - ${tanggalFormat}\n`;
-  message += `────────────────────────\n`;
-  message += `Toko: ${settings.nama || 'POS'}\n`;
-  message += `────────────────────────\n\n`;
-  message += `Total Transaksi: ${totalTransaksi}\n`;
-  message += `Total Pendapatan: Rp ${totalPendapatan.toLocaleString('id')}\n\n`;
-  
-  if (topProducts.length > 0) {
-    message += `🔥 PRODUK TERLARIS:\n`;
-    topProducts.forEach((p, i) => {
-      message += `${i + 1}. ${p.nama} - ${p.qty} pcs\n`;
-    });
-  }
-  
+  let message = `📊 LAPORAN POS - ${tanggalFormat}\n────────────────────────\nToko: ${settings.nama || 'POS'}\n────────────────────────\n\nTotal Transaksi: ${totalTransaksi}\nTotal Pendapatan: Rp ${totalPendapatan.toLocaleString('id')}\n\n`;
+  if (topProducts.length > 0) { message += `🔥 PRODUK TERLARIS:\n`; topProducts.forEach((p, i) => { message += `${i + 1}. ${p.nama} - ${p.qty} pcs\n`; }); }
   message += `\n────────────────────────\n📱 Dikirim otomatis oleh POS\n`;
-  
-  try {
-    await sendEmailResend(settings.report_email, `📊 Laporan POS - ${tanggal}`, message);
-    console.log('Auto report sent to:', settings.report_email);
-  } catch (error) {
-    console.error('Auto report failed:', error);
-  }
+  try { await sendEmailResend(settings.report_email, `📊 Laporan POS - ${tanggal}`, message); console.log('Auto report sent to:', settings.report_email); }
+  catch (error) { console.error('Auto report failed:', error); }
 }
 
 async function checkAutoEmailReport() {
   const settings = await getSettings();
-  
-  if (!settings.report_email || !settings.report_frequency || settings.report_frequency === 'none') {
-    return;
-  }
-  
+  if (!settings.report_email || !settings.report_frequency || settings.report_frequency === 'none') return;
   const today = new Date();
   const currentHour = today.getHours();
   const lastSent = localStorage.getItem('lastReportSent');
-  
   let shouldSend = false;
-  let targetHour = 21;
-  
   if (settings.report_frequency === 'daily') {
-    targetHour = parseInt(settings.report_daily_time) || 21;
+    const targetHour = parseInt(settings.report_daily_time) || 21;
     const todayStr = today.toISOString().slice(0, 10);
-    if (lastSent !== todayStr && currentHour === targetHour) {
-      shouldSend = true;
-    }
+    if (lastSent !== todayStr && currentHour === targetHour) shouldSend = true;
   } else if (settings.report_frequency === 'weekly') {
-    targetHour = parseInt(settings.report_weekly_time) || 21;
+    const targetHour = parseInt(settings.report_weekly_time) || 21;
     const targetDay = parseInt(settings.report_weekly_day);
     const todayDay = today.getDay();
     const weekStr = `${today.getFullYear()}-W${getWeekNumber(today)}`;
-    if (todayDay === targetDay && currentHour === targetHour && lastSent !== weekStr) {
-      shouldSend = true;
-    }
+    if (todayDay === targetDay && currentHour === targetHour && lastSent !== weekStr) shouldSend = true;
   } else if (settings.report_frequency === 'monthly') {
-    targetHour = parseInt(settings.report_monthly_time) || 21;
+    const targetHour = parseInt(settings.report_monthly_time) || 21;
     const targetDate = parseInt(settings.report_monthly_date);
     const todayDate = today.getDate();
     const monthStr = `${today.getFullYear()}-${today.getMonth() + 1}`;
-    if (todayDate === targetDate && currentHour === targetHour && lastSent !== monthStr) {
-      shouldSend = true;
-    }
+    if (todayDate === targetDate && currentHour === targetHour && lastSent !== monthStr) shouldSend = true;
   }
-  
   if (shouldSend) {
     await kirimEmailLaporan(settings);
-    
-    if (settings.report_frequency === 'daily') {
-      localStorage.setItem('lastReportSent', today.toISOString().slice(0, 10));
-    } else if (settings.report_frequency === 'weekly') {
-      localStorage.setItem('lastReportSent', `${today.getFullYear()}-W${getWeekNumber(today)}`);
-    } else if (settings.report_frequency === 'monthly') {
-      localStorage.setItem('lastReportSent', `${today.getFullYear()}-${today.getMonth() + 1}`);
-    }
+    if (settings.report_frequency === 'daily') localStorage.setItem('lastReportSent', today.toISOString().slice(0, 10));
+    else if (settings.report_frequency === 'weekly') localStorage.setItem('lastReportSent', `${today.getFullYear()}-W${getWeekNumber(today)}`);
+    else if (settings.report_frequency === 'monthly') localStorage.setItem('lastReportSent', `${today.getFullYear()}-${today.getMonth() + 1}`);
   }
 }
 
