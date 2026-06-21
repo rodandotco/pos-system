@@ -1,7 +1,20 @@
 // Supabase Configuration
-const SUPABASE_URL = 'https://lrnuuhljvywbqsitpdrb.supabase.co';   // GANTI
-const SUPABASE_ANON_KEY = 'sb_publishable_SzSbg7ySEAVcUuRVFTvNLA_dOzjlxS9'; // GANTI
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_URL = 'https://lrnuuhljvywbqsitpdrb.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_SzSbg7ySEAVcUuRVFTvNLA_dOzjlxS9';
+
+// Create Supabase client with proper headers
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+  global: {
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+    }
+  }
+});
 
 // Global variables
 let currentUser = null;
@@ -77,32 +90,27 @@ function toBase64(file) {
   });
 }
 
-// ===================== FUNGSI BARU UNTUK UPLOAD FOTO PRODUK =====================
+// ===================== UPLOAD FOTO PRODUK =====================
 async function uploadProductPhoto(file) {
   const fileName = `${Date.now()}_${file.name}`;
   const { data, error } = await supabaseClient.storage
     .from('product-photos')
     .upload(fileName, file, { cacheControl: '3600', upsert: true });
-
   if (error) throw error;
-
-  // Dapatkan URL publik
   const { data: urlData } = supabaseClient.storage
     .from('product-photos')
     .getPublicUrl(fileName);
-
   return urlData.publicUrl;
 }
 
 async function removeProductPhoto(url) {
-  // Ekstrak nama file dari URL
   const fileName = url.split('/').pop();
   if (fileName) {
     await supabaseClient.storage.from('product-photos').remove([fileName]);
   }
 }
 
-// Cache management for settings
+// Cache management
 window.cachedSettings = null;
 
 function invalidateSettingsCache() {
