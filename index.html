@@ -146,6 +146,18 @@
       <div class="form-group"><label>Telepon</label><input type="text" id="tokoTelp"></div>
       <div class="form-group"><label>Logo Toko</label><input type="file" id="tokoLogo" accept="image/*" onchange="previewLogoToko()"></div>
       <div class="form-group"><label>Footer Struk</label><textarea id="tokoFooter" rows="2" placeholder="Contoh: Terima kasih..."></textarea></div>
+
+<div class="form-group"><label>Email Laporan</label><input type="email" id="tokoEmail" placeholder="contoh@gmail.com"></div>
+
+<div class="form-group">
+  <label>Kirim Laporan Otomatis</label>
+  <select id="reportSchedule">
+    <option value="none">Manual (tidak otomatis)</option>
+    <option value="daily">Setiap Hari (jam 21:00)</option>
+    <option value="weekly">Setiap Minggu (Senin 21:00)</option>
+    <option value="monthly">Setiap Bulan (tanggal 1, 21:00)</option>
+  </select>
+</div>
       <button class="btn" id="btnSimpanProfil" onclick="simpanProfil()">Simpan Profil</button>
       <hr>
     </div>
@@ -244,6 +256,7 @@
     <button class="btn" onclick="document.getElementById('productDetailModal').style.display='none'">Tutup</button>
   </div>
 </div>
+
 
 <script src="js/supabase-config.js"></script>
 <script src="js/auth.js"></script>
