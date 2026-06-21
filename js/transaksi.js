@@ -1,3 +1,17 @@
+// DEBUG - Test if search works
+console.log('Transaksi.js loaded');
+
+// Override search function with debug version
+const originalSearch = searchProductFn;
+searchProductFn = function(query) {
+  console.log('Search called with:', query);
+  if (!query || query.length < 2) {
+    console.log('Query too short, need 2+ characters');
+    return;
+  }
+  originalSearch(query);
+};
+
 // ===================== TRANSAKSI.JS =====================
 let cart = [];
 let searchTimer = null;
