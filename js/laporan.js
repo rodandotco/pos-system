@@ -3,7 +3,7 @@ let chartInstance = null;
 let topProductsChart = null;
 
 // ========== RESEND CONFIG ==========
-const RESEND_API_KEY = 're_YOUR_API_KEY_HERE'; // GANTI dengan API key Resend Anda
+const RESEND_API_KEY = 're_WomMgNn3_P1Tgyk6EAgri3xjCBM5Ckt9B'; // GANTI dengan API key Resend Anda
 
 function setDefaultDateFilter() {
   const t = new Date().toISOString().slice(0,10);
