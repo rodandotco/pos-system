@@ -1,4 +1,4 @@
-// ===================== SETTING.JS (tanpa deklarasi ulang) =====================
+// ===================== SETTING.JS =====================
 window.logoTokoDihapus = false;
 
 async function muatProfilToko() {
@@ -8,8 +8,6 @@ async function muatProfilToko() {
     document.getElementById('tokoAlamat').value = s.alamat || '';
     document.getElementById('tokoTelp').value = s.telp || '';
     document.getElementById('tokoFooter').value = s.footer || '';
-document.getElementById('tokoEmail').value = s.email || '';          // ADD THIS
-document.getElementById('reportSchedule').value = s.report_schedule || 'none';  // ADD THIS
     document.getElementById('kertasLebar').value = s.kertas_lebar || '80';
     document.getElementById('jenisKertas').value = s.jenis_kertas || 'thermal';
     document.getElementById('printerPilihan').value = s.printer || 'default';
@@ -24,13 +22,21 @@ document.getElementById('reportSchedule').value = s.report_schedule || 'none';  
     } else {
       document.getElementById('logoPreviewContainer').style.display = 'none';
     }
+    
+    // Load report settings
+    document.getElementById('reportEmail').value = s.report_email || '';
+    document.getElementById('reportFrequency').value = s.report_frequency || 'none';
+    document.getElementById('dailyTime').value = s.report_daily_time || '21';
+    document.getElementById('weeklyDay').value = s.report_weekly_day || '1';
+    document.getElementById('weeklyTime').value = s.report_weekly_time || '21';
+    document.getElementById('monthlyDate').value = s.report_monthly_date || '1';
+    document.getElementById('monthlyTime').value = s.report_monthly_time || '21';
+    toggleReportOptions();
   } else {
     document.getElementById('tokoNama').value = '';
     document.getElementById('tokoAlamat').value = '';
     document.getElementById('tokoTelp').value = '';
     document.getElementById('tokoFooter').value = '';
-document.getElementById('tokoEmail').value = '';          // ADD THIS
-document.getElementById('reportSchedule').value = 'none'; // ADD THIS
     document.getElementById('kertasLebar').value = '80';
     document.getElementById('jenisKertas').value = 'thermal';
     document.getElementById('printerPilihan').value = 'default';
@@ -40,6 +46,16 @@ document.getElementById('reportSchedule').value = 'none'; // ADD THIS
     document.getElementById('labelCols').value = 1;
     toggleLabelSettings();
     document.getElementById('logoPreviewContainer').style.display = 'none';
+    
+    // Reset report settings
+    document.getElementById('reportEmail').value = '';
+    document.getElementById('reportFrequency').value = 'none';
+    document.getElementById('dailyTime').value = '21';
+    document.getElementById('weeklyDay').value = '1';
+    document.getElementById('weeklyTime').value = '21';
+    document.getElementById('monthlyDate').value = '1';
+    document.getElementById('monthlyTime').value = '21';
+    toggleReportOptions();
   }
 }
 
@@ -47,6 +63,90 @@ function toggleLabelSettings() {
   const jenis = document.getElementById('jenisKertas').value;
   document.getElementById('labelSettings').style.display = jenis === 'label' ? 'block' : 'none';
 }
+
+// ===================== MANAJEMEN LAPORAN =====================
+
+function toggleReportOptions() {
+  const freq = document.getElementById('reportFrequency').value;
+  document.getElementById('dailyOptions').style.display = freq === 'daily' ? 'block' : 'none';
+  document.getElementById('weeklyOptions').style.display = freq === 'weekly' ? 'block' : 'none';
+  document.getElementById('monthlyOptions').style.display = freq === 'monthly' ? 'block' : 'none';
+}
+
+async function simpanPengaturanLaporan() {
+  const email = document.getElementById('reportEmail').value.trim();
+  const frequency = document.getElementById('reportFrequency').value;
+  const dailyTime = document.getElementById('dailyTime').value;
+  const weeklyDay = document.getElementById('weeklyDay').value;
+  const weeklyTime = document.getElementById('weeklyTime').value;
+  const monthlyDate = document.getElementById('monthlyDate').value;
+  const monthlyTime = document.getElementById('monthlyTime').value;
+  
+  if (frequency !== 'none' && !email) {
+    alert('Silakan isi email tujuan terlebih dahulu.');
+    return;
+  }
+  
+  await updateSettings({
+    report_email: email,
+    report_frequency: frequency,
+    report_daily_time: dailyTime,
+    report_weekly_day: weeklyDay,
+    report_weekly_time: weeklyTime,
+    report_monthly_date: monthlyDate,
+    report_monthly_time: monthlyTime
+  });
+  
+  alert('✅ Pengaturan laporan disimpan!');
+  
+  // Reset last sent so new settings take effect
+  localStorage.removeItem('lastReportSent');
+  localStorage.removeItem('lastReportSchedule');
+}
+
+async function tesKirimLaporan() {
+  const email = document.getElementById('reportEmail').value.trim();
+  
+  if (!email) {
+    alert('Isi email tujuan terlebih dahulu.');
+    return;
+  }
+  
+  // Simpan dulu pengaturan
+  await simpanPengaturanLaporan();
+  
+  // Kirim laporan tes
+  const settings = await getSettings();
+  const today = new Date();
+  const tanggal = today.toISOString().slice(0, 10);
+  const tanggalFormat = today.toLocaleDateString('id-ID', { 
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' 
+  });
+  
+  const transactions = await getAllTransactions(tanggal + 'T00:00:00', tanggal + 'T23:59:59');
+  const totalTransaksi = transactions.length;
+  const totalPendapatan = transactions.reduce((sum, t) => sum + (t.total || 0), 0);
+  
+  let body = `📊 LAPORAN POS (TES)\n`;
+  body += `────────────────────────\n`;
+  body += `Toko: ${settings.nama || 'POS'}\n`;
+  body += `Tanggal: ${tanggalFormat}\n`;
+  body += `────────────────────────\n\n`;
+  body += `📋 RINGKASAN:\n`;
+  body += `Total Transaksi: ${totalTransaksi}\n`;
+  body += `Total Pendapatan: Rp ${totalPendapatan.toLocaleString('id')}\n\n`;
+  body += `✅ Ini adalah laporan percobaan.\n`;
+  body += `────────────────────────\n📱 Dikirim oleh POS System\n`;
+  
+  const subject = `📊 TES - Laporan POS - ${tanggal}`;
+  window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  
+  setTimeout(() => {
+    alert('✅ Email client terbuka!\nSilakan kirim email dari aplikasi email Anda.');
+  }, 500);
+}
+
+// ===================== PROFIL & LOGO =====================
 
 function previewLogoToko() {
   const f = document.getElementById('tokoLogo').files[0];
@@ -74,8 +174,6 @@ async function simpanProfil() {
   const alamat = document.getElementById('tokoAlamat').value;
   const telp = document.getElementById('tokoTelp').value;
   const footer = document.getElementById('tokoFooter').value;
-const email = document.getElementById('tokoEmail').value;              // ADD THIS
-const reportSchedule = document.getElementById('reportSchedule').value; // ADD THIS
   const kertasLebar = document.getElementById('kertasLebar').value;
   const jenisKertas = document.getElementById('jenisKertas').value;
   const printer = document.getElementById('printerPilihan').value;
@@ -96,8 +194,7 @@ const reportSchedule = document.getElementById('reportSchedule').value; // ADD T
   }
 
   await updateSettings({
-    nama, alamat, telp, logo, footer, email,          // ADD email
-    report_schedule: reportSchedule,                   // ADD THIS
+    nama, alamat, telp, logo, footer,
     kertas_lebar: kertasLebar,
     jenis_kertas: jenisKertas,
     printer,
@@ -151,11 +248,10 @@ async function pilihFolder() {
   }
 }
 
-// ========== BACKUP DATA (tanpa PDF) ==========
+// ========== BACKUP DATA ==========
 async function backupData() {
   try {
     const zip = new JSZip();
-    
     const { data: users } = await supabaseClient.from('users').select('*');
     const { data: products } = await supabaseClient.from('products').select('*');
     const { data: transactions } = await supabaseClient.from('transactions').select('*');
@@ -176,7 +272,7 @@ async function backupData() {
   }
 }
 
-// ========== RESTORE DATA (tanpa PDF) ==========
+// ========== RESTORE DATA ==========
 async function restoreData() {
   const input = document.createElement('input');
   input.type = 'file';
@@ -184,7 +280,6 @@ async function restoreData() {
   input.onchange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     try {
       const zip = await JSZip.loadAsync(file);
       let restored = { users: 0, products: 0, transactions: 0, settings: 0 };

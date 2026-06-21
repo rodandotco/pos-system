@@ -1,4 +1,4 @@
-// ===================== LAPORAN.JS (Tombol Hapus Hanya Admin) =====================
+// ===================== LAPORAN.JS =====================
 let chartInstance = null;
 let topProductsChart = null;
 
@@ -56,39 +56,26 @@ async function muatLaporan() {
   renderTopProductsChart(all);
 }
 
-// ========== CETAK ULANG VIA BLUETOOTH (DIPERBAIKI) ==========
+// ========== CETAK ULANG VIA BLUETOOTH ==========
 async function cetakUlangBT(noInv) {
   if (!bluetoothDevice || !bluetoothCharacteristic) {
     alert('Printer Bluetooth tidak terhubung. Sambungkan dulu di tab Setting.');
     return;
   }
-
   const trx = await getTransaction(noInv);
-  if (!trx) {
-    alert('Transaksi tidak ditemukan');
-    return;
-  }
-
+  if (!trx) { alert('Transaksi tidak ditemukan'); return; }
   const toko = await getSettings();
   const cart = trx.items || [];
-
-  // Hitung subtotal1 (setelah diskon per item, jika data diskon ada)
   const subtotal1 = cart.reduce((sum, item) => {
     const sub = item.harga * item.qty;
     const diskon = item.diskon || 0;
     return sum + (sub - diskon);
   }, 0);
-  // Diskon total (dari transaksi, default 0)
   const totalDiskon = trx.totalDiskon || 0;
-  // Grand Total = subtotal1 - totalDiskon (seharusnya sama dengan trx.total)
   const grandTotal = subtotal1 - totalDiskon;
-  // Bayar & Kembali
   const bayar = trx.bayar || 0;
   const kembali = trx.kembali || 0;
-
-  // Panggil fungsi buatStrukTeks versi 9 parameter (harus ada di transaksi.js)
   const teks = buatStrukTeks(cart, subtotal1, totalDiskon, grandTotal, bayar, kembali, toko, trx.no_invoice, trx.customer);
-
   await cetakStrukKePrinter(toko.logo || null, teks);
 }
 
@@ -111,13 +98,10 @@ async function hapusTransaksi(noInv) {
   } catch (e) { alert('Gagal menghapus: ' + e.message); }
 }
 
-// ========== VIEW & CETAK PDF (FALLBACK) ==========
+// ========== VIEW & CETAK PDF ==========
 async function viewInvoice(noInv) {
   const url = await getInvoiceURL(noInv);
-  if (url) {
-    window.open(url, '_blank');
-    return;
-  }
+  if (url) { window.open(url, '_blank'); return; }
   const trx = await getTransaction(noInv);
   if (!trx) return alert('Transaksi tidak ditemukan');
   const toko = await getSettings();
@@ -144,7 +128,7 @@ async function cetakUlang(noInv) {
   if (pw) pw.addEventListener('load', () => pw.print(), { once: true });
 }
 
-// ========== GENERATE PDF DARI DATA TRANSAKSI (sama seperti sebelumnya) ==========
+// ========== GENERATE PDF ==========
 function generateInvoicePDF(trx) {
   const { jsPDF } = window.jspdf;
   const lebarKertas = 80;
@@ -158,7 +142,6 @@ function generateInvoicePDF(trx) {
 
   const doc = new jsPDF({ unit: 'mm', format: [lebarKertas, tinggiTotal] });
   let y = 8;
-
   doc.setFontSize(9);
   doc.text(trx.toko_nama || 'TOKO', marginKiri, y);
   doc.setFontSize(7);
@@ -204,7 +187,6 @@ function generateInvoicePDF(trx) {
     doc.setFontSize(7);
     doc.text(trx.toko_footer, lebarKertas / 2, y, { align: 'center' });
   }
-
   return doc.output('blob');
 }
 
@@ -260,63 +242,180 @@ function exportCSV() {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'laporan.csv'; a.click();
 }
 
-// ========== AUTO EMAIL REPORT (runs on app load) ==========
-async function checkAutoEmailReport() {
+// ========== EMAIL LAPORAN ==========
+async function emailLaporanHarian() {
   const settings = await getSettings();
+  const emailTujuan = settings.report_email;
   
-  if (!settings.email || !settings.report_schedule || settings.report_schedule === 'none') {
-    return; // Not configured
+  if (!emailTujuan) {
+    alert('Email belum diatur. Silakan isi email di tab Setting → Manajemen Laporan.');
+    return;
   }
   
   const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10);
-  const lastSent = localStorage.getItem('lastReportSent');
-  const lastSchedule = localStorage.getItem('lastReportSchedule');
+  const tanggal = today.toISOString().slice(0, 10);
+  const tanggalFormat = today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   
-  // Check if schedule changed (reset)
-  if (lastSchedule !== settings.report_schedule) {
-    localStorage.removeItem('lastReportSent');
-    localStorage.setItem('lastReportSchedule', settings.report_schedule);
+  const transactions = await getAllTransactions(tanggal + 'T00:00:00', tanggal + 'T23:59:59');
+  const totalTransaksi = transactions.length;
+  const totalPendapatan = transactions.reduce((sum, t) => sum + (t.total || 0), 0);
+  
+  const productSales = {};
+  transactions.forEach(t => {
+    if (t.items) {
+      t.items.forEach(item => {
+        const key = item.barcode;
+        if (!productSales[key]) { productSales[key] = { nama: item.nama, qty: 0, total: 0 }; }
+        productSales[key].qty += item.qty || 0;
+        productSales[key].total += (item.harga * item.qty) || 0;
+      });
+    }
+  });
+  
+  const topProducts = Object.values(productSales).sort((a, b) => b.qty - a.qty).slice(0, 5);
+  
+  let body = `📊 LAPORAN HARIAN POS\n`;
+  body += `────────────────────────\n`;
+  body += `Toko: ${settings.nama || 'POS'}\n`;
+  body += `Tanggal: ${tanggalFormat}\n`;
+  body += `────────────────────────\n\n`;
+  body += `📋 RINGKASAN:\n`;
+  body += `Total Transaksi: ${totalTransaksi}\n`;
+  body += `Total Pendapatan: Rp ${totalPendapatan.toLocaleString('id')}\n`;
+  
+  if (totalTransaksi > 0) {
+    body += `Rata-rata: Rp ${Math.round(totalPendapatan / totalTransaksi).toLocaleString('id')}\n`;
   }
+  
+  if (topProducts.length > 0) {
+    body += `\n🔥 PRODUK TERLARIS:\n`;
+    topProducts.forEach((p, i) => {
+      body += `${i + 1}. ${p.nama} - ${p.qty} pcs (Rp ${p.total.toLocaleString('id')})\n`;
+    });
+  }
+  
+  body += `\n────────────────────────\n📱 Dikirim dari POS System\n`;
+  
+  const subject = `Laporan Harian POS - ${tanggal}`;
+  window.location.href = `mailto:${emailTujuan}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  
+  setTimeout(() => {
+    alert('✅ Email client terbuka!\nSilakan kirim email dari aplikasi email Anda.');
+  }, 500);
+}
+
+async function emailLaporanPeriode() {
+  const settings = await getSettings();
+  const emailTujuan = settings.report_email;
+  
+  if (!emailTujuan) {
+    alert('Email belum diatur. Silakan isi email di tab Setting → Manajemen Laporan.');
+    return;
+  }
+  
+  const tglAwal = document.getElementById('tglAwal').value;
+  const tglAkhir = document.getElementById('tglAkhir').value;
+  
+  if (!tglAwal || !tglAkhir) {
+    alert('Pilih tanggal terlebih dahulu.');
+    return;
+  }
+  
+  const transactions = await getAllTransactions(tglAwal + 'T00:00:00', tglAkhir + 'T23:59:59');
+  const totalTransaksi = transactions.length;
+  const totalPendapatan = transactions.reduce((sum, t) => sum + (t.total || 0), 0);
+  
+  const productSales = {};
+  transactions.forEach(t => {
+    if (t.items) {
+      t.items.forEach(item => {
+        const key = item.barcode;
+        if (!productSales[key]) { productSales[key] = { nama: item.nama, qty: 0, total: 0 }; }
+        productSales[key].qty += item.qty || 0;
+        productSales[key].total += (item.harga * item.qty) || 0;
+      });
+    }
+  });
+  
+  const topProducts = Object.values(productSales).sort((a, b) => b.qty - a.qty).slice(0, 10);
+  
+  let body = `📊 LAPORAN POS\n`;
+  body += `────────────────────────\n`;
+  body += `Toko: ${settings.nama || 'POS'}\n`;
+  body += `Periode: ${tglAwal} s/d ${tglAkhir}\n`;
+  body += `────────────────────────\n\n`;
+  body += `📋 RINGKASAN:\n`;
+  body += `Total Transaksi: ${totalTransaksi}\n`;
+  body += `Total Pendapatan: Rp ${totalPendapatan.toLocaleString('id')}\n`;
+  
+  if (totalTransaksi > 0) {
+    body += `Rata-rata: Rp ${Math.round(totalPendapatan / totalTransaksi).toLocaleString('id')}\n`;
+  }
+  
+  if (topProducts.length > 0) {
+    body += `\n🔥 PRODUK TERLARIS:\n`;
+    topProducts.forEach((p, i) => {
+      body += `${i + 1}. ${p.nama} - ${p.qty} pcs (Rp ${p.total.toLocaleString('id')})\n`;
+    });
+  }
+  
+  body += `\n────────────────────────\n📱 Dikirim dari POS System\n`;
+  
+  const subject = `Laporan POS - ${tglAwal} s/d ${tglAkhir}`;
+  window.location.href = `mailto:${emailTujuan}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  
+  setTimeout(() => {
+    alert('✅ Email client terbuka!\nSilakan kirim email dari aplikasi email Anda.');
+  }, 500);
+}
+
+// ========== AUTO EMAIL REPORT ==========
+async function checkAutoEmailReport() {
+  const settings = await getSettings();
+  
+  if (!settings.report_email || !settings.report_frequency || settings.report_frequency === 'none') {
+    return;
+  }
+  
+  const today = new Date();
+  const currentHour = today.getHours();
+  const lastSent = localStorage.getItem('lastReportSent');
   
   let shouldSend = false;
+  let targetHour = 21;
   
-  if (settings.report_schedule === 'daily') {
-    // Send if not sent today
-    if (lastSent !== todayStr) shouldSend = true;
-    
-  } else if (settings.report_schedule === 'weekly') {
-    // Send on Monday if not sent this week
-    const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon
-    if (dayOfWeek === 1) { // Monday
-      const weekStr = `${today.getFullYear()}-W${getWeekNumber(today)}`;
-      if (lastSent !== weekStr) shouldSend = true;
+  if (settings.report_frequency === 'daily') {
+    targetHour = parseInt(settings.report_daily_time) || 21;
+    const todayStr = today.toISOString().slice(0, 10);
+    if (lastSent !== todayStr && currentHour === targetHour) {
+      shouldSend = true;
     }
-    
-  } else if (settings.report_schedule === 'monthly') {
-    // Send on 1st day of month
-    if (today.getDate() === 1) {
-      const monthStr = `${today.getFullYear()}-${today.getMonth() + 1}`;
-      if (lastSent !== monthStr) shouldSend = true;
+  } else if (settings.report_frequency === 'weekly') {
+    targetHour = parseInt(settings.report_weekly_time) || 21;
+    const targetDay = parseInt(settings.report_weekly_day);
+    const todayDay = today.getDay();
+    const weekStr = `${today.getFullYear()}-W${getWeekNumber(today)}`;
+    if (todayDay === targetDay && currentHour === targetHour && lastSent !== weekStr) {
+      shouldSend = true;
     }
-  }
-  
-  // Check time (only send between 21:00-22:00)
-  const currentHour = today.getHours();
-  if (currentHour < 21 || currentHour >= 22) {
-    shouldSend = false;
+  } else if (settings.report_frequency === 'monthly') {
+    targetHour = parseInt(settings.report_monthly_time) || 21;
+    const targetDate = parseInt(settings.report_monthly_date);
+    const todayDate = today.getDate();
+    const monthStr = `${today.getFullYear()}-${today.getMonth() + 1}`;
+    if (todayDate === targetDate && currentHour === targetHour && lastSent !== monthStr) {
+      shouldSend = true;
+    }
   }
   
   if (shouldSend) {
-    // Send the report
     await kirimEmailLaporan(settings);
     
-    // Save sent status
-    if (settings.report_schedule === 'daily') {
-      localStorage.setItem('lastReportSent', todayStr);
-    } else if (settings.report_schedule === 'weekly') {
+    if (settings.report_frequency === 'daily') {
+      localStorage.setItem('lastReportSent', today.toISOString().slice(0, 10));
+    } else if (settings.report_frequency === 'weekly') {
       localStorage.setItem('lastReportSent', `${today.getFullYear()}-W${getWeekNumber(today)}`);
-    } else if (settings.report_schedule === 'monthly') {
+    } else if (settings.report_frequency === 'monthly') {
       localStorage.setItem('lastReportSent', `${today.getFullYear()}-${today.getMonth() + 1}`);
     }
   }
@@ -332,34 +431,25 @@ function getWeekNumber(d) {
 async function kirimEmailLaporan(settings) {
   const today = new Date();
   const tanggal = today.toISOString().slice(0, 10);
-  const tanggalFormat = today.toLocaleDateString('id-ID', { 
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' 
-  });
+  const tanggalFormat = today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   
-  // Get transactions
   const transactions = await getAllTransactions(tanggal + 'T00:00:00', tanggal + 'T23:59:59');
-  
   const totalTransaksi = transactions.length;
   const totalPendapatan = transactions.reduce((sum, t) => sum + (t.total || 0), 0);
   
-  // Top products
   const productSales = {};
   transactions.forEach(t => {
     if (t.items) {
       t.items.forEach(item => {
         const key = item.barcode;
-        if (!productSales[key]) {
-          productSales[key] = { nama: item.nama, qty: 0, total: 0 };
-        }
+        if (!productSales[key]) { productSales[key] = { nama: item.nama, qty: 0, total: 0 }; }
         productSales[key].qty += item.qty || 0;
         productSales[key].total += (item.harga * item.qty) || 0;
       });
     }
   });
   
-  const topProducts = Object.values(productSales)
-    .sort((a, b) => b.qty - a.qty)
-    .slice(0, 5);
+  const topProducts = Object.values(productSales).sort((a, b) => b.qty - a.qty).slice(0, 5);
   
   let body = `📊 LAPORAN POS - ${tanggalFormat}\n`;
   body += `────────────────────────\n`;
@@ -377,7 +467,6 @@ async function kirimEmailLaporan(settings) {
   
   body += `\n────────────────────────\n📱 Dikirim otomatis oleh POS\n`;
   
-  // Open email client
   const subject = `📊 Laporan POS - ${tanggal}`;
-  window.location.href = `mailto:${settings.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  window.location.href = `mailto:${settings.report_email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
