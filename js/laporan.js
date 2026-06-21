@@ -2,6 +2,9 @@
 let chartInstance = null;
 let topProductsChart = null;
 
+// ========== RESEND CONFIG ==========
+const RESEND_API_KEY = 're_YOUR_API_KEY_HERE'; // GANTI dengan API key Resend Anda
+
 function setDefaultDateFilter() {
   const t = new Date().toISOString().slice(0,10);
   document.getElementById('tglAwal').value = t;
@@ -56,7 +59,6 @@ async function muatLaporan() {
   renderTopProductsChart(all);
 }
 
-// ========== CETAK ULANG VIA BLUETOOTH ==========
 async function cetakUlangBT(noInv) {
   if (!bluetoothDevice || !bluetoothCharacteristic) {
     alert('Printer Bluetooth tidak terhubung. Sambungkan dulu di tab Setting.');
@@ -79,7 +81,6 @@ async function cetakUlangBT(noInv) {
   await cetakStrukKePrinter(toko.logo || null, teks);
 }
 
-// ========== HAPUS TRANSAKSI ==========
 async function hapusTransaksi(noInv) {
   if (!confirm(`Hapus transaksi ${noInv}? Stok akan dikembalikan.`)) return;
   const trx = await getTransaction(noInv);
@@ -98,7 +99,6 @@ async function hapusTransaksi(noInv) {
   } catch (e) { alert('Gagal menghapus: ' + e.message); }
 }
 
-// ========== VIEW & CETAK PDF ==========
 async function viewInvoice(noInv) {
   const url = await getInvoiceURL(noInv);
   if (url) { window.open(url, '_blank'); return; }
@@ -128,7 +128,6 @@ async function cetakUlang(noInv) {
   if (pw) pw.addEventListener('load', () => pw.print(), { once: true });
 }
 
-// ========== GENERATE PDF ==========
 function generateInvoicePDF(trx) {
   const { jsPDF } = window.jspdf;
   const lebarKertas = 80;
@@ -190,7 +189,6 @@ function generateInvoicePDF(trx) {
   return doc.output('blob');
 }
 
-// ========== CHART ==========
 function renderChart(trans, mode, start, end) {
   if (chartInstance) chartInstance.destroy();
   const ctx = document.getElementById('chartPenjualan')?.getContext('2d');
@@ -242,12 +240,35 @@ function exportCSV() {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'laporan.csv'; a.click();
 }
 
-// ========== EMAIL LAPORAN ==========
+// ===================== RESEND EMAIL API =====================
+async function sendEmailResend(to, subject, message) {
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${RESEND_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      from: 'POS Report <onboarding@resend.dev>',
+      to: to,
+      subject: subject,
+      text: message
+    })
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Gagal mengirim email');
+  }
+  
+  return response.json();
+}
+
+// ===================== EMAIL LAPORAN HARIAN (Resend) =====================
 async function emailLaporanHarian() {
   const settings = await getSettings();
-  const emailTujuan = settings.report_email;
   
-  if (!emailTujuan) {
+  if (!settings.report_email) {
     alert('Email belum diatur. Silakan isi email di tab Setting → Manajemen Laporan.');
     return;
   }
@@ -274,41 +295,41 @@ async function emailLaporanHarian() {
   
   const topProducts = Object.values(productSales).sort((a, b) => b.qty - a.qty).slice(0, 5);
   
-  let body = `📊 LAPORAN HARIAN POS\n`;
-  body += `────────────────────────\n`;
-  body += `Toko: ${settings.nama || 'POS'}\n`;
-  body += `Tanggal: ${tanggalFormat}\n`;
-  body += `────────────────────────\n\n`;
-  body += `📋 RINGKASAN:\n`;
-  body += `Total Transaksi: ${totalTransaksi}\n`;
-  body += `Total Pendapatan: Rp ${totalPendapatan.toLocaleString('id')}\n`;
+  let message = `📊 LAPORAN HARIAN POS\n`;
+  message += `────────────────────────\n`;
+  message += `Toko: ${settings.nama || 'POS'}\n`;
+  message += `Tanggal: ${tanggalFormat}\n`;
+  message += `────────────────────────\n\n`;
+  message += `📋 RINGKASAN:\n`;
+  message += `Total Transaksi: ${totalTransaksi}\n`;
+  message += `Total Pendapatan: Rp ${totalPendapatan.toLocaleString('id')}\n`;
   
   if (totalTransaksi > 0) {
-    body += `Rata-rata: Rp ${Math.round(totalPendapatan / totalTransaksi).toLocaleString('id')}\n`;
+    message += `Rata-rata: Rp ${Math.round(totalPendapatan / totalTransaksi).toLocaleString('id')}\n`;
   }
   
   if (topProducts.length > 0) {
-    body += `\n🔥 PRODUK TERLARIS:\n`;
+    message += `\n🔥 PRODUK TERLARIS:\n`;
     topProducts.forEach((p, i) => {
-      body += `${i + 1}. ${p.nama} - ${p.qty} pcs (Rp ${p.total.toLocaleString('id')})\n`;
+      message += `${i + 1}. ${p.nama} - ${p.qty} pcs (Rp ${p.total.toLocaleString('id')})\n`;
     });
   }
   
-  body += `\n────────────────────────\n📱 Dikirim dari POS System\n`;
+  message += `\n────────────────────────\n📱 Dikirim dari POS System\n`;
   
-  const subject = `Laporan Harian POS - ${tanggal}`;
-  window.location.href = `mailto:${emailTujuan}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  
-  setTimeout(() => {
-    alert('✅ Email client terbuka!\nSilakan kirim email dari aplikasi email Anda.');
-  }, 500);
+  try {
+    await sendEmailResend(settings.report_email, `📊 Laporan Harian POS - ${tanggal}`, message);
+    alert('✅ Laporan harian berhasil dikirim ke ' + settings.report_email);
+  } catch (error) {
+    alert('❌ Gagal mengirim: ' + error.message);
+  }
 }
 
+// ===================== EMAIL LAPORAN PERIODE (Resend) =====================
 async function emailLaporanPeriode() {
   const settings = await getSettings();
-  const emailTujuan = settings.report_email;
   
-  if (!emailTujuan) {
+  if (!settings.report_email) {
     alert('Email belum diatur. Silakan isi email di tab Setting → Manajemen Laporan.');
     return;
   }
@@ -339,37 +360,84 @@ async function emailLaporanPeriode() {
   
   const topProducts = Object.values(productSales).sort((a, b) => b.qty - a.qty).slice(0, 10);
   
-  let body = `📊 LAPORAN POS\n`;
-  body += `────────────────────────\n`;
-  body += `Toko: ${settings.nama || 'POS'}\n`;
-  body += `Periode: ${tglAwal} s/d ${tglAkhir}\n`;
-  body += `────────────────────────\n\n`;
-  body += `📋 RINGKASAN:\n`;
-  body += `Total Transaksi: ${totalTransaksi}\n`;
-  body += `Total Pendapatan: Rp ${totalPendapatan.toLocaleString('id')}\n`;
+  let message = `📊 LAPORAN POS\n`;
+  message += `────────────────────────\n`;
+  message += `Toko: ${settings.nama || 'POS'}\n`;
+  message += `Periode: ${tglAwal} s/d ${tglAkhir}\n`;
+  message += `────────────────────────\n\n`;
+  message += `📋 RINGKASAN:\n`;
+  message += `Total Transaksi: ${totalTransaksi}\n`;
+  message += `Total Pendapatan: Rp ${totalPendapatan.toLocaleString('id')}\n`;
   
   if (totalTransaksi > 0) {
-    body += `Rata-rata: Rp ${Math.round(totalPendapatan / totalTransaksi).toLocaleString('id')}\n`;
+    message += `Rata-rata: Rp ${Math.round(totalPendapatan / totalTransaksi).toLocaleString('id')}\n`;
   }
   
   if (topProducts.length > 0) {
-    body += `\n🔥 PRODUK TERLARIS:\n`;
+    message += `\n🔥 PRODUK TERLARIS:\n`;
     topProducts.forEach((p, i) => {
-      body += `${i + 1}. ${p.nama} - ${p.qty} pcs (Rp ${p.total.toLocaleString('id')})\n`;
+      message += `${i + 1}. ${p.nama} - ${p.qty} pcs (Rp ${p.total.toLocaleString('id')})\n`;
     });
   }
   
-  body += `\n────────────────────────\n📱 Dikirim dari POS System\n`;
+  message += `\n────────────────────────\n📱 Dikirim dari POS System\n`;
   
-  const subject = `Laporan POS - ${tglAwal} s/d ${tglAkhir}`;
-  window.location.href = `mailto:${emailTujuan}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  
-  setTimeout(() => {
-    alert('✅ Email client terbuka!\nSilakan kirim email dari aplikasi email Anda.');
-  }, 500);
+  try {
+    await sendEmailResend(settings.report_email, `📊 Laporan POS - ${tglAwal} s/d ${tglAkhir}`, message);
+    alert('✅ Laporan periode berhasil dikirim ke ' + settings.report_email);
+  } catch (error) {
+    alert('❌ Gagal mengirim: ' + error.message);
+  }
 }
 
-// ========== AUTO EMAIL REPORT ==========
+// ===================== AUTO EMAIL REPORT =====================
+async function kirimEmailLaporan(settings) {
+  const today = new Date();
+  const tanggal = today.toISOString().slice(0, 10);
+  const tanggalFormat = today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  
+  const transactions = await getAllTransactions(tanggal + 'T00:00:00', tanggal + 'T23:59:59');
+  const totalTransaksi = transactions.length;
+  const totalPendapatan = transactions.reduce((sum, t) => sum + (t.total || 0), 0);
+  
+  const productSales = {};
+  transactions.forEach(t => {
+    if (t.items) {
+      t.items.forEach(item => {
+        const key = item.barcode;
+        if (!productSales[key]) { productSales[key] = { nama: item.nama, qty: 0, total: 0 }; }
+        productSales[key].qty += item.qty || 0;
+        productSales[key].total += (item.harga * item.qty) || 0;
+      });
+    }
+  });
+  
+  const topProducts = Object.values(productSales).sort((a, b) => b.qty - a.qty).slice(0, 5);
+  
+  let message = `📊 LAPORAN POS - ${tanggalFormat}\n`;
+  message += `────────────────────────\n`;
+  message += `Toko: ${settings.nama || 'POS'}\n`;
+  message += `────────────────────────\n\n`;
+  message += `Total Transaksi: ${totalTransaksi}\n`;
+  message += `Total Pendapatan: Rp ${totalPendapatan.toLocaleString('id')}\n\n`;
+  
+  if (topProducts.length > 0) {
+    message += `🔥 PRODUK TERLARIS:\n`;
+    topProducts.forEach((p, i) => {
+      message += `${i + 1}. ${p.nama} - ${p.qty} pcs\n`;
+    });
+  }
+  
+  message += `\n────────────────────────\n📱 Dikirim otomatis oleh POS\n`;
+  
+  try {
+    await sendEmailResend(settings.report_email, `📊 Laporan POS - ${tanggal}`, message);
+    console.log('Auto report sent to:', settings.report_email);
+  } catch (error) {
+    console.error('Auto report failed:', error);
+  }
+}
+
 async function checkAutoEmailReport() {
   const settings = await getSettings();
   
@@ -426,47 +494,4 @@ function getWeekNumber(d) {
   d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-}
-
-async function kirimEmailLaporan(settings) {
-  const today = new Date();
-  const tanggal = today.toISOString().slice(0, 10);
-  const tanggalFormat = today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  
-  const transactions = await getAllTransactions(tanggal + 'T00:00:00', tanggal + 'T23:59:59');
-  const totalTransaksi = transactions.length;
-  const totalPendapatan = transactions.reduce((sum, t) => sum + (t.total || 0), 0);
-  
-  const productSales = {};
-  transactions.forEach(t => {
-    if (t.items) {
-      t.items.forEach(item => {
-        const key = item.barcode;
-        if (!productSales[key]) { productSales[key] = { nama: item.nama, qty: 0, total: 0 }; }
-        productSales[key].qty += item.qty || 0;
-        productSales[key].total += (item.harga * item.qty) || 0;
-      });
-    }
-  });
-  
-  const topProducts = Object.values(productSales).sort((a, b) => b.qty - a.qty).slice(0, 5);
-  
-  let body = `📊 LAPORAN POS - ${tanggalFormat}\n`;
-  body += `────────────────────────\n`;
-  body += `Toko: ${settings.nama || 'POS'}\n`;
-  body += `────────────────────────\n\n`;
-  body += `Total Transaksi: ${totalTransaksi}\n`;
-  body += `Total Pendapatan: Rp ${totalPendapatan.toLocaleString('id')}\n\n`;
-  
-  if (topProducts.length > 0) {
-    body += `🔥 PRODUK TERLARIS:\n`;
-    topProducts.forEach((p, i) => {
-      body += `${i + 1}. ${p.nama} - ${p.qty} pcs\n`;
-    });
-  }
-  
-  body += `\n────────────────────────\n📱 Dikirim otomatis oleh POS\n`;
-  
-  const subject = `📊 Laporan POS - ${tanggal}`;
-  window.location.href = `mailto:${settings.report_email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
