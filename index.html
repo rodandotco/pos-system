@@ -24,9 +24,10 @@
 
   <!-- ================== TRANSAKSI ================== -->
   <div id="page-transaksi" class="page active">
-<div id="lowStockBanner" style="display:none; background:#fff3e0; border:1px solid #ff9800; border-radius:8px; padding:10px; margin-bottom:12px; font-size:13px;">
-  ⚠️ <b>Stok Rendah:</b> <span id="lowStockBannerText"></span>
-</div>
+    <div id="lowStockBanner" style="display:none; background:#fff3e0; border:1px solid #ff9800; border-radius:8px; padding:10px; margin-bottom:12px; font-size:13px;">
+      ⚠️ <b>Stok Rendah:</b> <span id="lowStockBannerText"></span>
+    </div>
+
     <div class="form-group">
       <label>Nama Customer (opsional)</label>
       <div style="position:relative; display:inline-block; width:200px;">
@@ -56,6 +57,11 @@
       <thead><tr><th>Produk</th><th>Harga</th><th>Qty</th><th>Subtotal</th><th></th></tr></thead>
       <tbody></tbody>
     </table>
+
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <button class="btn" onclick="simpanPesanan()" style="background:#ff9800;">💾 Simpan Pesanan</button>
+      <button class="btn" onclick="tampilkanPesananTersimpan()">📋 Pesanan Tersimpan</button>
+    </div>
 
     <div class="form-group" id="pembayaranGroup">
       <label>Pembayaran</label>
@@ -94,29 +100,27 @@
       <div class="form-group"><label>Keterangan</label><input type="text" id="prodKeterangan"></div>
       <div class="form-group"><label>Harga Beli</label><input type="number" id="prodHargaBeli" step="1"></div>
       <div class="form-group"><label>Harga Jual</label><input type="number" id="prodHargaJual" step="1"></div>
-<!-- ADD THESE NEW FIELDS -->
-<div class="form-group">
-  <label>Harga Grosir (opsional)</label>
-  <div style="display:flex; gap:8px; align-items:center;">
-    <span>Diskon</span>
-    <input type="number" id="prodDiskonPersen" placeholder="%" min="0" max="100" step="1" style="width:60px;">
-    <span>% setiap pembelian</span>
-    <input type="number" id="prodDiskonMinQty" placeholder="Qty" min="0" step="1" style="width:60px;">
-    <span>pcs</span>
-  </div>
-  <small style="color:#666;">Contoh: Diskon 5% setiap 12 pcs. Harga otomatis berubah jadi Harga Grosir.</small>
-</div>
-<!-- END NEW FIELDS -->
+      <div class="form-group">
+        <label>Harga Grosir (opsional)</label>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <span>Diskon</span>
+          <input type="number" id="prodDiskonPersen" placeholder="%" min="0" max="100" step="1" style="width:60px;">
+          <span>% setiap pembelian</span>
+          <input type="number" id="prodDiskonMinQty" placeholder="Qty" min="0" step="1" style="width:60px;">
+          <span>pcs</span>
+        </div>
+        <small style="color:#666;">Contoh: Diskon 5% setiap 12 pcs. Harga otomatis berubah jadi Harga Grosir.</small>
+      </div>
       <div class="stok-info">
-  <div class="form-group">
-    <label>Minimum Stok</label>
-    <input type="number" id="prodMinStok" value="10" min="0" step="1">
-    <small style="color:#666;">Peringatan jika stok ≤ nilai ini</small>
-  </div>
-  Stok Saat Ini: <span id="stokSaatIni">0</span><br>
-  <label>Tambah/Kurangi Stok</label><input type="number" id="perubahanStok" value="0" oninput="hitungStokAkhir()"><br>
-  Stok Akhir: <span id="stokAkhir">0</span>
-</div>
+        <div class="form-group">
+          <label>Minimum Stok</label>
+          <input type="number" id="prodMinStok" value="10" min="0" step="1">
+          <small style="color:#666;">Peringatan jika stok ≤ nilai ini</small>
+        </div>
+        Stok Saat Ini: <span id="stokSaatIni">0</span><br>
+        <label>Tambah/Kurangi Stok</label><input type="number" id="perubahanStok" value="0" oninput="hitungStokAkhir()"><br>
+        Stok Akhir: <span id="stokAkhir">0</span>
+      </div>
       <div class="form-group"><label>Foto</label><input type="file" id="prodFoto" accept="image/*" onchange="previewFoto()"></div>
       <button class="btn" id="btnSimpanProduk">Simpan</button>
       <button class="btn btn-danger" id="btnHapusProduk" style="display:none;">Hapus Produk</button>
@@ -129,15 +133,12 @@
   </div>
 
   <!-- ================== LAPORAN ================== -->
-    
   <div id="page-laporan" class="page">
     <h3>Ringkasan</h3>
-    
     <div id="lowStockAlert" style="display:none; background:#fff3e0; border:1px solid #ff9800; border-radius:8px; padding:12px; margin-bottom:12px;">
       <strong>⚠️ Peringatan Stok Rendah:</strong>
       <ul id="lowStockList" style="margin:8px 0 0 20px; font-size:13px;"></ul>
     </div>
-    <h3>Ringkasan</h3>
     <div style="display:flex; gap:12px; margin-bottom:12px;">
       <div style="flex:1; background:#e0f2f1; padding:10px; border-radius:8px;"><small>Total Transaksi</small><br><strong id="totalTransaksi">0</strong></div>
       <div style="flex:1; background:#e0f2f1; padding:10px; border-radius:8px;"><small>Total Pendapatan</small><br><strong id="totalPendapatan">Rp 0</strong></div>
@@ -155,15 +156,17 @@
       <button class="btn btn-sm" onclick="muatLaporan()">Tampilkan</button>
     </div>
     <table class="report-table" id="reportTable"><thead><tr><th>No Invoice</th><th>Tanggal</th><th>Customer</th><th>Total</th><th>Aksi</th></tr></thead><tbody></tbody></table>
-    <button class="btn" onclick="exportCSV()">📥 Export CSV</button>
-    <button class="btn" onclick="emailLaporanHarian()">📧 Email Hari Ini</button>
-    <button class="btn" onclick="emailLaporanPeriode()">📧 Email Periode</button>
+    <div style="margin-top:12px; padding:12px; background:#f8fafb; border-radius:8px; border:1px solid #e8ecf0;">
+      <h4 style="margin:0 0 8px 0;">📧 Kirim Laporan via Email</h4>
+      <p style="font-size:12px; color:#666; margin:0 0 8px 0;">Pilih tanggal di atas, lalu klik Email Periode</p>
+      <button class="btn" onclick="exportCSV()">📥 Export CSV</button>
+      <button class="btn" onclick="emailLaporanHarian()">📧 Email Hari Ini</button>
+      <button class="btn" onclick="emailLaporanPeriode()">📧 Email Periode</button>
+    </div>
   </div>
 
   <!-- ================== SETTING ================== -->
   <div id="page-setting" class="page">
-    
-    <!-- Manajemen Profil -->
     <div id="manajemenProfilSection">
       <h3>Manajemen Profil</h3>
       <div id="logoPreviewContainer" style="margin-bottom:12px; display:none;">
@@ -179,134 +182,35 @@
       <hr>
     </div>
 
-    <!-- Manajemen Laporan -->
     <h3>📊 Manajemen Laporan</h3>
     <div class="card" style="margin-bottom:16px;">
       <div class="card-header">📧 Email Laporan Otomatis</div>
-      
-      <div class="form-group">
-        <label>Email Tujuan</label>
-        <input type="email" id="reportEmail" placeholder="contoh@email.com">
-      </div>
-      
-      <div class="form-group">
-        <label>Frekuensi Laporan</label>
-        <select id="reportFrequency" onchange="toggleReportOptions()">
-          <option value="none">Matikan</option>
-          <option value="daily">Setiap Hari</option>
-          <option value="weekly">Setiap Minggu</option>
-          <option value="monthly">Setiap Bulan</option>
-        </select>
-      </div>
-      
-      <div id="dailyOptions" style="display:none;">
-        <div class="form-group">
-          <label>Jam Kirim</label>
-          <select id="dailyTime">
-            <option value="20">20:00</option>
-            <option value="21" selected>21:00</option>
-            <option value="22">22:00</option>
-            <option value="23">23:00</option>
-            <option value="0">00:00</option>
-          </select>
-        </div>
-      </div>
-      
-      <div id="weeklyOptions" style="display:none;">
-        <div class="form-group">
-          <label>Hari Kirim</label>
-          <select id="weeklyDay">
-            <option value="1" selected>Senin</option>
-            <option value="2">Selasa</option>
-            <option value="3">Rabu</option>
-            <option value="4">Kamis</option>
-            <option value="5">Jumat</option>
-            <option value="6">Sabtu</option>
-            <option value="0">Minggu</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Jam Kirim</label>
-          <select id="weeklyTime">
-            <option value="20">20:00</option>
-            <option value="21" selected>21:00</option>
-            <option value="22">22:00</option>
-            <option value="23">23:00</option>
-          </select>
-        </div>
-      </div>
-      
-      <div id="monthlyOptions" style="display:none;">
-        <div class="form-group">
-          <label>Tanggal Kirim</label>
-          <select id="monthlyDate">
-            <option value="1" selected>Tanggal 1</option>
-            <option value="2">Tanggal 2</option>
-            <option value="3">Tanggal 3</option>
-            <option value="5">Tanggal 5</option>
-            <option value="10">Tanggal 10</option>
-            <option value="15">Tanggal 15</option>
-            <option value="28">Tanggal 28</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Jam Kirim</label>
-          <select id="monthlyTime">
-            <option value="20">20:00</option>
-            <option value="21" selected>21:00</option>
-            <option value="22">22:00</option>
-            <option value="23">23:00</option>
-          </select>
-        </div>
-      </div>
-      
+      <div class="form-group"><label>Email Tujuan</label><input type="email" id="reportEmail" placeholder="contoh@email.com"></div>
+      <div class="form-group"><label>Frekuensi Laporan</label><select id="reportFrequency" onchange="toggleReportOptions()"><option value="none">Matikan</option><option value="daily">Setiap Hari</option><option value="weekly">Setiap Minggu</option><option value="monthly">Setiap Bulan</option></select></div>
+      <div id="dailyOptions" style="display:none;"><div class="form-group"><label>Jam Kirim</label><select id="dailyTime"><option value="20">20:00</option><option value="21" selected>21:00</option><option value="22">22:00</option><option value="23">23:00</option><option value="0">00:00</option></select></div></div>
+      <div id="weeklyOptions" style="display:none;"><div class="form-group"><label>Hari Kirim</label><select id="weeklyDay"><option value="1" selected>Senin</option><option value="2">Selasa</option><option value="3">Rabu</option><option value="4">Kamis</option><option value="5">Jumat</option><option value="6">Sabtu</option><option value="0">Minggu</option></select></div><div class="form-group"><label>Jam Kirim</label><select id="weeklyTime"><option value="20">20:00</option><option value="21" selected>21:00</option><option value="22">22:00</option><option value="23">23:00</option></select></div></div>
+      <div id="monthlyOptions" style="display:none;"><div class="form-group"><label>Tanggal Kirim</label><select id="monthlyDate"><option value="1" selected>Tanggal 1</option><option value="2">Tanggal 2</option><option value="3">Tanggal 3</option><option value="5">Tanggal 5</option><option value="10">Tanggal 10</option><option value="15">Tanggal 15</option><option value="28">Tanggal 28</option></select></div><div class="form-group"><label>Jam Kirim</label><select id="monthlyTime"><option value="20">20:00</option><option value="21" selected>21:00</option><option value="22">22:00</option><option value="23">23:00</option></select></div></div>
       <button class="btn" onclick="simpanPengaturanLaporan()">💾 Simpan Pengaturan Laporan</button>
       <button class="btn btn-sm" onclick="tesKirimLaporan()" style="margin-top:8px;">🧪 Tes Kirim Laporan</button>
     </div>
     <hr>
 
-    <!-- Manajemen Cetak -->
     <h3>Manajemen Cetak</h3>
     <div class="form-group">
-      <label>Printer <button class="info-btn" onclick="alert('Untuk printer Bluetooth:\n1. Nyalakan printer dan pastikan dalam mode pairing.\n2. Buka Pengaturan Android > Bluetooth > pindai dan pasangkan dengan printer.\n3. Setelah terhubung, pilih "Bluetooth Printer" di dropdown.\n4. Saat mencetak, Android akan menanyakan printer tujuan.\n\nUntuk printer USB:\n1. Colokkan kabel OTG ke tablet.\n2. Sambungkan printer.\n3. Pilih "USB Printer".')">ℹ️</button></label>
+      <label>Printer <button class="info-btn" onclick="alert('Untuk printer Bluetooth:\n1. Nyalakan printer dan pastikan dalam mode pairing.\n2. Buka Pengaturan Android > Bluetooth > pindai dan pasangkan dengan printer.\n3. Setelah terhubung, pilih \"Bluetooth Printer\" di dropdown.\n4. Saat mencetak, Android akan menanyakan printer tujuan.\n\nUntuk printer USB:\n1. Colokkan kabel OTG ke tablet.\n2. Sambungkan printer.\n3. Pilih \"USB Printer\".')">ℹ️</button></label>
       <div style="display:flex; gap:4px;">
-        <select id="printerPilihan" style="flex:1;">
-          <option value="default">Default (bawaan browser)</option>
-          <option value="bluetooth">Bluetooth Printer</option>
-          <option value="usb">USB Printer</option>
-        </select>
+        <select id="printerPilihan" style="flex:1;"><option value="default">Default (bawaan browser)</option><option value="bluetooth">Bluetooth Printer</option><option value="usb">USB Printer</option></select>
         <button class="btn btn-sm" onclick="sambungPrinter()">🔗 Sambung</button>
         <button class="btn btn-sm" onclick="testPrint()" title="Cetak halaman uji">🖨️ Test</button>
       </div>
-      <div id="printerStatusSetting" class="printer-status" style="margin-top:8px;">
-        <span class="led led-red" id="ledSetting"></span>
-        <span id="printerStatusTextSetting">Printer tidak terhubung</span>
-        <button class="btn btn-sm btn-danger" id="btnPutusSetting" onclick="putusPrinter()" style="display:none;">Putus</button>
-      </div>
+      <div id="printerStatusSetting" class="printer-status" style="margin-top:8px;"><span class="led led-red" id="ledSetting"></span><span id="printerStatusTextSetting">Printer tidak terhubung</span><button class="btn btn-sm btn-danger" id="btnPutusSetting" onclick="putusPrinter()" style="display:none;">Putus</button></div>
     </div>
-    <div class="form-group"><label>Lebar Kertas</label>
-      <select id="kertasLebar">
-        <option value="80">80 mm</option>
-        <option value="58">58 mm</option>
-      </select>
-    </div>
-    <div class="form-group"><label>Jenis Kertas</label>
-      <select id="jenisKertas" onchange="toggleLabelSettings()">
-        <option value="thermal">Thermal Plain (tanpa label)</option>
-        <option value="label">Thermal Label (stiker)</option>
-      </select>
-    </div>
-    <div id="labelSettings" style="display:none;">
-      <div class="form-group"><label>Lebar Label (mm)</label><input type="number" id="labelWidth" value="50" step="1"></div>
-      <div class="form-group"><label>Tinggi Label (mm)</label><input type="number" id="labelHeight" value="30" step="1"></div>
-      <div class="form-group"><label>Jarak Antar Label (mm)</label><input type="number" id="labelGap" value="3" step="0.5"></div>
-      <div class="form-group"><label>Jumlah Kolom</label><input type="number" id="labelCols" value="1" min="1" step="1"></div>
-      <p style="font-size:12px; color:#666;">Sesuaikan dengan stok label yang digunakan.</p>
-    </div>
+    <div class="form-group"><label>Lebar Kertas</label><select id="kertasLebar"><option value="80">80 mm</option><option value="58">58 mm</option></select></div>
+    <div class="form-group"><label>Jenis Kertas</label><select id="jenisKertas" onchange="toggleLabelSettings()"><option value="thermal">Thermal Plain (tanpa label)</option><option value="label">Thermal Label (stiker)</option></select></div>
+    <div id="labelSettings" style="display:none;"><div class="form-group"><label>Lebar Label (mm)</label><input type="number" id="labelWidth" value="50" step="1"></div><div class="form-group"><label>Tinggi Label (mm)</label><input type="number" id="labelHeight" value="30" step="1"></div><div class="form-group"><label>Jarak Antar Label (mm)</label><input type="number" id="labelGap" value="3" step="0.5"></div><div class="form-group"><label>Jumlah Kolom</label><input type="number" id="labelCols" value="1" min="1" step="1"></div><p style="font-size:12px; color:#666;">Sesuaikan dengan stok label yang digunakan.</p></div>
     <button class="btn" onclick="simpanPengaturanCetak()">Simpan Pengaturan Cetak</button>
     <hr>
 
-    <!-- Manajemen User -->
     <div id="manajemenUserSection">
       <h3>Manajemen User</h3>
       <table class="user-table"><thead><tr><th>Username</th><th>Role</th><th>Aksi</th></tr></thead><tbody id="userListBody"></tbody></table>
@@ -314,7 +218,6 @@
       <hr>
     </div>
 
-    <!-- Manajemen Data -->
     <div id="manajemenDataSection">
       <h3>Manajemen Data</h3>
       <button class="btn" id="btnPilihFolder" onclick="pilihFolder()">📁 Pilih Folder Kerja</button>
@@ -360,6 +263,15 @@
     <p>Harga Jual: <span id="detailHargaJual"></span></p>
     <p>Stok: <span id="detailStok"></span></p>
     <button class="btn" onclick="document.getElementById('productDetailModal').style.display='none'">Tutup</button>
+  </div>
+</div>
+
+<!-- Modal Pesanan Tersimpan -->
+<div id="pesananModal" class="overlay" style="display:none;">
+  <div class="modal-content" style="max-width:500px;">
+    <h3>📋 Pesanan Tersimpan</h3>
+    <div id="pesananList" style="max-height:400px; overflow-y:auto;"></div>
+    <button class="btn btn-danger" onclick="document.getElementById('pesananModal').style.display='none'">Tutup</button>
   </div>
 </div>
 
