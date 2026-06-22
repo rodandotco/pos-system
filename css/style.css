@@ -384,9 +384,9 @@ input:disabled, select:disabled, textarea:disabled {
 }
 
 .qty-control button {
-  width: 30px;
-  height: 30px;
-  font-size: 16px;
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
   background: #e8ecf0;
   border: 1.5px solid #cfd8dc;
   border-radius: 6px;
@@ -394,6 +394,9 @@ input:disabled, select:disabled, textarea:disabled {
   font-weight: 600;
   color: #455a64;
   transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .qty-control button:hover {
@@ -401,8 +404,10 @@ input:disabled, select:disabled, textarea:disabled {
 }
 
 .qty-control input {
-  width: 50px;
+  width: 60px;
   text-align: center;
+  font-size: 16px;
+  padding: 5px;
 }
 
 /* ===================== MODAL CONTENT ===================== */
