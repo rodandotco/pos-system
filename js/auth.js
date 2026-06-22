@@ -1,50 +1,70 @@
 // ===================== AUTH.JS =====================
-const ADMIN_HASH = '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918';
+var ADMIN_HASH = '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918';
 
 async function hashPassword(pwd) {
   if (pwd === 'admin') return ADMIN_HASH;
   if (crypto.subtle) {
-    const e = new TextEncoder(); const h = await crypto.subtle.digest('SHA-256', e.encode(pwd));
-    return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2, '0')).join('');
+    var e = new TextEncoder();
+    var h = await crypto.subtle.digest('SHA-256', e.encode(pwd));
+    return Array.from(new Uint8Array(h)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
   }
-  let h = 0; for (let i=0;i<pwd.length;i++) { h = ((h<<5)-h) + pwd.charCodeAt(i); h|=0; }
-  return 'fallback_'+Math.abs(h).toString(16);
+  var h = 0;
+  for (var i = 0; i < pwd.length; i++) {
+    h = ((h << 5) - h) + pwd.charCodeAt(i);
+    h |= 0;
+  }
+  return 'fallback_' + Math.abs(h).toString(16);
 }
 
 async function login() {
-  const u = document.getElementById('loginUser').value.trim();
-  const p = document.getElementById('loginPass').value;
-  if (!u||!p) return;
+  var u = document.getElementById('loginUser').value.trim();
+  var p = document.getElementById('loginPass').value;
+  if (!u || !p) return;
 
   if (typeof cart !== 'undefined') cart = [];
   if (typeof totalDiskonValue !== 'undefined') totalDiskonValue = 0;
   if (typeof bayarValue !== 'undefined') bayarValue = 0;
   if (typeof renderCart === 'function') renderCart();
 
-  const { data: user, error } = await supabaseClient.from('users').select('*').eq('username', u).single();
-  if (error) { document.getElementById('loginError').textContent = 'Error: '+error.message; return; }
-  if (!user) { document.getElementById('loginError').textContent = 'User tidak ditemukan'; return; }
-  if (user.password_hash !== await hashPassword(p)) { document.getElementById('loginError').textContent = 'Password salah'; return; }
+  var result = await supabaseClient.from('users').select('*').eq('username', u).single();
+  var user = result.data;
+  var error = result.error;
+  
+  if (error) {
+    document.getElementById('loginError').textContent = 'Error: ' + error.message;
+    return;
+  }
+  if (!user) {
+    document.getElementById('loginError').textContent = 'User tidak ditemukan';
+    return;
+  }
+  if (user.password_hash !== await hashPassword(p)) {
+    document.getElementById('loginError').textContent = 'Password salah';
+    return;
+  }
 
   currentUser = user;
   saveSession();
   clearAllDisplayedData();
 
   document.getElementById('loginOverlay').style.display = 'none';
-  
   applyRoleRestrictions();
-  
   await muatProfilToko();
   tampilkanUserList();
   setupTransaksi();
   setupInventory();
   refreshProductList();
   setDefaultDateFilter();
-  if (activeTab==='laporan') muatLaporan();
+  if (activeTab === 'laporan') muatLaporan();
   aturHakAkses();
 
-  setTimeout(function() { if (typeof checkAutoEmailReport === 'function') checkAutoEmailReport(); }, 2000);
-  setTimeout(function() { if (typeof checkLowStockBanner === 'function') checkLowStockBanner(); }, 1500);
+  setTimeout(function() {
+    if (typeof checkAutoEmailReport === 'function') checkAutoEmailReport();
+  }, 2000);
+
+  setTimeout(function() {
+    if (typeof checkLowStockBanner === 'function') checkLowStockBanner();
+  }, 1500);
 }
 
 function logout() {
@@ -57,33 +77,43 @@ function logout() {
   if (typeof renderCart === 'function') renderCart();
   if (typeof tutupFormProduk === 'function') tutupFormProduk();
 
-  var searchResults = document.getElementById('searchResults');
-  if (searchResults) { searchResults.innerHTML = ''; searchResults.style.display = 'none'; }
+  var el = document.getElementById('searchResults');
+  if (el) { el.innerHTML = ''; el.style.display = 'none'; }
 
-  var cartTable = document.querySelector('#cartTable tbody');
-  if (cartTable) cartTable.innerHTML = '';
-  var reportTable = document.querySelector('#reportTable tbody');
-  if (reportTable) reportTable.innerHTML = '';
-  var productTable = document.querySelector('#productListTable tbody');
-  if (productTable) productTable.innerHTML = '';
+  el = document.querySelector('#cartTable tbody');
+  if (el) el.innerHTML = '';
+  el = document.querySelector('#reportTable tbody');
+  if (el) el.innerHTML = '';
+  el = document.querySelector('#productListTable tbody');
+  if (el) el.innerHTML = '';
 
-  var totalTransaksi = document.getElementById('totalTransaksi');
-  var totalPendapatan = document.getElementById('totalPendapatan');
-  if (totalTransaksi) totalTransaksi.textContent = '0';
-  if (totalPendapatan) totalPendapatan.textContent = 'Rp 0';
+  el = document.getElementById('totalTransaksi');
+  if (el) el.textContent = '0';
+  el = document.getElementById('totalPendapatan');
+  if (el) el.textContent = 'Rp 0';
 
-  var productCount = document.getElementById('productCount');
-  if (productCount) productCount.textContent = '0';
+  el = document.getElementById('productCount');
+  if (el) el.textContent = '0';
 
-  if (typeof chartInstance !== 'undefined' && chartInstance) { chartInstance.destroy(); chartInstance = null; }
-  if (typeof topProductsChart !== 'undefined' && topProductsChart) { topProductsChart.destroy(); topProductsChart = null; }
+  if (typeof chartInstance !== 'undefined' && chartInstance) {
+    chartInstance.destroy();
+    chartInstance = null;
+  }
+  if (typeof topProductsChart !== 'undefined' && topProductsChart) {
+    topProductsChart.destroy();
+    topProductsChart = null;
+  }
 
-  var lowStockBanner = document.getElementById('lowStockBanner');
-  if (lowStockBanner) lowStockBanner.style.display = 'none';
-  var lowStockAlert = document.getElementById('lowStockAlert');
-  if (lowStockAlert) lowStockAlert.style.display = 'none';
+  el = document.getElementById('lowStockBanner');
+  if (el) el.style.display = 'none';
+  el = document.getElementById('lowStockAlert');
+  if (el) el.style.display = 'none';
 
-  ['scanInputTrans', 'custName', 'invSearch', 'searchProduct', 'prodBarcode', 'prodNama', 'prodKategori', 'prodKeterangan', 'prodHargaBeli', 'prodHargaJual', 'perubahanStok', 'bayar', 'newUsername', 'newPassword'].forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
+  var ids = ['scanInputTrans', 'custName', 'invSearch', 'searchProduct', 'prodBarcode', 'prodNama', 'prodKategori', 'prodKeterangan', 'prodHargaBeli', 'prodHargaJual', 'perubahanStok', 'bayar', 'newUsername', 'newPassword'];
+  ids.forEach(function(id) {
+    var input = document.getElementById(id);
+    if (input) input.value = '';
+  });
 
   if (typeof invalidateSettingsCache === 'function') invalidateSettingsCache();
   if (typeof appSettings !== 'undefined') appSettings = {};
@@ -92,10 +122,12 @@ function logout() {
   localStorage.removeItem('lastReportSent');
   localStorage.removeItem('lastReportSchedule');
 
-  document.querySelectorAll('.tab-btn').forEach(function(b) { b.style.display = ''; });
-  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+  var tabs = document.querySelectorAll('.tab-btn');
+  tabs.forEach(function(b) { b.style.display = ''; });
+  var pages = document.querySelectorAll('.page');
+  pages.forEach(function(p) { p.classList.remove('active'); });
   document.getElementById('page-transaksi').classList.add('active');
-  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+  tabs.forEach(function(b) { b.classList.remove('active'); });
   var transTab = document.querySelector('.tab-btn[data-page="transaksi"]');
   if (transTab) transTab.classList.add('active');
   activeTab = 'transaksi';
@@ -105,8 +137,13 @@ function logout() {
   document.getElementById('loginPass').value = '';
 }
 
-function saveSession() { if (currentUser) localStorage.setItem('currentUser', JSON.stringify(currentUser)); }
-function clearSession() { localStorage.removeItem('currentUser'); }
+function saveSession() {
+  if (currentUser) localStorage.setItem('currentUser', JSON.stringify(currentUser));
+}
+
+function clearSession() {
+  localStorage.removeItem('currentUser');
+}
 
 function checkSession() {
   var saved = localStorage.getItem('currentUser');
@@ -114,25 +151,26 @@ function checkSession() {
     try {
       currentUser = JSON.parse(saved);
       clearAllDisplayedData();
-
       document.getElementById('loginOverlay').style.display = 'none';
-      
       applyRoleRestrictions();
-      
       muatProfilToko();
       tampilkanUserList();
       setupTransaksi();
       setupInventory();
       refreshProductList();
       setDefaultDateFilter();
-      if (activeTab==='laporan') muatLaporan();
+      if (activeTab === 'laporan') muatLaporan();
       aturHakAkses();
-
-      setTimeout(function() { if (typeof checkAutoEmailReport === 'function') checkAutoEmailReport(); }, 2000);
-      setTimeout(function() { if (typeof checkLowStockBanner === 'function') checkLowStockBanner(); }, 1500);
-
+      setTimeout(function() {
+        if (typeof checkAutoEmailReport === 'function') checkAutoEmailReport();
+      }, 2000);
+      setTimeout(function() {
+        if (typeof checkLowStockBanner === 'function') checkLowStockBanner();
+      }, 1500);
       return true;
-    } catch(e) { clearSession(); }
+    } catch (e) {
+      clearSession();
+    }
   }
   document.getElementById('loginOverlay').style.display = 'flex';
   document.getElementById('loginUser').value = '';
@@ -140,15 +178,13 @@ function checkSession() {
   return false;
 }
 
-// ===================== ROLE-BASED PAGE RESTRICTIONS =====================
 function applyRoleRestrictions() {
   var role = currentUser ? currentUser.role : '';
-  
   var tabTransaksi = document.querySelector('.tab-btn[data-page="transaksi"]');
   var tabInventory = document.querySelector('.tab-btn[data-page="inventory"]');
   var tabLaporan = document.querySelector('.tab-btn[data-page="laporan"]');
   var tabSetting = document.querySelector('.tab-btn[data-page="setting"]');
-  
+
   if (role === 'gudang') {
     if (tabTransaksi) tabTransaksi.style.display = 'none';
     if (tabInventory) tabInventory.style.display = '';
@@ -185,31 +221,47 @@ function applyRoleRestrictions() {
 }
 
 function clearAllDisplayedData() {
-  var cartTable = document.querySelector('#cartTable tbody');
-  if (cartTable) cartTable.innerHTML = '';
-  var reportTable = document.querySelector('#reportTable tbody');
-  if (reportTable) reportTable.innerHTML = '';
-  var productTable = document.querySelector('#productListTable tbody');
-  if (productTable) productTable.innerHTML = '';
-  var totalTransaksi = document.getElementById('totalTransaksi');
-  var totalPendapatan = document.getElementById('totalPendapatan');
-  if (totalTransaksi) totalTransaksi.textContent = '0';
-  if (totalPendapatan) totalPendapatan.textContent = 'Rp 0';
-  var productCount = document.getElementById('productCount');
-  if (productCount) productCount.textContent = '0';
-  if (typeof chartInstance !== 'undefined' && chartInstance) { chartInstance.destroy(); chartInstance = null; }
-  if (typeof topProductsChart !== 'undefined' && topProductsChart) { topProductsChart.destroy(); topProductsChart = null; }
-  var lowStockBanner = document.getElementById('lowStockBanner');
-  if (lowStockBanner) lowStockBanner.style.display = 'none';
-  var lowStockAlert = document.getElementById('lowStockAlert');
-  if (lowStockAlert) lowStockAlert.style.display = 'none';
-  ['scanInputTrans', 'custName', 'invSearch', 'searchProduct', 'prodBarcode', 'prodNama', 'prodKategori', 'prodKeterangan', 'prodHargaBeli', 'prodHargaJual', 'perubahanStok', 'bayar'].forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
-  var searchResults = document.getElementById('searchResults');
-  if (searchResults) { searchResults.innerHTML = ''; searchResults.style.display = 'none'; }
-  var productForm = document.getElementById('productForm');
-  if (productForm) productForm.style.display = 'none';
-  var fotoPreviewContainer = document.getElementById('fotoPreviewContainer');
-  if (fotoPreviewContainer) fotoPreviewContainer.style.display = 'none';
+  var el;
+  el = document.querySelector('#cartTable tbody');
+  if (el) el.innerHTML = '';
+  el = document.querySelector('#reportTable tbody');
+  if (el) el.innerHTML = '';
+  el = document.querySelector('#productListTable tbody');
+  if (el) el.innerHTML = '';
+  el = document.getElementById('totalTransaksi');
+  if (el) el.textContent = '0';
+  el = document.getElementById('totalPendapatan');
+  if (el) el.textContent = 'Rp 0';
+  el = document.getElementById('productCount');
+  if (el) el.textContent = '0';
+
+  if (typeof chartInstance !== 'undefined' && chartInstance) {
+    chartInstance.destroy();
+    chartInstance = null;
+  }
+  if (typeof topProductsChart !== 'undefined' && topProductsChart) {
+    topProductsChart.destroy();
+    topProductsChart = null;
+  }
+
+  el = document.getElementById('lowStockBanner');
+  if (el) el.style.display = 'none';
+  el = document.getElementById('lowStockAlert');
+  if (el) el.style.display = 'none';
+
+  var ids = ['scanInputTrans', 'custName', 'invSearch', 'searchProduct', 'prodBarcode', 'prodNama', 'prodKategori', 'prodKeterangan', 'prodHargaBeli', 'prodHargaJual', 'perubahanStok', 'bayar'];
+  ids.forEach(function(id) {
+    var input = document.getElementById(id);
+    if (input) input.value = '';
+  });
+
+  el = document.getElementById('searchResults');
+  if (el) { el.innerHTML = ''; el.style.display = 'none'; }
+  el = document.getElementById('productForm');
+  if (el) el.style.display = 'none';
+  el = document.getElementById('fotoPreviewContainer');
+  if (el) el.style.display = 'none';
+
   if (typeof invalidateSettingsCache === 'function') invalidateSettingsCache();
   if (typeof appSettings !== 'undefined') appSettings = {};
   if (typeof window.cachedSettings !== 'undefined') window.cachedSettings = null;
@@ -217,27 +269,31 @@ function clearAllDisplayedData() {
 
 // ===================== USER MANAGEMENT =====================
 async function tambahUser() {
-  if (!currentUser || currentUser.role!=='admin') return;
+  if (!currentUser || currentUser.role !== 'admin') return;
   var u = document.getElementById('newUsername').value.trim();
   var p = document.getElementById('newPassword').value;
   var r = document.getElementById('newRole').value;
-  if (!u||!p) return alert('Isi username dan password');
-  await supabaseClient.from('users').upsert({ username: u, password_hash: await hashPassword(p), role: r });
+  if (!u || !p) return alert('Isi username dan password');
+  await supabaseClient.from('users').upsert({
+    username: u,
+    password_hash: await hashPassword(p),
+    role: r
+  });
   tampilkanUserList();
   document.getElementById('newUsername').value = '';
   document.getElementById('newPassword').value = '';
 }
 
 async function hapusUser(username) {
-  if (!currentUser || currentUser.role!=='admin') return;
-  if (username==='admin') return alert('Admin tidak bisa dihapus');
+  if (!currentUser || currentUser.role !== 'admin') return;
+  if (username === 'admin') return alert('Admin tidak bisa dihapus');
   if (!confirm('Hapus user ' + username + '?')) return;
   await supabaseClient.from('users').delete().eq('username', username);
   tampilkanUserList();
 }
 
 function editUser(username) {
-  if (!currentUser || currentUser.role!=='admin') return;
+  if (!currentUser || currentUser.role !== 'admin') return;
   supabaseClient.from('users').select('*').eq('username', username).single().then(function(result) {
     var u = result.data;
     if (!u) return;
@@ -261,7 +317,7 @@ async function simpanEditUser() {
 }
 
 async function tampilkanUserList() {
-  if (!currentUser || currentUser.role!=='admin') {
+  if (!currentUser || currentUser.role !== 'admin') {
     document.getElementById('userListBody').innerHTML = '<tr><td colspan="3">Admin only</td></tr>';
     return;
   }
@@ -275,8 +331,12 @@ async function tampilkanUserList() {
   }
   users.forEach(function(u) {
     var row = tbody.insertRow();
-    var editBtn = '<button class="btn-sm" onclick="editUser(\'' + u.username + '\')">✏️</button>';
-    var deleteBtn = u.username !== 'admin' ? ' <button class="btn-sm btn-danger" onclick="hapusUser(\'' + u.username + '\')">🗑</button>' : '';
-    row.innerHTML = '<td>' + u.username + '</td><td>' + u.role + '</td><td>' + editBtn + deleteBtn + '</td>';
+    var html = '<td>' + u.username + '</td><td>' + u.role + '</td><td>';
+    html += '<button class="btn-sm" onclick="editUser(\'' + u.username + '\')">✏️</button>';
+    if (u.username !== 'admin') {
+      html += ' <button class="btn-sm btn-danger" onclick="hapusUser(\'' + u.username + '\')">🗑</button>';
+    }
+    html += '</td>';
+    row.innerHTML = html;
   });
 }
