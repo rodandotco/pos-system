@@ -48,16 +48,36 @@ async function setupTransaksi() {
   const searchInput = document.getElementById('searchProduct');
   if (searchInput) { searchInput.oninput = () => searchProductFn(searchInput.value); searchInput.onfocus = () => searchProductFn(searchInput.value); }
 
-  // Hide payment for staff & gudang
-  if (isStaff || isGudang) {
-    const ps = document.getElementById('pembayaranSummary'); if (ps) ps.style.display = 'none';
-    const bb = document.querySelector('button[onclick="bayarDanCetak()"]'); if (bb) bb.style.display = 'none';
-  }
+  // Show/hide buttons based on role
+  const btnSimpan = document.querySelector('button[onclick="simpanPesanan()"]');
+  const btnPesanan = document.querySelector('button[onclick="tampilkanPesananTersimpan()"]');
+  const btnBayar = document.querySelector('button[onclick="bayarDanCetak()"]');
+  const pembayaranSummary = document.getElementById('pembayaranSummary');
 
-  // Hide simpan pesanan for gudang
   if (isGudang) {
-    const sp = document.querySelector('button[onclick="simpanPesanan()"]'); if (sp) sp.style.display = 'none';
-    const pt = document.querySelector('button[onclick="tampilkanPesananTersimpan()"]'); if (pt) pt.style.display = 'none';
+    // Gudang: no transaction access
+    if (btnSimpan) btnSimpan.style.display = 'none';
+    if (btnPesanan) btnPesanan.style.display = 'none';
+    if (btnBayar) btnBayar.style.display = 'none';
+    if (pembayaranSummary) pembayaranSummary.style.display = 'none';
+  } else if (isStaff) {
+    // Staff: save & recall, no payment
+    if (btnSimpan) btnSimpan.style.display = '';
+    if (btnPesanan) btnPesanan.style.display = '';
+    if (btnBayar) btnBayar.style.display = 'none';
+    if (pembayaranSummary) pembayaranSummary.style.display = 'none';
+  } else if (isKasir) {
+    // Kasir: all transaction features
+    if (btnSimpan) btnSimpan.style.display = '';
+    if (btnPesanan) btnPesanan.style.display = '';
+    if (btnBayar) btnBayar.style.display = '';
+    if (pembayaranSummary) pembayaranSummary.style.display = '';
+  } else if (isAdmin) {
+    // Admin: everything
+    if (btnSimpan) btnSimpan.style.display = '';
+    if (btnPesanan) btnPesanan.style.display = '';
+    if (btnBayar) btnBayar.style.display = '';
+    if (pembayaranSummary) pembayaranSummary.style.display = '';
   }
 
   totalDiskonValue = 0; renderCart();
