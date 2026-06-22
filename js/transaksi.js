@@ -6,6 +6,7 @@ var isAdmin = false;
 var totalDiskonValue = 0;
 var bayarValue = 0;
 var cachedSettings = null;
+var currentPesananNo = null;
 
 async function setupTransaksi() {
   var role = currentUser ? currentUser.role : 'kasir';
@@ -399,10 +400,9 @@ async function bayarDanCetak() {
     }
 
     // Delete saved order only after successful payment
-    var pesananNo = document.getElementById('custName').getAttribute('data-pesanan');
-    if (pesananNo) {
-      await supabaseClient.from('saved_orders').delete().eq('no_pesanan', pesananNo);
-      document.getElementById('custName').removeAttribute('data-pesanan');
+    if (currentPesananNo) {
+      await supabaseClient.from('saved_orders').delete().eq('no_pesanan', currentPesananNo);
+      currentPesananNo = null;
     }
 
     cart = [];
@@ -468,6 +468,7 @@ async function simpanPesanan() {
   });
   if (result.error) { alert('Gagal menyimpan: ' + result.error.message); return; }
   cart = []; totalDiskonValue = 0; bayarValue = 0;
+  currentPesananNo = null;
   updateBayarDisplay(); renderCart();
   document.getElementById('custName').value = '';
   alert('Pesanan disimpan!\nNo: ' + no + '\nTotal: Rp' + gt.toLocaleString('id'));
@@ -522,8 +523,8 @@ async function muatPesanan(noPesanan) {
   });
   if (order.customer) {
     document.getElementById('custName').value = order.customer;
-    document.getElementById('custName').setAttribute('data-pesanan', noPesanan);
   }
+  currentPesananNo = noPesanan;
   renderCart();
   document.getElementById('pesananModal').style.display = 'none';
   alert('Pesanan ' + noPesanan + ' dimuat!\nTotal: Rp' + (order.total || 0).toLocaleString('id'));
