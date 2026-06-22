@@ -548,7 +548,7 @@ async function tampilkanPesananTersimpan() {
       var isAdminUser = currentUser && currentUser.role === 'admin';
       html += '<div style="border:1px solid #e0e0e0;border-radius:8px;padding:12px;margin-bottom:8px;">';
       html += '<strong>' + o.no_pesanan + '</strong><br>';
-      html += '<small>' + new Date(o.created_at).toLocaleString('id-ID') + ' | Staff: ' + (o.created_by || '-') + '</small><br>';
+      html += '<small>' + new Date(o.created_at).toLocaleString('id-ID') + ' | User: ' + (o.created_by || '-') + '</small><br>';
       html += '<small>Customer: ' + (o.customer || '-') + ' | Total: <b>Rp' + (o.total || 0).toLocaleString('id') + '</b></small>';
       if (o.total_diskon > 0) html += '<br><small style="color:#e53935;">Diskon: -Rp' + (o.total_diskon || 0).toLocaleString('id') + '</small>';
       html += '<div style="margin-top:4px;font-size:12px;color:#666;">' + itemsText + '</div>';

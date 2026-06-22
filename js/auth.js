@@ -45,6 +45,7 @@ async function login() {
 
   currentUser = user;
   saveSession();
+  updateActiveUserDisplay();
   clearAllDisplayedData();
 
   document.getElementById('loginOverlay').style.display = 'none';
@@ -122,6 +123,12 @@ function logout() {
   localStorage.removeItem('lastReportSent');
   localStorage.removeItem('lastReportSchedule');
 
+  // Clear active user display
+  var display = document.getElementById('activeUserDisplay');
+  if (display) display.textContent = '-';
+  var roleDisplay = document.getElementById('activeUserRole');
+  if (roleDisplay) roleDisplay.textContent = '-';
+
   var tabs = document.querySelectorAll('.tab-btn');
   tabs.forEach(function(b) { b.style.display = ''; });
   var pages = document.querySelectorAll('.page');
@@ -150,6 +157,7 @@ function checkSession() {
   if (saved) {
     try {
       currentUser = JSON.parse(saved);
+      updateActiveUserDisplay();
       clearAllDisplayedData();
       document.getElementById('loginOverlay').style.display = 'none';
       applyRoleRestrictions();
@@ -265,6 +273,22 @@ function clearAllDisplayedData() {
   if (typeof invalidateSettingsCache === 'function') invalidateSettingsCache();
   if (typeof appSettings !== 'undefined') appSettings = {};
   if (typeof window.cachedSettings !== 'undefined') window.cachedSettings = null;
+}
+
+function updateActiveUserDisplay() {
+  var display = document.getElementById('activeUserDisplay');
+  var roleDisplay = document.getElementById('activeUserRole');
+  if (display && currentUser) {
+    display.textContent = currentUser.username;
+  }
+  if (roleDisplay && currentUser) {
+    var roleName = currentUser.role;
+    if (roleName === 'admin') roleName = 'Admin';
+    else if (roleName === 'kasir') roleName = 'Kasir';
+    else if (roleName === 'staff') roleName = 'User';
+    else if (roleName === 'gudang') roleName = 'Gudang';
+    roleDisplay.textContent = roleName;
+  }
 }
 
 // ===================== USER MANAGEMENT =====================
