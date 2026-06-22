@@ -267,6 +267,44 @@ function editDiskonItem(index) {
   renderCart();
 }
 
+function bukaPopupDiskonTotal() {
+  if (!isAdmin) return;
+  if (appSettings.diskon_total_enabled === false) {
+    alert('Fitur diskon total dinonaktifkan oleh pengaturan.');
+    return;
+  }
+  var modal = document.createElement('div');
+  modal.id = 'popupDiskonModal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
+  var html = '<div style="background:#fff;padding:20px;border-radius:8px;width:300px;text-align:center;">';
+  html += '<h3>Diskon Tambahan</h3>';
+  html += '<input type="text" id="inputDiskonPopup" placeholder="Nominal atau persen (contoh: 5000 atau 10%)" style="width:100%;padding:8px;box-sizing:border-box;">';
+  html += '<div style="margin-top:10px;"><button id="btnSimpanDiskon" class="btn-sm">Simpan</button><button id="btnBatalDiskon" class="btn-sm btn-danger">Batal</button></div></div>';
+  modal.innerHTML = html;
+  document.body.appendChild(modal);
+
+  document.getElementById('btnSimpanDiskon').onclick = function() {
+    var input = document.getElementById('inputDiskonPopup').value.trim();
+    var nilai = 0;
+    if (input.indexOf('%') > -1) {
+      var persen = parseFloat(input);
+      if (isNaN(persen)) { alert('Persentase tidak valid'); return; }
+      var s1 = 0;
+      cart.forEach(function(item) { s1 += (item.harga * item.qty) - (item.diskon || 0); });
+      nilai = Math.round((persen / 100) * s1);
+    } else {
+      nilai = parseInt(input) || 0;
+    }
+    if (nilai < 0) nilai = 0;
+    totalDiskonValue = nilai;
+    document.body.removeChild(modal);
+    renderCart();
+  };
+
+  document.getElementById('btnBatalDiskon').onclick = function() {
+    document.body.removeChild(modal);
+  };
+}
 function renderCart() {
   var tbody = document.querySelector('#cartTable tbody');
   tbody.innerHTML = '';
