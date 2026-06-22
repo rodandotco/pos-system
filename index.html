@@ -22,6 +22,10 @@
     <button class="logout-btn" onclick="logout()">Logout</button>
   </div>
 
+  <div style="background:#e0f2f1; padding:6px 16px; font-size:12px; color:#00695c; display:flex; justify-content:space-between; align-items:center;">
+    <span>👤 User aktif: <strong id="activeUserDisplay">-</strong> <small style="color:#666;">(<span id="activeUserRole">-</span>)</small></span>
+  </div>
+
   <!-- ================== TRANSAKSI ================== -->
   <div id="page-transaksi" class="page active">
     <div id="lowStockBanner" style="display:none; background:#fff3e0; border:1px solid #ff9800; border-radius:8px; padding:10px; margin-bottom:12px; font-size:13px;">
@@ -214,13 +218,7 @@
     <div id="manajemenUserSection">
       <h3>Manajemen User</h3>
       <table class="user-table"><thead><tr><th>Username</th><th>Role</th><th>Aksi</th></tr></thead><tbody id="userListBody"></tbody></table>
-      <div style="margin-top:8px;"><input type="text" id="newUsername" placeholder="Username"><input type="password" id="newPassword" placeholder="Password"> 
-<select id="newRole">
-  <option value="kasir">Kasir</option>
-  <option value="staff">Staff</option>
-  <option value="gudang">Gudang</option>
-  <option value="admin">Admin</option>
-</select><button class="btn" id="btnTambahUser" onclick="tambahUser()">Tambah</button></div>
+      <div style="margin-top:8px;"><input type="text" id="newUsername" placeholder="Username"><input type="password" id="newPassword" placeholder="Password"><select id="newRole"><option value="kasir">Kasir</option><option value="staff">Staff</option><option value="gudang">Gudang</option><option value="admin">Admin</option></select><button class="btn" id="btnTambahUser" onclick="tambahUser()">Tambah</button></div>
       <hr>
     </div>
 
@@ -253,12 +251,7 @@
     <input type="hidden" id="editUsername">
     <input type="text" id="editUsernameDisplay" disabled><br><br>
     <input type="password" id="editPassword" placeholder="Password baru"><br><br>
-    <select id="editRole">
-  <option value="kasir">Kasir</option>
-  <option value="staff">Staff</option>
-  <option value="gudang">Gudang</option>
-  <option value="admin">Admin</option>
-</select><br><br>
+    <select id="editRole"><option value="kasir">Kasir</option><option value="staff">Staff</option><option value="gudang">Gudang</option><option value="admin">Admin</option></select><br><br>
     <button class="btn" onclick="simpanEditUser()">Simpan</button> <button class="btn btn-danger" onclick="document.getElementById('editUserModal').style.display='none'">Batal</button>
   </div>
 </div>
