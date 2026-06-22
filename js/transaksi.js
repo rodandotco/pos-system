@@ -452,8 +452,12 @@ async function bayarDanCetak() {
     alert('Berhasil!\nNo: ' + no + '\nTotal: Rp' + grandTotal.toLocaleString('id') + '\nKembali: Rp' + kembali.toLocaleString('id'));
 
     if (currentPesananNo) {
-      supabaseClient.from('saved_orders').delete().eq('no_pesanan', currentPesananNo).then(function() {
-        console.log('Order deleted: ' + currentPesananNo);
+      supabaseClient.from('saved_orders').update({
+        status: 'paid',
+        closed_by: currentUser.username,
+        closed_at: now.toISOString()
+      }).eq('no_pesanan', currentPesananNo).then(function() {
+        console.log('Order closed: ' + currentPesananNo);
       });
       currentPesananNo = null;
     }
@@ -504,6 +508,7 @@ function lihatDetailProduk(barcode) {
   })();
 }
 
+// ========== SIMPAN / UPDATE PESANAN ==========
 async function simpanPesanan() {
   if (!cart.length) { alert('Keranjang kosong'); return; }
   var cust = document.getElementById('custName').value.trim();
@@ -515,23 +520,37 @@ async function simpanPesanan() {
   var s1 = 0;
   cart.forEach(function(item) { s1 += (item.harga * item.qty) - (item.diskon || 0); });
   var gt = s1 - totalDiskonValue;
-  var result = await supabaseClient.from('saved_orders').insert({
-    no_pesanan: no, 
+  
+  var updateData = {
     customer: cust, 
     items: items, 
     total: gt, 
     total_diskon: totalDiskonValue,
-    status: 'pending', 
-    created_by: currentUser.username
-  });
-  if (result.error) { alert('Gagal menyimpan: ' + result.error.message); return; }
+    modified_by: currentUser.username,
+    modified_at: now.toISOString()
+  };
+  
+  if (currentPesananNo) {
+    var result = await supabaseClient.from('saved_orders').update(updateData).eq('no_pesanan', currentPesananNo);
+    if (result.error) { alert('Gagal update: ' + result.error.message); return; }
+    alert('Pesanan ' + currentPesananNo + ' diupdate!\nTotal: Rp' + gt.toLocaleString('id'));
+    currentPesananNo = null;
+  } else {
+    updateData.no_pesanan = no;
+    updateData.status = 'pending';
+    updateData.created_by = currentUser.username;
+    var result = await supabaseClient.from('saved_orders').insert(updateData);
+    if (result.error) { alert('Gagal menyimpan: ' + result.error.message); return; }
+    alert('Pesanan disimpan!\nNo: ' + no + '\nTotal: Rp' + gt.toLocaleString('id'));
+  }
+  
   cart = []; totalDiskonValue = 0; bayarValue = 0;
   currentPesananNo = null;
   updateBayarDisplay(); renderCart();
   document.getElementById('custName').value = '';
-  alert('Pesanan disimpan!\nNo: ' + no + '\nTotal: Rp' + gt.toLocaleString('id'));
 }
 
+// ========== TAMPILKAN PESANAN TERSIMPAN ==========
 async function tampilkanPesananTersimpan() {
   var result = await supabaseClient.from('saved_orders').select('*').eq('status', 'pending').order('created_at', { ascending: false });
   if (result.error) { alert('Gagal memuat: ' + result.error.message); return; }
@@ -547,10 +566,13 @@ async function tampilkanPesananTersimpan() {
       itemsText = itemsText.replace(/, $/, '');
       var isAdminUser = currentUser && currentUser.role === 'admin';
       html += '<div style="border:1px solid #e0e0e0;border-radius:8px;padding:12px;margin-bottom:8px;">';
-      html += '<strong>' + o.no_pesanan + '</strong><br>';
-      html += '<small>' + new Date(o.created_at).toLocaleString('id-ID') + ' | User: ' + (o.created_by || '-') + '</small><br>';
-      html += '<small>Customer: ' + (o.customer || '-') + ' | Total: <b>Rp' + (o.total || 0).toLocaleString('id') + '</b></small>';
-      if (o.total_diskon > 0) html += '<br><small style="color:#e53935;">Diskon: -Rp' + (o.total_diskon || 0).toLocaleString('id') + '</small>';
+      html += '<strong>' + o.no_pesanan + '</strong>';
+      html += ' | Total: <b>Rp' + (o.total || 0).toLocaleString('id') + '</b>';
+      if (o.total_diskon > 0) html += ' <small style="color:#e53935;">(Diskon: -Rp' + (o.total_diskon || 0).toLocaleString('id') + ')</small>';
+      html += '<br><small style="color:#00695c;">📝 Dibuat: ' + new Date(o.created_at).toLocaleString('id-ID') + ' oleh ' + (o.created_by || '-') + '</small>';
+      if (o.modified_by) {
+        html += '<br><small style="color:#e65100;">✏️ Diubah: ' + new Date(o.modified_at).toLocaleString('id-ID') + ' oleh ' + o.modified_by + '</small>';
+      }
       html += '<div style="margin-top:4px;font-size:12px;color:#666;">' + itemsText + '</div>';
       html += '<div style="margin-top:8px;">';
       html += '<button class="btn-sm" onclick="muatPesanan(\'' + o.no_pesanan + '\')">📥 Muat</button>';
@@ -562,6 +584,7 @@ async function tampilkanPesananTersimpan() {
   document.getElementById('pesananModal').style.display = 'flex';
 }
 
+// ========== MUAT PESANAN ==========
 async function muatPesanan(noPesanan) {
   var result = await supabaseClient.from('saved_orders').select('*').eq('no_pesanan', noPesanan).single();
   if (result.error || !result.data) { alert('Pesanan tidak ditemukan'); return; }
@@ -587,9 +610,19 @@ async function muatPesanan(noPesanan) {
   currentPesananNo = noPesanan;
   renderCart();
   document.getElementById('pesananModal').style.display = 'none';
-  alert('Pesanan ' + noPesanan + ' dimuat!\nTotal: Rp' + (order.total || 0).toLocaleString('id'));
+  
+  var info = 'Pesanan ' + noPesanan + ' dimuat!\nTotal: Rp' + (order.total || 0).toLocaleString('id');
+  info += '\n\n📝 Dibuat: ' + new Date(order.created_at).toLocaleString('id-ID') + ' oleh ' + (order.created_by || '-');
+  if (order.modified_by) {
+    info += '\n✏️ Diubah: ' + new Date(order.modified_at).toLocaleString('id-ID') + ' oleh ' + order.modified_by;
+  }
+  if (order.closed_by) {
+    info += '\n🔒 Ditutup: ' + new Date(order.closed_at).toLocaleString('id-ID') + ' oleh ' + order.closed_by;
+  }
+  alert(info);
 }
 
+// ========== HAPUS PESANAN ==========
 async function hapusPesanan(noPesanan) {
   if (!confirm('Hapus pesanan ' + noPesanan + '?')) return;
   await supabaseClient.from('saved_orders').delete().eq('no_pesanan', noPesanan);
