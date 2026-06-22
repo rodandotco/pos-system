@@ -22,8 +22,6 @@ async function muatProfilToko() {
     } else {
       document.getElementById('logoPreviewContainer').style.display = 'none';
     }
-    
-    // Load report settings
     document.getElementById('reportEmail').value = s.report_email || '';
     document.getElementById('reportFrequency').value = s.report_frequency || 'none';
     document.getElementById('dailyTime').value = s.report_daily_time || '21';
@@ -46,8 +44,6 @@ async function muatProfilToko() {
     document.getElementById('labelCols').value = 1;
     toggleLabelSettings();
     document.getElementById('logoPreviewContainer').style.display = 'none';
-    
-    // Reset report settings
     document.getElementById('reportEmail').value = '';
     document.getElementById('reportFrequency').value = 'none';
     document.getElementById('dailyTime').value = '21';
@@ -64,8 +60,6 @@ function toggleLabelSettings() {
   document.getElementById('labelSettings').style.display = jenis === 'label' ? 'block' : 'none';
 }
 
-// ===================== MANAJEMEN LAPORAN =====================
-
 function toggleReportOptions() {
   const freq = document.getElementById('reportFrequency').value;
   document.getElementById('dailyOptions').style.display = freq === 'daily' ? 'block' : 'none';
@@ -81,63 +75,35 @@ async function simpanPengaturanLaporan() {
   const weeklyTime = document.getElementById('weeklyTime').value;
   const monthlyDate = document.getElementById('monthlyDate').value;
   const monthlyTime = document.getElementById('monthlyTime').value;
-  
-  if (frequency !== 'none' && !email) {
-    alert('Silakan isi email tujuan terlebih dahulu.');
-    return;
-  }
-  
+  if (frequency !== 'none' && !email) { alert('Silakan isi email tujuan terlebih dahulu.'); return; }
   await updateSettings({
-    report_email: email,
-    report_frequency: frequency,
-    report_daily_time: dailyTime,
-    report_weekly_day: weeklyDay,
-    report_weekly_time: weeklyTime,
-    report_monthly_date: monthlyDate,
+    report_email: email, report_frequency: frequency,
+    report_daily_time: dailyTime, report_weekly_day: weeklyDay,
+    report_weekly_time: weeklyTime, report_monthly_date: monthlyDate,
     report_monthly_time: monthlyTime
   });
-  
   alert('✅ Pengaturan laporan disimpan!');
-  
   localStorage.removeItem('lastReportSent');
   localStorage.removeItem('lastReportSchedule');
 }
 
 async function tesKirimLaporan() {
   const email = document.getElementById('reportEmail').value.trim();
-  
-  if (!email) {
-    alert('Isi email tujuan terlebih dahulu.');
-    return;
-  }
-  
+  if (!email) { alert('Isi email tujuan terlebih dahulu.'); return; }
   await simpanPengaturanLaporan();
-  
   const settings = await getSettings();
   const today = new Date();
-  
   try {
-    await sendEmailResend(
-      email,
-      '📊 TES - Laporan POS',
-      `✅ Ini adalah email percobaan dari POS System.\n\nToko: ${settings.nama || 'POS'}\nTanggal: ${today.toLocaleDateString('id-ID')}\n\nJika Anda menerima email ini, pengaturan laporan otomatis berhasil!`
-    );
+    await sendEmailResend(email, '📊 TES - Laporan POS', '✅ Ini adalah email percobaan dari POS System.\n\nToko: ' + (settings.nama || 'POS') + '\nTanggal: ' + today.toLocaleDateString('id-ID') + '\n\nJika Anda menerima email ini, pengaturan laporan otomatis berhasil!');
     alert('✅ Email tes berhasil dikirim ke ' + email + '\nSilakan cek inbox (dan folder Spam).');
-  } catch (error) {
-    alert('❌ Gagal mengirim email: ' + error.message);
-  }
+  } catch (error) { alert('❌ Gagal mengirim email: ' + error.message); }
 }
-
-// ===================== PROFIL & LOGO =====================
 
 function previewLogoToko() {
   const f = document.getElementById('tokoLogo').files[0];
   if (f) {
     const reader = new FileReader();
-    reader.onload = e => {
-      document.getElementById('logoPreview').src = e.target.result;
-      document.getElementById('logoPreviewContainer').style.display = 'block';
-    };
+    reader.onload = e => { document.getElementById('logoPreview').src = e.target.result; document.getElementById('logoPreviewContainer').style.display = 'block'; };
     reader.readAsDataURL(f);
     window.logoTokoDihapus = false;
   }
@@ -163,74 +129,62 @@ async function simpanProfil() {
   const lh = parseFloat(document.getElementById('labelHeight').value) || 30;
   const lg = parseFloat(document.getElementById('labelGap').value) || 3;
   const lc = parseInt(document.getElementById('labelCols').value) || 1;
-
   let logo = null;
   if (!window.logoTokoDihapus) {
     const fi = document.getElementById('tokoLogo');
-    if (fi.files[0]) {
-      logo = await toBase64(fi.files[0]);
-    } else {
-      const s = await getSettings();
-      logo = s.logo || null;
-    }
+    if (fi.files[0]) { logo = await toBase64(fi.files[0]); }
+    else { const s = await getSettings(); logo = s.logo || null; }
   }
-
-  await updateSettings({
-    nama, alamat, telp, logo, footer,
-    kertas_lebar: kertasLebar,
-    jenis_kertas: jenisKertas,
-    printer,
-    label_width: lw, label_height: lh, label_gap: lg, label_cols: lc
-  });
-
+  await updateSettings({ nama, alamat, telp, logo, footer, kertas_lebar: kertasLebar, jenis_kertas: jenisKertas, printer, label_width: lw, label_height: lh, label_gap: lg, label_cols: lc });
   alert('Profil disimpan!');
   window.logoTokoDihapus = false;
   document.getElementById('tokoLogo').value = '';
-  if (typeof invalidateSettingsCache === 'function') {
-    invalidateSettingsCache();
-  }
+  if (typeof invalidateSettingsCache === 'function') invalidateSettingsCache();
   await muatProfilToko();
 }
 
 async function simpanPengaturanCetak() {
   const s = await getSettings();
-  await updateSettings({
-    ...s,
-    kertas_lebar: document.getElementById('kertasLebar').value,
-    jenis_kertas: document.getElementById('jenisKertas').value,
-    printer: document.getElementById('printerPilihan').value,
-    label_width: parseFloat(document.getElementById('labelWidth').value) || 50,
-    label_height: parseFloat(document.getElementById('labelHeight').value) || 30,
-    label_gap: parseFloat(document.getElementById('labelGap').value) || 3,
-    label_cols: parseInt(document.getElementById('labelCols').value) || 1
-  });
+  await updateSettings({ ...s, kertas_lebar: document.getElementById('kertasLebar').value, jenis_kertas: document.getElementById('jenisKertas').value, printer: document.getElementById('printerPilihan').value, label_width: parseFloat(document.getElementById('labelWidth').value) || 50, label_height: parseFloat(document.getElementById('labelHeight').value) || 30, label_gap: parseFloat(document.getElementById('labelGap').value) || 3, label_cols: parseInt(document.getElementById('labelCols').value) || 1 });
   alert('Pengaturan cetak disimpan!');
-  if (typeof invalidateSettingsCache === 'function') {
-    invalidateSettingsCache();
-  }
+  if (typeof invalidateSettingsCache === 'function') invalidateSettingsCache();
 }
 
 function aturHakAkses() {
-  const isAdmin = currentUser && currentUser.role === 'admin';
+  const role = currentUser ? currentUser.role : 'kasir';
+  const isAdmin = role === 'admin';
+  const isKasir = role === 'kasir';
+  const isStaff = role === 'staff';
+  const isGudang = role === 'gudang';
+
   document.getElementById('manajemenProfilSection').style.display = isAdmin ? 'block' : 'none';
   document.getElementById('manajemenUserSection').style.display = isAdmin ? 'block' : 'none';
   document.getElementById('manajemenDataSection').style.display = isAdmin ? 'block' : 'none';
-  document.getElementById('thAksi').style.display = isAdmin ? '' : 'none';
+  document.getElementById('thAksi').style.display = (isAdmin || isGudang) ? '' : 'none';
+
+  // Bayar button - Admin & Kasir only
+  const bayarBtn = document.querySelector('button[onclick="bayarDanCetak()"]');
+  if (bayarBtn) bayarBtn.style.display = (isAdmin || isKasir) ? '' : 'none';
+
+  // Pembayaran section
+  const pembayaranSummary = document.getElementById('pembayaranSummary');
+  if (pembayaranSummary) pembayaranSummary.style.display = (isAdmin || isKasir) ? '' : 'none';
+
+  // Diskon buttons - Admin only
+  setTimeout(() => {
+    const diskonBtns = document.querySelectorAll('button[onclick^="editDiskonItem"], button[onclick^="bukaPopupDiskonTotal"]');
+    diskonBtns.forEach(b => { if (!isAdmin) b.style.display = 'none'; });
+  }, 500);
+
   if (activeTab === 'inventory') refreshProductList();
+  if (activeTab === 'laporan') muatLaporan();
 }
 
 async function pilihFolder() {
-  try {
-    const d = await window.showDirectoryPicker();
-    workingDirHandle = d;
-    document.getElementById('folderPath').textContent = d.name;
-    alert('Folder dipilih!');
-  } catch (e) {
-    if (e.name !== 'AbortError') alert('Gagal memilih folder');
-  }
+  try { const d = await window.showDirectoryPicker(); workingDirHandle = d; document.getElementById('folderPath').textContent = d.name; alert('Folder dipilih!'); }
+  catch (e) { if (e.name !== 'AbortError') alert('Gagal memilih folder'); }
 }
 
-// ========== BACKUP DATA ==========
 async function backupData() {
   try {
     const zip = new JSZip();
@@ -238,78 +192,30 @@ async function backupData() {
     const { data: products } = await supabaseClient.from('products').select('*');
     const { data: transactions } = await supabaseClient.from('transactions').select('*');
     const { data: settings } = await supabaseClient.from('settings').select('*');
-
     zip.file('users.json', JSON.stringify(users || []));
     zip.file('products.json', JSON.stringify(products || []));
     zip.file('transactions.json', JSON.stringify(transactions || []));
     zip.file('settings.json', JSON.stringify(settings || []));
-
     const blob = await zip.generateAsync({ type: 'blob' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `backup_${new Date().toISOString().slice(0, 10)}.zip`;
-    a.click();
-  } catch (e) {
-    alert('Gagal backup: ' + e.message);
-  }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'backup_' + new Date().toISOString().slice(0, 10) + '.zip'; a.click();
+  } catch (e) { alert('Gagal backup: ' + e.message); }
 }
 
-// ========== RESTORE DATA ==========
 async function restoreData() {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.zip';
+  const input = document.createElement('input'); input.type = 'file'; input.accept = '.zip';
   input.onchange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const file = e.target.files[0]; if (!file) return;
     try {
       const zip = await JSZip.loadAsync(file);
       let restored = { users: 0, products: 0, transactions: 0, settings: 0 };
-
-      if (zip.files['users.json']) {
-        const text = await zip.files['users.json'].async('text');
-        const users = JSON.parse(text);
-        if (users.length > 0) {
-          const { error } = await supabaseClient.from('users').upsert(users, { onConflict: 'username' });
-          if (!error) restored.users = users.length;
-        }
-      }
-
-      if (zip.files['products.json']) {
-        const text = await zip.files['products.json'].async('text');
-        const products = JSON.parse(text);
-        if (products.length > 0) {
-          const { error } = await supabaseClient.from('products').upsert(products, { onConflict: 'barcode' });
-          if (!error) restored.products = products.length;
-        }
-      }
-
-      if (zip.files['transactions.json']) {
-        const text = await zip.files['transactions.json'].async('text');
-        const transactions = JSON.parse(text);
-        if (transactions.length > 0) {
-          const { error } = await supabaseClient.from('transactions').upsert(transactions, { onConflict: 'no_invoice' });
-          if (!error) restored.transactions = transactions.length;
-        }
-      }
-
-      if (zip.files['settings.json']) {
-        const text = await zip.files['settings.json'].async('text');
-        const settings = JSON.parse(text);
-        if (settings.length > 0) {
-          const { error } = await supabaseClient.from('settings').upsert(settings, { onConflict: 'id' });
-          if (!error) restored.settings = settings.length;
-        }
-      }
-
-      alert(`Restore berhasil!\nUsers: ${restored.users}\nProducts: ${restored.products}\nTransactions: ${restored.transactions}\nSettings: ${restored.settings}`);
-      if (typeof invalidateSettingsCache === 'function') {
-        invalidateSettingsCache();
-      }
+      if (zip.files['users.json']) { const text = await zip.files['users.json'].async('text'); const users = JSON.parse(text); if (users.length > 0) { const { error } = await supabaseClient.from('users').upsert(users, { onConflict: 'username' }); if (!error) restored.users = users.length; } }
+      if (zip.files['products.json']) { const text = await zip.files['products.json'].async('text'); const products = JSON.parse(text); if (products.length > 0) { const { error } = await supabaseClient.from('products').upsert(products, { onConflict: 'barcode' }); if (!error) restored.products = products.length; } }
+      if (zip.files['transactions.json']) { const text = await zip.files['transactions.json'].async('text'); const transactions = JSON.parse(text); if (transactions.length > 0) { const { error } = await supabaseClient.from('transactions').upsert(transactions, { onConflict: 'no_invoice' }); if (!error) restored.transactions = transactions.length; } }
+      if (zip.files['settings.json']) { const text = await zip.files['settings.json'].async('text'); const settings = JSON.parse(text); if (settings.length > 0) { const { error } = await supabaseClient.from('settings').upsert(settings, { onConflict: 'id' }); if (!error) restored.settings = settings.length; } }
+      alert('Restore berhasil!\nUsers: ' + restored.users + '\nProducts: ' + restored.products + '\nTransactions: ' + restored.transactions + '\nSettings: ' + restored.settings);
+      if (typeof invalidateSettingsCache === 'function') invalidateSettingsCache();
       location.reload();
-    } catch (err) {
-      alert('Gagal restore: ' + err.message);
-    }
+    } catch (err) { alert('Gagal restore: ' + err.message); }
   };
   input.click();
 }
