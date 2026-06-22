@@ -337,8 +337,11 @@ function renderCart() {
   if (!diskonContainer) return;
   if (totalDiskonValue > subtotalItemNetto) totalDiskonValue = subtotalItemNetto;
   var total = subtotalItemNetto - totalDiskonValue;
-  if (isAdmin) {
-    diskonContainer.innerHTML = '<div style="text-align:right;font-size:14px;"><div><strong>SUBTOTAL: Rp<span id="subtotal1Display">' + subtotalItemNetto.toLocaleString('id') + '</span></strong></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;"><button class="btn-sm" style="background:#ff9800;color:white;border:none;font-weight:bold;" onclick="bukaPopupDiskonTotal()">💰 Diskon Lagi</button>' + (totalDiskonValue > 0 ? '<span style="color:#e53935;font-weight:bold;">-Rp' + totalDiskonValue.toLocaleString('id') + '</span>' : '<span></span>') + '</div><div style="margin-top:6px;font-size:16px;font-weight:bold;">TOTAL: Rp<span id="totalCart">' + total.toLocaleString('id') + '</span></div></div>';
+  
+  if (totalDiskonValue > 0) {
+    diskonContainer.innerHTML = '<div style="text-align:right;font-size:14px;"><div><strong>SUBTOTAL: Rp<span id="subtotal1Display">' + subtotalItemNetto.toLocaleString('id') + '</span></strong></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">' + (isAdmin ? '<button class="btn-sm" style="background:#ff9800;color:white;border:none;font-weight:bold;" onclick="bukaPopupDiskonTotal()">💰 Diskon Lagi</button>' : '<span></span>') + '<span style="color:#e53935;font-weight:bold;">Diskon: -Rp' + totalDiskonValue.toLocaleString('id') + '</span></div><div style="margin-top:6px;font-size:16px;font-weight:bold;">TOTAL: Rp<span id="totalCart">' + total.toLocaleString('id') + '</span></div></div>';
+  } else if (isAdmin) {
+    diskonContainer.innerHTML = '<div style="text-align:right;font-size:14px;"><div><strong>SUBTOTAL: Rp<span id="subtotal1Display">' + subtotalItemNetto.toLocaleString('id') + '</span></strong></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;"><button class="btn-sm" style="background:#ff9800;color:white;border:none;font-weight:bold;" onclick="bukaPopupDiskonTotal()">💰 Diskon Lagi</button><span></span></div><div style="margin-top:6px;font-size:16px;font-weight:bold;">TOTAL: Rp<span id="totalCart">' + total.toLocaleString('id') + '</span></div></div>';
   } else {
     diskonContainer.innerHTML = '<div style="text-align:right;font-size:16px;font-weight:bold;">TOTAL: Rp<span id="totalCart">' + subtotalItemNetto.toLocaleString('id') + '</span></div>';
   }
@@ -547,6 +550,7 @@ async function tampilkanPesananTersimpan() {
       html += '<strong>' + o.no_pesanan + '</strong><br>';
       html += '<small>' + new Date(o.created_at).toLocaleString('id-ID') + ' | Staff: ' + (o.created_by || '-') + '</small><br>';
       html += '<small>Customer: ' + (o.customer || '-') + ' | Total: <b>Rp' + (o.total || 0).toLocaleString('id') + '</b></small>';
+      if (o.total_diskon > 0) html += '<br><small style="color:#e53935;">Diskon: -Rp' + (o.total_diskon || 0).toLocaleString('id') + '</small>';
       html += '<div style="margin-top:4px;font-size:12px;color:#666;">' + itemsText + '</div>';
       html += '<div style="margin-top:8px;">';
       html += '<button class="btn-sm" onclick="muatPesanan(\'' + o.no_pesanan + '\')">📥 Muat</button>';
