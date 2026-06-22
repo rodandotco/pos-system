@@ -305,6 +305,7 @@ function bukaPopupDiskonTotal() {
     document.body.removeChild(modal);
   };
 }
+
 function renderCart() {
   var tbody = document.querySelector('#cartTable tbody');
   tbody.innerHTML = '';
@@ -447,7 +448,6 @@ async function bayarDanCetak() {
 
     alert('Berhasil!\nNo: ' + no + '\nTotal: Rp' + grandTotal.toLocaleString('id') + '\nKembali: Rp' + kembali.toLocaleString('id'));
 
-    // Delete saved order after successful payment
     if (currentPesananNo) {
       supabaseClient.from('saved_orders').delete().eq('no_pesanan', currentPesananNo).then(function() {
         console.log('Order deleted: ' + currentPesananNo);
@@ -513,7 +513,13 @@ async function simpanPesanan() {
   cart.forEach(function(item) { s1 += (item.harga * item.qty) - (item.diskon || 0); });
   var gt = s1 - totalDiskonValue;
   var result = await supabaseClient.from('saved_orders').insert({
-    no_pesanan: no, customer: cust, items: items, total: gt, status: 'pending', created_by: currentUser.username
+    no_pesanan: no, 
+    customer: cust, 
+    items: items, 
+    total: gt, 
+    total_diskon: totalDiskonValue,
+    status: 'pending', 
+    created_by: currentUser.username
   });
   if (result.error) { alert('Gagal menyimpan: ' + result.error.message); return; }
   cart = []; totalDiskonValue = 0; bayarValue = 0;
@@ -562,7 +568,8 @@ async function muatPesanan(noPesanan) {
     if (!p) { alert('Produk "' + item.nama + '" sudah tidak ada.'); return; }
     if (p.stok < item.qty) { alert('Stok "' + item.nama + '" tidak cukup!'); return; }
   }
-  cart = []; totalDiskonValue = 0;
+  cart = []; 
+  totalDiskonValue = order.total_diskon || 0;
   order.items.forEach(function(item) {
     cart.push({
       barcode: item.barcode, nama: item.nama, harga: item.harga,
