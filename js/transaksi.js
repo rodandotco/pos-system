@@ -241,7 +241,7 @@ async function tambahProdukDariScan(barcode) {
 function tambahProdukKeCart(barcode) { tambahProdukDariScan(barcode); }
 
 function calculateGrosirPrice(product, qty) {
-  var hn = product.harga_jual || product.hargaAsli || 0;
+  var hn = product.hargaAsli || product.harga_jual || 0;
   var dp = product.diskon_persen || 0;
   var mq = product.diskon_min_qty || 0;
   if (dp > 0 && mq > 0 && qty >= mq) {
@@ -311,20 +311,28 @@ function changeQty(i, d) {
   if (q < 1) q = 1;
   if (q > cart[i].stok) { alert('Stok tidak cukup'); q = cart[i].stok; }
   cart[i].qty = q;
-  cart[i].harga = calculateGrosirPrice(cart[i], q);
-  cart[i].isGrosir = cart[i].harga < cart[i].hargaAsli;
-  cart[i].diskon = 0;
-  renderCart();
+  getProductByBarcode(cart[i].barcode).then(function(product) {
+    if (product) {
+      cart[i].harga = calculateGrosirPrice(product, q);
+      cart[i].isGrosir = cart[i].harga < cart[i].hargaAsli;
+      cart[i].diskon = 0;
+    }
+    renderCart();
+  });
 }
 
 function updateQty(i, q) {
   q = parseInt(q) || 1;
   if (q > cart[i].stok) { alert('Stok tidak cukup'); q = cart[i].stok; }
   cart[i].qty = q;
-  cart[i].harga = calculateGrosirPrice(cart[i], q);
-  cart[i].isGrosir = cart[i].harga < cart[i].hargaAsli;
-  cart[i].diskon = 0;
-  renderCart();
+  getProductByBarcode(cart[i].barcode).then(function(product) {
+    if (product) {
+      cart[i].harga = calculateGrosirPrice(product, q);
+      cart[i].isGrosir = cart[i].harga < cart[i].hargaAsli;
+      cart[i].diskon = 0;
+    }
+    renderCart();
+  });
 }
 
 function hapusCartItem(i) { cart.splice(i, 1); renderCart(); }
@@ -399,9 +407,13 @@ async function bayarDanCetak() {
       window.open(URL.createObjectURL(pdfBlob), '_blank');
     }
 
-    // Delete saved order only after successful payment
+    alert('Berhasil!\nNo: ' + no + '\nTotal: Rp' + grandTotal.toLocaleString('id') + '\nKembali: Rp' + kembali.toLocaleString('id'));
+
+    // Delete saved order after successful payment
     if (currentPesananNo) {
-      await supabaseClient.from('saved_orders').delete().eq('no_pesanan', currentPesananNo);
+      supabaseClient.from('saved_orders').delete().eq('no_pesanan', currentPesananNo).then(function() {
+        console.log('Order deleted: ' + currentPesananNo);
+      });
       currentPesananNo = null;
     }
 
@@ -411,7 +423,6 @@ async function bayarDanCetak() {
     updateBayarDisplay();
     renderCart();
     document.getElementById('custName').value = '';
-    alert('Berhasil!\nNo: ' + no + '\nTotal: Rp' + grandTotal.toLocaleString('id') + '\nKembali: Rp' + kembali.toLocaleString('id'));
   } catch (e) {
     alert('Gagal: ' + e.message);
   }
