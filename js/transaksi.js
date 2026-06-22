@@ -66,7 +66,6 @@ async function setupTransaksi() {
     searchInput.onfocus = function() { searchProductFn(searchInput.value); };
   }
 
-  // Show/hide buttons based on role
   var btnSimpan = document.querySelector('button[onclick="simpanPesanan()"]');
   var btnPesanan = document.querySelector('button[onclick="tampilkanPesananTersimpan()"]');
   var btnBayar = document.querySelector('button[onclick="bayarDanCetak()"]');
@@ -398,6 +397,14 @@ async function bayarDanCetak() {
     } else {
       window.open(URL.createObjectURL(pdfBlob), '_blank');
     }
+
+    // Delete saved order only after successful payment
+    var pesananNo = document.getElementById('custName').getAttribute('data-pesanan');
+    if (pesananNo) {
+      await supabaseClient.from('saved_orders').delete().eq('no_pesanan', pesananNo);
+      document.getElementById('custName').removeAttribute('data-pesanan');
+    }
+
     cart = [];
     totalDiskonValue = 0;
     bayarValue = 0;
@@ -513,10 +520,12 @@ async function muatPesanan(noPesanan) {
       diskon: item.diskon || 0, isGrosir: item.isGrosir || false
     });
   });
-  if (order.customer) document.getElementById('custName').value = order.customer;
+  if (order.customer) {
+    document.getElementById('custName').value = order.customer;
+    document.getElementById('custName').setAttribute('data-pesanan', noPesanan);
+  }
   renderCart();
   document.getElementById('pesananModal').style.display = 'none';
-  await supabaseClient.from('saved_orders').delete().eq('no_pesanan', noPesanan);
   alert('Pesanan ' + noPesanan + ' dimuat!\nTotal: Rp' + (order.total || 0).toLocaleString('id'));
 }
 
