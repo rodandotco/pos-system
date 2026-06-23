@@ -162,7 +162,7 @@ function bukaLabelDialog(barcode) {
       document.getElementById('labelWidthDots').value = settings.width || 264;
       document.getElementById('labelHeightDots').value = settings.height || 120;
       document.getElementById('labelGapDots').value = settings.gap || 16;
-      document.getElementById('labelOffsetX').value = settings.offsetX || 0;
+      document.getElementById('labelOffsetX').value = settings.offsetX || 160;
       document.getElementById('labelOffsetY').value = settings.offsetY || 0;
       document.getElementById('labelCols').value = settings.cols || 2;
     } catch(e) {}
