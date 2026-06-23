@@ -165,6 +165,10 @@ function bukaLabelDialog(barcode) {
       document.getElementById('labelOffsetX').value = settings.offsetX || 160;
       document.getElementById('labelOffsetY').value = settings.offsetY || 0;
       document.getElementById('labelCols').value = settings.cols || 2;
+      if (settings.showNama !== undefined) document.getElementById('showNama').checked = settings.showNama;
+      if (settings.showHarga !== undefined) document.getElementById('showHarga').checked = settings.showHarga;
+      if (settings.showBarcode !== undefined) document.getElementById('showBarcode').checked = settings.showBarcode;
+      if (settings.showDate !== undefined) document.getElementById('showDate').checked = settings.showDate;
     } catch(e) {}
   }
   
@@ -179,6 +183,10 @@ function bukaLabelDialog(barcode) {
   if (settingsDiv) settingsDiv.style.display = 'none';
   
   document.getElementById('labelPrintModal').style.display = 'flex';
+}
+
+function tampilkanLabelSettings() {
+  document.getElementById('labelPrinterSettings').style.display = 'block';
 }
 
 // PDF option - original QR label format
@@ -215,11 +223,6 @@ async function cetakLabelPDF() {
   document.getElementById('labelPrintModal').style.display = 'none';
 }
 
-// Show printer settings
-function tampilkanLabelSettings() {
-  document.getElementById('labelPrinterSettings').style.display = 'block';
-}
-
 // Print to label printer with custom settings
 async function cetakLabelWithSettings() {
   if (!labelPrinterDevice || !labelPrinterCharacteristic) {
@@ -233,7 +236,7 @@ async function cetakLabelWithSettings() {
   var width = parseInt(document.getElementById('labelWidthDots').value) || 264;
   var height = parseInt(document.getElementById('labelHeightDots').value) || 120;
   var gap = parseInt(document.getElementById('labelGapDots').value) || 16;
-  var offsetX = parseInt(document.getElementById('labelOffsetX').value) || 0;
+  var offsetX = parseInt(document.getElementById('labelOffsetX').value) || 160;
   var offsetY = parseInt(document.getElementById('labelOffsetY').value) || 0;
   var cols = parseInt(document.getElementById('labelCols').value) || 2;
   
@@ -280,7 +283,6 @@ async function cetakLabelWithSettings() {
     cmd += 'PRINT 1\r\n';
     
     console.log('Sending custom label...');
-    console.log('Width:', totalWidth, 'Cols:', cols, 'OffsetX:', offsetX, 'OffsetY:', offsetY);
     
     var data = encoder.encode(cmd);
     for (var i = 0; i < data.byteLength; i += 20) {
@@ -304,15 +306,19 @@ function simpanLabelSettings() {
     width: parseInt(document.getElementById('labelWidthDots').value) || 264,
     height: parseInt(document.getElementById('labelHeightDots').value) || 120,
     gap: parseInt(document.getElementById('labelGapDots').value) || 16,
-    offsetX: parseInt(document.getElementById('labelOffsetX').value) || 0,
+    offsetX: parseInt(document.getElementById('labelOffsetX').value) || 160,
     offsetY: parseInt(document.getElementById('labelOffsetY').value) || 0,
-    cols: parseInt(document.getElementById('labelCols').value) || 2
+    cols: parseInt(document.getElementById('labelCols').value) || 2,
+    showNama: document.getElementById('showNama').checked,
+    showHarga: document.getElementById('showHarga').checked,
+    showBarcode: document.getElementById('showBarcode').checked,
+    showDate: document.getElementById('showDate').checked
   };
   localStorage.setItem('labelSettings', JSON.stringify(settings));
   alert('Pengaturan label disimpan!');
 }
 
-// ===================== OLD CETAK LABEL (fallback) =====================
+// Old function kept as fallback
 async function cetakLabelQR(barcode) {
   bukaLabelDialog(barcode);
 }
