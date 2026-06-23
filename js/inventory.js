@@ -6,6 +6,7 @@ function setupInventory() {
 }
 
 var currentBarcode = null, fotoDihapus = false;
+var currentLabelBarcode = null;
 
 async function cariAtauTambahProduk() {
   if (!currentUser) return;
@@ -103,7 +104,7 @@ function renderProductTable(products) {
     var namaCell = '<td style="display:flex;align-items:center;gap:6px;">' + (p.foto ? '<img src="' + p.foto + '" style="width:30px;height:30px;border-radius:4px;object-fit:cover;">' : '<div style="width:30px;height:30px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;">📦</div>') + '<div>' + (p.nama || '') + grosirInfo + '</div></td>';
     var editBtn = canEdit ? '<button class="btn-sm" onclick="editProdukDariDaftar(\'' + p.barcode + '\')">✏️</button> ' : '';
     var deleteBtn = isAdmin ? '<button class="btn-sm btn-danger" onclick="hapusProdukDariDaftar(\'' + p.barcode + '\')">🗑</button> ' : '';
-    var aksi = editBtn + deleteBtn + '<button class="btn-sm" onclick="cetakLabelQR(\'' + p.barcode + '\')">🏷️ Label</button>';
+    var aksi = editBtn + deleteBtn + '<button class="btn-sm" onclick="bukaLabelDialog(\'' + p.barcode + '\')">🏷️ Label</button>';
     row.innerHTML = '<td>' + (p.barcode || '') + '</td>' + namaCell + '<td>' + (p.kategori || '-') + '</td><td>' + (p.keterangan || '-') + '</td><td>Rp' + (p.harga_jual || 0).toLocaleString('id') + '</td><td style="' + stokStyle + '">' + stokDisplay + '</td><td>' + aksi + '</td>';
   });
 }
@@ -149,44 +150,169 @@ function generateBarcode() {
   cariAtauTambahProduk();
 }
 
-// ========== CETAK LABEL (Direct PPLB/BeePRT or PDF Fallback) ==========
-async function cetakLabelQR(barcode) {
-  // Check if label printer is connected
-  if (typeof labelPrinterDevice === 'undefined' || !labelPrinterDevice || typeof labelPrinterCharacteristic === 'undefined' || !labelPrinterCharacteristic) {
-    // Fallback: show PDF
-    var product = await getProductByBarcode(barcode);
-    if (!product) return alert('Produk tidak ditemukan');
-    
-    var qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(barcode);
-    var nama = product.nama || 'Produk';
-    var harga = 'Rp ' + (product.harga_jual || 0).toLocaleString('id');
-    
-    var doc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: [33, 15] });
-    var qrImage = new Image();
-    qrImage.crossOrigin = 'Anonymous';
-    qrImage.onload = function() {
-      doc.addImage(qrImage, 'PNG', 2, 2, 9, 9);
-      doc.setFontSize(5);
-      doc.text(doc.splitTextToSize(nama, 23), 12, 3);
-      doc.setFontSize(6);
-      doc.setFont(undefined, 'bold');
-      doc.text(harga, 12, 9);
-      doc.setFontSize(3);
-      doc.setFont(undefined, 'normal');
-      doc.text(barcode, 2, 12);
-      doc.setFontSize(2);
-      doc.text(new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }), 12, 12);
-      window.open(URL.createObjectURL(doc.output('blob')), '_blank');
-    };
-    qrImage.onerror = function() { alert('Gagal memuat QR code.'); };
-    qrImage.src = qrUrl;
+// ===================== LABEL PRINT DIALOG =====================
+function bukaLabelDialog(barcode) {
+  currentLabelBarcode = barcode;
+  
+  // Load saved settings
+  var savedSettings = localStorage.getItem('labelSettings');
+  if (savedSettings) {
+    try {
+      var settings = JSON.parse(savedSettings);
+      document.getElementById('labelWidthDots').value = settings.width || 264;
+      document.getElementById('labelHeightDots').value = settings.height || 120;
+      document.getElementById('labelGapDots').value = settings.gap || 16;
+      document.getElementById('labelOffsetX').value = settings.offsetX || 0;
+      document.getElementById('labelOffsetY').value = settings.offsetY || 0;
+      document.getElementById('labelCols').value = settings.cols || 2;
+    } catch(e) {}
+  }
+  
+  // Show/hide label printer button based on connection
+  var hasLabelPrinter = (typeof labelPrinterDevice !== 'undefined' && labelPrinterDevice && 
+                         typeof labelPrinterCharacteristic !== 'undefined' && labelPrinterCharacteristic);
+  
+  var btnPrintLabel = document.getElementById('btnPrintLabel');
+  if (btnPrintLabel) btnPrintLabel.style.display = hasLabelPrinter ? '' : 'none';
+  
+  var settingsDiv = document.getElementById('labelPrinterSettings');
+  if (settingsDiv) settingsDiv.style.display = 'none';
+  
+  document.getElementById('labelPrintModal').style.display = 'flex';
+}
+
+// PDF option - original QR label format
+async function cetakLabelPDF() {
+  var product = await getProductByBarcode(currentLabelBarcode);
+  if (!product) return alert('Produk tidak ditemukan');
+  
+  var qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(currentLabelBarcode);
+  var nama = product.nama || 'Produk';
+  var harga = 'Rp ' + (product.harga_jual || 0).toLocaleString('id');
+  var barcodeText = currentLabelBarcode;
+  
+  var doc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: [33, 15] });
+  var qrImage = new Image();
+  qrImage.crossOrigin = 'Anonymous';
+  qrImage.onload = function() {
+    doc.addImage(qrImage, 'PNG', 2, 2, 9, 9);
+    doc.setFontSize(5);
+    var namaLines = doc.splitTextToSize(nama, 23);
+    doc.text(namaLines, 12, 3);
+    doc.setFontSize(6);
+    doc.setFont(undefined, 'bold');
+    doc.text(harga, 12, 9);
+    doc.setFontSize(3);
+    doc.setFont(undefined, 'normal');
+    doc.text(barcodeText, 2, 12);
+    doc.setFontSize(2);
+    doc.text(new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }), 12, 12);
+    window.open(URL.createObjectURL(doc.output('blob')), '_blank');
+  };
+  qrImage.onerror = function() { alert('Gagal memuat QR code.'); };
+  qrImage.src = qrUrl;
+  
+  document.getElementById('labelPrintModal').style.display = 'none';
+}
+
+// Show printer settings
+function tampilkanLabelSettings() {
+  document.getElementById('labelPrinterSettings').style.display = 'block';
+}
+
+// Print to label printer with custom settings
+async function cetakLabelWithSettings() {
+  if (!labelPrinterDevice || !labelPrinterCharacteristic) {
+    alert('Label printer tidak terhubung.');
     return;
   }
   
-  // Direct print to label printer
-  if (typeof cetakLabelLangsung === 'function') {
-    await cetakLabelLangsung(barcode);
-  } else {
-    alert('Fungsi cetak label tidak tersedia. Pastikan printer.js dimuat.');
+  var product = await getProductByBarcode(currentLabelBarcode);
+  if (!product) return alert('Produk tidak ditemukan');
+  
+  var width = parseInt(document.getElementById('labelWidthDots').value) || 264;
+  var height = parseInt(document.getElementById('labelHeightDots').value) || 120;
+  var gap = parseInt(document.getElementById('labelGapDots').value) || 16;
+  var offsetX = parseInt(document.getElementById('labelOffsetX').value) || 0;
+  var offsetY = parseInt(document.getElementById('labelOffsetY').value) || 0;
+  var cols = parseInt(document.getElementById('labelCols').value) || 2;
+  
+  var showNama = document.getElementById('showNama').checked;
+  var showHarga = document.getElementById('showHarga').checked;
+  var showBarcode = document.getElementById('showBarcode').checked;
+  var showDate = document.getElementById('showDate').checked;
+  
+  var nama = (product.nama || 'Produk').substring(0, 20);
+  var harga = 'Rp' + (product.harga_jual || 0).toLocaleString('id');
+  var barcodeText = currentLabelBarcode;
+  var tgl = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+  
+  try {
+    var encoder = new TextEncoder();
+    var cmd = '';
+    
+    var totalWidth = cols === 2 ? (width * 2 + gap) : width;
+    cmd += 'SIZE ' + totalWidth + ',' + height + '\r\n';
+    cmd += 'GAP 0,0\r\n';
+    cmd += 'CLS\r\n';
+    
+    for (var col = 0; col < cols; col++) {
+      var xBase = (col * (width + gap)) + 10 + offsetX;
+      var yPos = 10 + offsetY;
+      
+      if (showNama) {
+        cmd += 'TEXT ' + xBase + ',' + yPos + ',"1",0,1,1,"' + nama + '"\r\n';
+        yPos += 25;
+      }
+      if (showHarga) {
+        cmd += 'TEXT ' + xBase + ',' + yPos + ',"1",0,1.5,1.5,"' + harga + '"\r\n';
+        yPos += 30;
+      }
+      if (showBarcode) {
+        cmd += 'BARCODE ' + xBase + ',' + yPos + ',"128",30,1,0,1,1,"' + barcodeText + '"\r\n';
+        yPos += 35;
+      }
+      if (showDate) {
+        cmd += 'TEXT ' + xBase + ',' + yPos + ',"1",0,1,1,"' + tgl + '"\r\n';
+      }
+    }
+    
+    cmd += 'PRINT 1\r\n';
+    
+    console.log('Sending custom label...');
+    console.log('Width:', totalWidth, 'Cols:', cols, 'OffsetX:', offsetX, 'OffsetY:', offsetY);
+    
+    var data = encoder.encode(cmd);
+    for (var i = 0; i < data.byteLength; i += 20) {
+      var end = Math.min(i + 20, data.byteLength);
+      var chunk = data.slice(i, end);
+      await labelPrinterCharacteristic.writeValue(chunk);
+      await sleep(80);
+    }
+    
+    document.getElementById('labelPrintModal').style.display = 'none';
+    alert('Label dicetak!');
+    
+  } catch (e) {
+    console.error('Error:', e.message);
+    alert('Gagal cetak: ' + e.message);
   }
+}
+
+function simpanLabelSettings() {
+  var settings = {
+    width: parseInt(document.getElementById('labelWidthDots').value) || 264,
+    height: parseInt(document.getElementById('labelHeightDots').value) || 120,
+    gap: parseInt(document.getElementById('labelGapDots').value) || 16,
+    offsetX: parseInt(document.getElementById('labelOffsetX').value) || 0,
+    offsetY: parseInt(document.getElementById('labelOffsetY').value) || 0,
+    cols: parseInt(document.getElementById('labelCols').value) || 2
+  };
+  localStorage.setItem('labelSettings', JSON.stringify(settings));
+  alert('Pengaturan label disimpan!');
+}
+
+// ===================== OLD CETAK LABEL (fallback) =====================
+async function cetakLabelQR(barcode) {
+  bukaLabelDialog(barcode);
 }
