@@ -2,7 +2,7 @@
 var bluetoothDevice = null;
 var bluetoothCharacteristic = null;
 
-// Label printer (PPLB - Aiyin AD240-BT)
+// Label printer (BeePRT - Aiyin AD240-BT)
 var labelPrinterDevice = null;
 var labelPrinterCharacteristic = null;
 
@@ -121,47 +121,69 @@ async function testPrint() {
   }
 }
 
-// ===================== LABEL PRINTER (PPLB - Aiyin AD240-BT) =====================
+// ===================== LABEL PRINTER (Aiyin AD240-BT) - DEBUG =====================
 async function sambungLabelPrinter() {
   try {
-    // First try standard SPP UUID
+    console.log('Requesting Bluetooth device...');
+    
     labelPrinterDevice = await navigator.bluetooth.requestDevice({
       acceptAllDevices: true,
-      optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
+      optionalServices: []
     });
     
+    console.log('Device selected:', labelPrinterDevice.name);
+    console.log('Device ID:', labelPrinterDevice.id);
+    
     var server = await labelPrinterDevice.gatt.connect();
-    var service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
-    labelPrinterCharacteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
+    console.log('GATT connected!');
     
-    updateLabelPrinterStatus(true);
-    alert('Label printer terhubung!');
-  } catch (e) {
-    console.error('First attempt failed:', e.message);
+    var services = await server.getPrimaryServices();
+    console.log('Found ' + services.length + ' services');
     
-    // Try alternative SPP UUID
-    try {
-      labelPrinterDevice = await navigator.bluetooth.requestDevice({
-        acceptAllDevices: true,
-        optionalServices: ['00001101-0000-1000-8000-00805f9b34fb']
-      });
-      var server2 = await labelPrinterDevice.gatt.connect();
-      var service2 = await server2.getPrimaryService('00001101-0000-1000-8000-00805f9b34fb');
-      var chars = await service2.getCharacteristics();
-      for (var j = 0; j < chars.length; j++) {
-        if (chars[j].properties.write || chars[j].properties.writeWithoutResponse) {
-          labelPrinterCharacteristic = chars[j];
-          updateLabelPrinterStatus(true);
-          alert('Label printer terhubung!');
-          return;
+    for (var i = 0; i < services.length; i++) {
+      console.log('Service ' + i + ': ' + services[i].uuid);
+      
+      try {
+        var chars = await services[i].getCharacteristics();
+        for (var j = 0; j < chars.length; j++) {
+          console.log('  Char ' + j + ': ' + chars[j].uuid);
+          console.log('  Properties: write=' + chars[j].properties.write + ', writeWoResp=' + chars[j].properties.writeWithoutResponse);
+          
+          if (chars[j].properties.write || chars[j].properties.writeWithoutResponse) {
+            labelPrinterCharacteristic = chars[j];
+            console.log('  -> USING THIS');
+            updateLabelPrinterStatus(true);
+            
+            var msg = 'Label printer terhubung!\n\n';
+            msg += 'Device: ' + labelPrinterDevice.name + '\n';
+            msg += 'Service: ' + services[i].uuid + '\n';
+            msg += 'Char: ' + chars[j].uuid;
+            alert(msg);
+            return;
+          }
         }
+      } catch (e) {
+        console.log('  Error: ' + e.message);
       }
-      throw new Error('No characteristic found');
-    } catch (e2) {
-      console.error('Second attempt failed:', e2.message);
-      updateLabelPrinterStatus(false);
-      alert('Gagal hubung label printer. Pastikan printer dalam mode pairing dan tidak terhubung ke perangkat lain.');
     }
+    
+    alert('Tidak menemukan characteristic.\nCek console (F12) untuk detail.');
+    updateLabelPrinterStatus(false);
+    
+  } catch (e) {
+    console.error('Error:', e.message, e.name);
+    
+    if (e.name === 'NotFoundError') {
+      alert('Tidak ada device ditemukan.\nPastikan printer menyala & dalam mode pairing (lampu biru berkedip).');
+    } else if (e.name === 'SecurityError') {
+      alert('Izin Bluetooth ditolak.\nSettings > Apps > Chrome > Permissions > Allow Bluetooth.');
+    } else if (e.name === 'NetworkError') {
+      alert('Gagal konek.\n1. Restart printer\n2. Unpair dari Settings Bluetooth\n3. Coba lagi');
+    } else {
+      alert('Gagal: ' + e.message);
+    }
+    
+    updateLabelPrinterStatus(false);
   }
 }
 
@@ -181,7 +203,7 @@ function updateLabelPrinterStatus(connected) {
   }
 }
 
-// ===================== CETAK LABEL 33x15mm 2 KOLOM (PPLB) =====================
+// ===================== CETAK LABEL (BeePRT) =====================
 async function cetakLabelLangsung(barcode) {
   if (!labelPrinterDevice || !labelPrinterCharacteristic) {
     alert('Label printer tidak terhubung. Sambungkan dulu.');
@@ -195,53 +217,73 @@ async function cetakLabelLangsung(barcode) {
   var harga = 'Rp' + (product.harga_jual || 0).toLocaleString('id');
   var barcodeText = product.barcode || '';
 
+  // Try BeePRT Style 1
   try {
     var encoder = new TextEncoder();
-    
-    // PPLB Commands for 33x15mm label, 2 columns, 2mm gap
     var cmd = '';
     
-    // Start job
-    cmd += '! 0 200 200 120 1\r\n';
-    cmd += 'LABEL\r\n';
-    cmd += 'CONTRAST 2\r\n';
-    cmd += 'SPEED 3\r\n';
+    cmd += 'SIZE 33 mm,15 mm\r\n';
+    cmd += 'GAP 2 mm,0\r\n';
+    cmd += 'DIRECTION 1\r\n';
+    cmd += 'CLS\r\n';
     
-    // Column 1 - Left label
-    cmd += 'TEXT 10 10 0 3 1 ' + nama + '\r\n';
-    cmd += 'TEXT 10 50 0 4 2 ' + harga + '\r\n';
-    cmd += 'TEXT 10 85 0 2 1 ' + barcodeText + '\r\n';
-    cmd += 'BARCODE 10 100 0 128 2 1 ' + barcodeText + '\r\n';
+    cmd += 'TEXT 10,10,"1",0,1,1,"' + nama + '"\r\n';
+    cmd += 'TEXT 10,45,"1",0,2,2,"' + harga + '"\r\n';
+    cmd += 'BARCODE 10,80,"128",50,1,0,2,2,"' + barcodeText + '"\r\n';
     
-    // Column 2 - Right label
-    var col2x = 280;
-    cmd += 'TEXT ' + col2x + ' 10 0 3 1 ' + nama + '\r\n';
-    cmd += 'TEXT ' + col2x + ' 50 0 4 2 ' + harga + '\r\n';
-    cmd += 'TEXT ' + col2x + ' 85 0 2 1 ' + barcodeText + '\r\n';
-    cmd += 'BARCODE ' + col2x + ' 100 0 128 2 1 ' + barcodeText + '\r\n';
+    var col2x = 285;
+    cmd += 'TEXT ' + col2x + ',10,"1",0,1,1,"' + nama + '"\r\n';
+    cmd += 'TEXT ' + col2x + ',45,"1",0,2,2,"' + harga + '"\r\n';
+    cmd += 'BARCODE ' + col2x + ',80,"128",50,1,0,2,2,"' + barcodeText + '"\r\n';
     
-    // End and print
-    cmd += 'END\r\n';
-    cmd += 'FORM\r\n';
-    cmd += 'PRINT\r\n';
+    cmd += 'PRINT 1\r\n';
     
-    // Send to printer in VERY small chunks (Aiyin needs this)
     var data = encoder.encode(cmd);
-    var chunkSize = 20;
-    for (var i = 0; i < data.byteLength; i += chunkSize) {
-      var chunk = data.slice(i, Math.min(i + chunkSize, data.byteLength));
-      try {
-        await labelPrinterCharacteristic.writeValueWithoutResponse(chunk);
-      } catch (e) {
-        await labelPrinterCharacteristic.writeValue(chunk);
-      }
+    for (var i = 0; i < data.byteLength; i += 20) {
+      var chunk = data.slice(i, Math.min(i + 20, data.byteLength));
+      try { await labelPrinterCharacteristic.writeValueWithoutResponse(chunk); }
+      catch (e) { await labelPrinterCharacteristic.writeValue(chunk); }
       await sleep(80);
     }
     
     alert('Label dicetak!');
-  } catch (e) {
-    console.error(e);
-    alert('Gagal cetak label: ' + e.message);
+    return;
+  } catch (e1) {
+    console.log('Style 1 failed:', e1.message);
+  }
+  
+  // Try BeePRT Style 2
+  try {
+    var encoder2 = new TextEncoder();
+    var cmd2 = '';
+    
+    cmd2 += '^Q264,120\r\n';
+    cmd2 += '^G16\r\n';
+    cmd2 += '^W2\r\n';
+    
+    cmd2 += '^H10,10,0,3,1,1,' + nama + '\r\n';
+    cmd2 += '^H10,50,0,4,2,2,' + harga + '\r\n';
+    cmd2 += '^B10,85,128,40,2,2,0,1,' + barcodeText + '\r\n';
+    
+    var col2x2 = 280;
+    cmd2 += '^H' + col2x2 + ',10,0,3,1,1,' + nama + '\r\n';
+    cmd2 += '^H' + col2x2 + ',50,0,4,2,2,' + harga + '\r\n';
+    cmd2 += '^B' + col2x2 + ',85,128,40,2,2,0,1,' + barcodeText + '\r\n';
+    
+    cmd2 += '^P1\r\n';
+    
+    var data2 = encoder2.encode(cmd2);
+    for (var k = 0; k < data2.byteLength; k += 20) {
+      var chunk2 = data2.slice(k, Math.min(k + 20, data2.byteLength));
+      try { await labelPrinterCharacteristic.writeValueWithoutResponse(chunk2); }
+      catch (e) { await labelPrinterCharacteristic.writeValue(chunk2); }
+      await sleep(80);
+    }
+    
+    alert('Label dicetak! (style 2)');
+    return;
+  } catch (e2) {
+    alert('Gagal cetak: ' + e2.message);
   }
 }
 

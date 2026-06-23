@@ -131,6 +131,7 @@ async function editProdukDariDaftar(b) {
   if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'gudang')) return;
   document.getElementById('prodBarcode').value = b; cariAtauTambahProduk();
 }
+
 async function hapusProdukDariDaftar(b) {
   if (!currentUser || currentUser.role !== 'admin') return;
   if (!confirm('Hapus?')) return; await deleteProduct(b); refreshProductList();
@@ -148,10 +149,11 @@ function generateBarcode() {
   cariAtauTambahProduk();
 }
 
-// ========== CETAK LABEL (Direct PPLB or PDF Fallback) ==========
+// ========== CETAK LABEL (Direct PPLB/BeePRT or PDF Fallback) ==========
 async function cetakLabelQR(barcode) {
-  if (!labelPrinterDevice || !labelPrinterCharacteristic) {
-    // Fallback: show PDF if no label printer connected
+  // Check if label printer is connected
+  if (typeof labelPrinterDevice === 'undefined' || !labelPrinterDevice || typeof labelPrinterCharacteristic === 'undefined' || !labelPrinterCharacteristic) {
+    // Fallback: show PDF
     var product = await getProductByBarcode(barcode);
     if (!product) return alert('Produk tidak ditemukan');
     
@@ -181,6 +183,10 @@ async function cetakLabelQR(barcode) {
     return;
   }
   
-  // Direct print to label printer via PPLB
-  await cetakLabelLangsung(barcode);
+  // Direct print to label printer
+  if (typeof cetakLabelLangsung === 'function') {
+    await cetakLabelLangsung(barcode);
+  } else {
+    alert('Fungsi cetak label tidak tersedia. Pastikan printer.js dimuat.');
+  }
 }
