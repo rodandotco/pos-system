@@ -214,7 +214,7 @@ function updateLabelPrinterStatus(connected) {
   }
 }
 
-// ===================== CETAK LABEL 33x15mm 2 KOLOM (BeePRT) =====================
+// ===================== CETAK LABEL 33x15mm 2 KOLOM (BeePRT via BLE) =====================
 async function cetakLabelLangsung(barcode) {
   if (!labelPrinterDevice || !labelPrinterCharacteristic) {
     alert('Label printer tidak terhubung. Sambungkan dulu.');
@@ -228,11 +228,11 @@ async function cetakLabelLangsung(barcode) {
   var harga = 'Rp' + (product.harga_jual || 0).toLocaleString('id');
   var barcodeText = product.barcode || '';
 
+  // Try Style 1: SIZE/CLS/TEXT/BARCODE/PRINT
   try {
     var encoder = new TextEncoder();
     var cmd = '';
     
-    // BeePRT Style 1
     cmd += 'SIZE 33 mm,15 mm\r\n';
     cmd += 'GAP 2 mm,0\r\n';
     cmd += 'DIRECTION 1\r\n';
@@ -249,60 +249,63 @@ async function cetakLabelLangsung(barcode) {
     
     cmd += 'PRINT 1\r\n';
     
-    console.log('Sending commands, length:', cmd.length);
+    console.log('Sending Style 1, length:', cmd.length);
     
-    // For BLE: Use writeValue (with response), 20 bytes max per chunk
     var data = encoder.encode(cmd);
     console.log('Encoded size:', data.byteLength, 'bytes');
     
     for (var i = 0; i < data.byteLength; i += 20) {
       var end = Math.min(i + 20, data.byteLength);
       var chunk = data.slice(i, end);
-      console.log('Sending chunk ' + (i/20 + 1) + ': ' + chunk.byteLength + ' bytes');
+      console.log('Chunk ' + Math.floor(i/20 + 1) + ': ' + chunk.byteLength + ' bytes');
       await labelPrinterCharacteristic.writeValue(chunk);
       await sleep(100);
     }
     
     console.log('All data sent!');
     alert('Label dicetak!');
+    return;
     
-  } catch (e) {
-    console.error('Print error:', e.message);
+  } catch (e1) {
+    console.error('Style 1 failed:', e1.message);
+  }
+  
+  // Try Style 2: ^ commands
+  try {
+    var encoder2 = new TextEncoder();
+    var cmd2 = '';
     
-    // Try Style 2
-    try {
-      var encoder2 = new TextEncoder();
-      var cmd2 = '';
-      
-      cmd2 += '^Q264,120\r\n';
-      cmd2 += '^G16\r\n';
-      cmd2 += '^W2\r\n';
-      
-      cmd2 += '^H10,10,0,3,1,1,' + nama + '\r\n';
-      cmd2 += '^H10,50,0,4,2,2,' + harga + '\r\n';
-      cmd2 += '^B10,85,128,40,2,2,0,1,' + barcodeText + '\r\n';
-      
-      var col2x2 = 280;
-      cmd2 += '^H' + col2x2 + ',10,0,3,1,1,' + nama + '\r\n';
-      cmd2 += '^H' + col2x2 + ',50,0,4,2,2,' + harga + '\r\n';
-      cmd2 += '^B' + col2x2 + ',85,128,40,2,2,0,1,' + barcodeText + '\r\n';
-      
-      cmd2 += '^P1\r\n';
-      
-      console.log('Trying Style 2...');
-      var data2 = encoder2.encode(cmd2);
-      
-      for (var k = 0; k < data2.byteLength; k += 20) {
-        var chunk2 = data2.slice(k, Math.min(k + 20, data2.byteLength));
-        await labelPrinterCharacteristic.writeValue(chunk2);
-        await sleep(100);
-      }
-      
-      alert('Label dicetak! (Style 2)');
-    } catch (e2) {
-      console.error('Style 2 failed:', e2.message);
-      alert('Gagal cetak: ' + e2.message + '\n\nCek console untuk detail.');
+    cmd2 += '^Q264,120\r\n';
+    cmd2 += '^G16\r\n';
+    cmd2 += '^W2\r\n';
+    
+    cmd2 += '^H10,10,0,3,1,1,' + nama + '\r\n';
+    cmd2 += '^H10,50,0,4,2,2,' + harga + '\r\n';
+    cmd2 += '^B10,85,128,40,2,2,0,1,' + barcodeText + '\r\n';
+    
+    var col2x2 = 280;
+    cmd2 += '^H' + col2x2 + ',10,0,3,1,1,' + nama + '\r\n';
+    cmd2 += '^H' + col2x2 + ',50,0,4,2,2,' + harga + '\r\n';
+    cmd2 += '^B' + col2x2 + ',85,128,40,2,2,0,1,' + barcodeText + '\r\n';
+    
+    cmd2 += '^P1\r\n';
+    
+    console.log('Trying Style 2...');
+    var data2 = encoder2.encode(cmd2);
+    
+    for (var k = 0; k < data2.byteLength; k += 20) {
+      var chunk2 = data2.slice(k, Math.min(k + 20, data2.byteLength));
+      await labelPrinterCharacteristic.writeValue(chunk2);
+      await sleep(100);
     }
+    
+    console.log('Style 2 sent!');
+    alert('Label dicetak! (Style 2)');
+    return;
+    
+  } catch (e2) {
+    console.error('Style 2 failed:', e2.message);
+    alert('Gagal cetak label: ' + e2.message + '\n\nCek console untuk detail.');
   }
 }
 
