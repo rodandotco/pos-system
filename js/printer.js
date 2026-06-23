@@ -124,49 +124,44 @@ async function testPrint() {
 // ===================== LABEL PRINTER (PPLB - Aiyin AD240-BT) =====================
 async function sambungLabelPrinter() {
   try {
+    // First try standard SPP UUID
     labelPrinterDevice = await navigator.bluetooth.requestDevice({
       acceptAllDevices: true,
-      optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb', '0000ff00-0000-1000-8000-00805f9b34fb', '0000180a-0000-1000-8000-00805f9b34fb']
+      optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
     });
     
     var server = await labelPrinterDevice.gatt.connect();
+    var service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
+    labelPrinterCharacteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
     
-    // Try to find any available service
-    var services = await server.getPrimaryServices();
-    console.log('Available services:', services);
-    
-    var service = null;
-    var characteristic = null;
-    
-    // Find first service with a writable characteristic
-    for (var i = 0; i < services.length; i++) {
-      try {
-        var chars = await services[i].getCharacteristics();
-        for (var j = 0; j < chars.length; j++) {
-          if (chars[j].properties.write || chars[j].properties.writeWithoutResponse) {
-            service = services[i];
-            characteristic = chars[j];
-            console.log('Found service:', service.uuid, 'characteristic:', characteristic.uuid);
-            break;
-          }
-        }
-      } catch (e) {
-        console.log('Error getting characteristics for service:', services[i].uuid);
-      }
-      if (characteristic) break;
-    }
-    
-    if (!characteristic) {
-      throw new Error('No writable characteristic found');
-    }
-    
-    labelPrinterCharacteristic = characteristic;
     updateLabelPrinterStatus(true);
-    alert('Label printer terhubung!\nService: ' + service.uuid);
+    alert('Label printer terhubung!');
   } catch (e) {
-    console.error(e);
-    updateLabelPrinterStatus(false);
-    alert('Gagal hubung label printer: ' + e.message);
+    console.error('First attempt failed:', e.message);
+    
+    // Try alternative SPP UUID
+    try {
+      labelPrinterDevice = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: ['00001101-0000-1000-8000-00805f9b34fb']
+      });
+      var server2 = await labelPrinterDevice.gatt.connect();
+      var service2 = await server2.getPrimaryService('00001101-0000-1000-8000-00805f9b34fb');
+      var chars = await service2.getCharacteristics();
+      for (var j = 0; j < chars.length; j++) {
+        if (chars[j].properties.write || chars[j].properties.writeWithoutResponse) {
+          labelPrinterCharacteristic = chars[j];
+          updateLabelPrinterStatus(true);
+          alert('Label printer terhubung!');
+          return;
+        }
+      }
+      throw new Error('No characteristic found');
+    } catch (e2) {
+      console.error('Second attempt failed:', e2.message);
+      updateLabelPrinterStatus(false);
+      alert('Gagal hubung label printer. Pastikan printer dalam mode pairing dan tidak terhubung ke perangkat lain.');
+    }
   }
 }
 
@@ -206,22 +201,19 @@ async function cetakLabelLangsung(barcode) {
     // PPLB Commands for 33x15mm label, 2 columns, 2mm gap
     var cmd = '';
     
-    // Start job: ! offset width height copies
-    // 33mm at 203dpi = ~264 dots, 15mm = ~120 dots
+    // Start job
     cmd += '! 0 200 200 120 1\r\n';
     cmd += 'LABEL\r\n';
     cmd += 'CONTRAST 2\r\n';
     cmd += 'SPEED 3\r\n';
     
     // Column 1 - Left label
-    // TEXT x y rotation font size data
     cmd += 'TEXT 10 10 0 3 1 ' + nama + '\r\n';
     cmd += 'TEXT 10 50 0 4 2 ' + harga + '\r\n';
     cmd += 'TEXT 10 85 0 2 1 ' + barcodeText + '\r\n';
-    // BARCODE x y rotation type height readable data
     cmd += 'BARCODE 10 100 0 128 2 1 ' + barcodeText + '\r\n';
     
-    // Column 2 - Right label (offset by ~264 dots + 16 dot gap = 280)
+    // Column 2 - Right label
     var col2x = 280;
     cmd += 'TEXT ' + col2x + ' 10 0 3 1 ' + nama + '\r\n';
     cmd += 'TEXT ' + col2x + ' 50 0 4 2 ' + harga + '\r\n';
@@ -233,13 +225,17 @@ async function cetakLabelLangsung(barcode) {
     cmd += 'FORM\r\n';
     cmd += 'PRINT\r\n';
     
-    // Send to printer in small chunks
+    // Send to printer in VERY small chunks (Aiyin needs this)
     var data = encoder.encode(cmd);
-    var chunkSize = 64;
+    var chunkSize = 20;
     for (var i = 0; i < data.byteLength; i += chunkSize) {
       var chunk = data.slice(i, Math.min(i + chunkSize, data.byteLength));
-      await labelPrinterCharacteristic.writeValue(chunk);
-      await sleep(50);
+      try {
+        await labelPrinterCharacteristic.writeValueWithoutResponse(chunk);
+      } catch (e) {
+        await labelPrinterCharacteristic.writeValue(chunk);
+      }
+      await sleep(80);
     }
     
     alert('Label dicetak!');
