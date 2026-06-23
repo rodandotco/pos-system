@@ -154,7 +154,6 @@ function generateBarcode() {
 function bukaLabelDialog(barcode) {
   currentLabelBarcode = barcode;
   
-  // Load saved settings
   var savedSettings = localStorage.getItem('labelSettings');
   if (savedSettings) {
     try {
@@ -172,7 +171,6 @@ function bukaLabelDialog(barcode) {
     } catch(e) {}
   }
   
-  // Show/hide label printer button based on connection
   var hasLabelPrinter = (typeof labelPrinterDevice !== 'undefined' && labelPrinterDevice && 
                          typeof labelPrinterCharacteristic !== 'undefined' && labelPrinterCharacteristic);
   
@@ -189,7 +187,6 @@ function tampilkanLabelSettings() {
   document.getElementById('labelPrinterSettings').style.display = 'block';
 }
 
-// PDF option - original QR label format
 async function cetakLabelPDF() {
   var product = await getProductByBarcode(currentLabelBarcode);
   if (!product) return alert('Produk tidak ditemukan');
@@ -223,7 +220,6 @@ async function cetakLabelPDF() {
   document.getElementById('labelPrintModal').style.display = 'none';
 }
 
-// Print to label printer with custom settings
 async function cetakLabelWithSettings() {
   if (!labelPrinterDevice || !labelPrinterCharacteristic) {
     alert('Label printer tidak terhubung.');
@@ -250,41 +246,40 @@ async function cetakLabelWithSettings() {
   var barcodeText = currentLabelBarcode;
   var tgl = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
   
+  var totalW = cols === 2 ? (width * 2 + gap) : width;
+  
   try {
-    var encoder = new TextEncoder();
     var cmd = '';
-    
-    var totalWidth = cols === 2 ? (width * 2 + gap) : width;
-    cmd += 'SIZE ' + totalWidth + ',' + height + '\r\n';
+    cmd += 'SIZE ' + totalW + ',' + height + '\r\n';
     cmd += 'GAP 0,0\r\n';
     cmd += 'CLS\r\n';
     
     for (var col = 0; col < cols; col++) {
-      var xBase = (col * (width + gap)) + 10 + offsetX;
-      var yPos = 10 + offsetY;
+      var x = (col * (width + gap)) + 10 + offsetX;
+      var y = 10 + offsetY;
       
       if (showNama) {
-        cmd += 'TEXT ' + xBase + ',' + yPos + ',"1",0,1,1,"' + nama + '"\r\n';
-        yPos += 25;
+        cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + nama + '"\r\n';
+        y += 25;
       }
       if (showHarga) {
-        cmd += 'TEXT ' + xBase + ',' + yPos + ',"1",0,1.5,1.5,"' + harga + '"\r\n';
-        yPos += 30;
+        cmd += 'TEXT ' + x + ',' + y + ',"1",0,1.5,1.5,"' + harga + '"\r\n';
+        y += 30;
       }
       if (showBarcode) {
-        cmd += 'BARCODE ' + xBase + ',' + yPos + ',"128",30,1,0,1,1,"' + barcodeText + '"\r\n';
-        yPos += 35;
+        cmd += 'BARCODE ' + x + ',' + y + ',"128",30,1,0,1,1,"' + barcodeText + '"\r\n';
+        y += 35;
       }
       if (showDate) {
-        cmd += 'TEXT ' + xBase + ',' + yPos + ',"1",0,1,1,"' + tgl + '"\r\n';
+        cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + tgl + '"\r\n';
       }
     }
     
     cmd += 'PRINT 1\r\n';
     
-    console.log('Sending custom label...');
-    
+    var encoder = new TextEncoder();
     var data = encoder.encode(cmd);
+    
     for (var i = 0; i < data.byteLength; i += 20) {
       var end = Math.min(i + 20, data.byteLength);
       var chunk = data.slice(i, end);
@@ -318,7 +313,10 @@ function simpanLabelSettings() {
   alert('Pengaturan label disimpan!');
 }
 
-// Old function kept as fallback
 async function cetakLabelQR(barcode) {
   bukaLabelDialog(barcode);
+}
+
+function sleep(ms) {
+  return new Promise(function(resolve) { setTimeout(resolve, ms); });
 }
