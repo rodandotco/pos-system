@@ -236,36 +236,32 @@ async function cetakLabelLangsung(barcode) {
     var encoder = new TextEncoder();
     var cmd = '';
     
-    // Label: 264 x 120 dots (33mm x 15mm at 203dpi), gap 16 dots (2mm)
-    cmd += 'SIZE 264,120\r\n';
-    cmd += 'GAP 16,0\r\n';
+    // Total: 544 dots wide (264 + 16 + 264), 120 dots high (15mm)
+    cmd += 'SIZE 544,120\r\n';
+    cmd += 'GAP 0,0\r\n';
     cmd += 'DIRECTION 1\r\n';
     cmd += 'DENSITY 10\r\n';
     cmd += 'CLS\r\n';
     
-    // ===== LEFT LABEL (x: 0 to 124) =====
-    cmd += 'TEXT 5,5,"1",0,1,1,"' + namaLine1 + '"\r\n';
+    // ===== LEFT LABEL (Column 1: x=0 to 264) =====
+    cmd += 'TEXT 10,5,"1",0,1,1,"' + namaLine1 + '"\r\n';
     if (namaLine2) {
-      cmd += 'TEXT 5,25,"1",0,1,1,"' + namaLine2 + '"\r\n';
+      cmd += 'TEXT 10,25,"1",0,1,1,"' + namaLine2 + '"\r\n';
     }
     var priceY = namaLine2 ? 50 : 40;
-    cmd += 'TEXT 5,' + priceY + ',"1",0,1.5,1.5,"' + harga + '"\r\n';
-    cmd += 'TEXT 5,85,"1",0,1,1,"' + barcodeText + '"\r\n';
-    cmd += 'TEXT 5,105,"1",0,1,1,"' + tglCetak + '"\r\n';
+    cmd += 'TEXT 10,' + priceY + ',"1",0,1.5,1.5,"' + harga + '"\r\n';
+    cmd += 'BARCODE 10,65,"128",30,1,0,1,1,"' + barcodeText + '"\r\n';
+    cmd += 'TEXT 10,100,"1",0,1,1,"' + tglCetak + '"\r\n';
     
-    // ===== RIGHT LABEL (x: 140 to 264) =====
-    var col2 = 140;
-    cmd += 'TEXT ' + (5 + col2) + ',5,"1",0,1,1,"' + namaLine1 + '"\r\n';
+    // ===== RIGHT LABEL (Column 2: x=280 to 544) =====
+    var col2 = 280;
+    cmd += 'TEXT ' + (10 + col2) + ',5,"1",0,1,1,"' + namaLine1 + '"\r\n';
     if (namaLine2) {
-      cmd += 'TEXT ' + (5 + col2) + ',25,"1",0,1,1,"' + namaLine2 + '"\r\n';
+      cmd += 'TEXT ' + (10 + col2) + ',25,"1",0,1,1,"' + namaLine2 + '"\r\n';
     }
-    cmd += 'TEXT ' + (5 + col2) + ',' + priceY + ',"1",0,1.5,1.5,"' + harga + '"\r\n';
-    cmd += 'TEXT ' + (5 + col2) + ',85,"1",0,1,1,"' + barcodeText + '"\r\n';
-    cmd += 'TEXT ' + (5 + col2) + ',105,"1",0,1,1,"' + tglCetak + '"\r\n';
-    
-    // BARCODE for both
-    cmd += 'BARCODE 5,60,"128",20,1,0,1,1,"' + barcodeText + '"\r\n';
-    cmd += 'BARCODE ' + (5 + col2) + ',60,"128",20,1,0,1,1,"' + barcodeText + '"\r\n';
+    cmd += 'TEXT ' + (10 + col2) + ',' + priceY + ',"1",0,1.5,1.5,"' + harga + '"\r\n';
+    cmd += 'BARCODE ' + (10 + col2) + ',65,"128",30,1,0,1,1,"' + barcodeText + '"\r\n';
+    cmd += 'TEXT ' + (10 + col2) + ',100,"1",0,1,1,"' + tglCetak + '"\r\n';
     
     cmd += 'PRINT 1\r\n';
     
@@ -284,37 +280,7 @@ async function cetakLabelLangsung(barcode) {
     
   } catch (e) {
     console.error('Print error:', e.message);
-    
-    // Fallback: simpler format without barcode
-    try {
-      var encoder2 = new TextEncoder();
-      var cmd2 = '';
-      
-      cmd2 += 'SIZE 264,120\r\n';
-      cmd2 += 'GAP 16,0\r\n';
-      cmd2 += 'CLS\r\n';
-      
-      cmd2 += 'TEXT 10,10,"1",0,1,1,"' + namaLine1 + '"\r\n';
-      cmd2 += 'TEXT 10,40,"1",0,2,2,"' + harga + '"\r\n';
-      cmd2 += 'TEXT 10,80,"1",0,1,1,"' + barcodeText + '"\r\n';
-      
-      cmd2 += 'TEXT 150,10,"1",0,1,1,"' + namaLine1 + '"\r\n';
-      cmd2 += 'TEXT 150,40,"1",0,2,2,"' + harga + '"\r\n';
-      cmd2 += 'TEXT 150,80,"1",0,1,1,"' + barcodeText + '"\r\n';
-      
-      cmd2 += 'PRINT 1\r\n';
-      
-      var data2 = encoder2.encode(cmd2);
-      for (var k = 0; k < data2.byteLength; k += 20) {
-        var chunk2 = data2.slice(k, Math.min(k + 20, data2.byteLength));
-        await labelPrinterCharacteristic.writeValue(chunk2);
-        await sleep(80);
-      }
-      
-      alert('Label dicetak! (simple)');
-    } catch (e2) {
-      alert('Gagal cetak: ' + e2.message);
-    }
+    alert('Gagal cetak: ' + e.message);
   }
 }
 
