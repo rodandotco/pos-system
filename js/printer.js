@@ -225,24 +225,21 @@ async function cetakLabelLangsung(barcode) {
     var encoder = new TextEncoder();
     var cmd = '';
     
-    // Use very small width, see what happens
-    cmd += 'SIZE 384,120\r\n';
-    cmd += 'GAP 0,0\r\n';
+    cmd += 'SIZE 264,120\r\n';
+    cmd += 'GAP 16,0\r\n';
     cmd += 'CLS\r\n';
     
-    // Simple markers at different positions
-    cmd += 'TEXT 10,10,"1",0,1,1,"A"\r\n';
-    cmd += 'TEXT 50,10,"1",0,1,1,"B"\r\n';
-    cmd += 'TEXT 100,10,"1",0,1,1,"C"\r\n';
-    cmd += 'TEXT 150,10,"1",0,1,1,"D"\r\n';
-    cmd += 'TEXT 200,10,"1",0,1,1,"E"\r\n';
-    cmd += 'TEXT 250,10,"1",0,1,1,"F"\r\n';
-    cmd += 'TEXT 300,10,"1",0,1,1,"G"\r\n';
-    cmd += 'TEXT 350,10,"1",0,1,1,"H"\r\n';
+    // Test from right edge going left
+    cmd += 'TEXT 250,10,"1",0,1,1,"R1"\r\n';
+    cmd += 'TEXT 200,10,"1",0,1,1,"R2"\r\n';
+    cmd += 'TEXT 150,10,"1",0,1,1,"R3"\r\n';
+    cmd += 'TEXT 100,10,"1",0,1,1,"R4"\r\n';
+    cmd += 'TEXT 50,10,"1",0,1,1,"R5"\r\n';
+    cmd += 'TEXT 10,10,"1",0,1,1,"R6"\r\n';
     
     cmd += 'PRINT 1\r\n';
     
-    console.log('Test markers A-H');
+    console.log('Test reverse markers');
     
     var data = encoder.encode(cmd);
     for (var i = 0; i < data.byteLength; i += 20) {
@@ -252,7 +249,7 @@ async function cetakLabelLangsung(barcode) {
       await sleep(80);
     }
     
-    alert('Check the label! Which letters do you see? Where are they?');
+    alert('What do you see? R1 should be leftmost, R6 rightmost.');
     
   } catch (e) {
     console.error('Error:', e.message);
