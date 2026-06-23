@@ -416,7 +416,16 @@ async function bayarDanCetak() {
         await supabaseClient.from('products').update({ stok: Math.max(0, prodResult.data.stok - cart[j].qty) }).eq('barcode', cart[j].barcode);
       }
     }
-    await insertTransaction({ no_invoice: no, tanggal: now.toISOString(), customer: cust, items: items, total: grandTotal, bayar: bayarValue, kembali: kembali });
+    await insertTransaction({ 
+  no_invoice: no, 
+  tanggal: now.toISOString(), 
+  customer: cust, 
+  items: items, 
+  total: grandTotal, 
+  bayar: bayarValue, 
+  kembali: kembali,
+  created_by: currentUser.username
+});
     var toko = appSettings;
     var lk = parseInt(toko.kertas_lebar) || 80;
     var doc = new window.jspdf.jsPDF({ unit: 'mm', format: [lk, 80] });

@@ -127,17 +127,54 @@ async function hapusTransaksi(noInv) {
 }
 
 async function viewInvoice(noInv) {
-  const url = await getInvoiceURL(noInv);
-  if (url) { window.open(url, '_blank'); return; }
-  const trx = await getTransaction(noInv);
-  if (!trx) return alert('Transaksi tidak ditemukan');
-  const toko = await getSettings();
-  trx.toko_nama = toko.nama; trx.toko_alamat = toko.alamat; trx.toko_footer = toko.footer;
-  const blob = generateInvoicePDF(trx);
-  const blobUrl = URL.createObjectURL(blob);
-  window.open(blobUrl, '_blank');
+  var trx = await getTransaction(noInv);
+  if (!trx) {
+    // Check if it's a saved order
+    var result = await supabaseClient.from('saved_orders').select('*').eq('no_pesanan', noInv).single();
+    trx = result.data;
+    if (!trx) return alert('Transaksi tidak ditemukan');
+    
+    // Show saved order history
+    var info = '📋 Pesanan: ' + trx.no_pesanan + '\n';
+    info += '💰 Total: Rp' + (trx.total || 0).toLocaleString('id') + '\n';
+    info += '📝 Dibuat: ' + new Date(trx.created_at).toLocaleString('id-ID') + ' oleh ' + (trx.created_by || '-') + '\n';
+    if (trx.modified_by) {
+      info += '✏️ Diubah: ' + new Date(trx.modified_at).toLocaleString('id-ID') + ' oleh ' + trx.modified_by + '\n';
+    }
+    if (trx.closed_by) {
+      info += '🔒 Dibayar: ' + new Date(trx.closed_at).toLocaleString('id-ID') + ' oleh ' + trx.closed_by + '\n';
+    }
+    if (trx.customer) info += '👤 Customer: ' + trx.customer + '\n';
+    if (trx.items) {
+      info += '\n📦 Items:\n';
+      trx.items.forEach(function(i) {
+        info += '- ' + i.nama + ' x' + i.qty + ' @Rp' + (i.harga || 0).toLocaleString('id') + '\n';
+      });
+    }
+    alert(info);
+    return;
+  }
+  
+  // Show regular transaction history
+  var info = '🧾 Invoice: ' + trx.no_invoice + '\n';
+  info += '📅 Tanggal: ' + new Date(trx.tanggal).toLocaleString('id-ID') + '\n';
+  info += '💰 Total: Rp' + (trx.total || 0).toLocaleString('id') + '\n';
+  info += '💵 Bayar: Rp' + (trx.bayar || 0).toLocaleString('id') + '\n';
+  info += '🔄 Kembali: Rp' + (trx.kembali || 0).toLocaleString('id') + '\n';
+  if (trx.created_by) {
+    info += '👤 Kasir: ' + trx.created_by + '\n';
+  }
+  if (trx.customer) info += '👤 Customer: ' + trx.customer + '\n';
+  
+  if (trx.items) {
+    info += '\n📦 Items:\n';
+    trx.items.forEach(function(i) {
+      info += '- ' + i.nama + ' x' + i.qty + ' @Rp' + (i.harga || 0).toLocaleString('id') + '\n';
+    });
+  }
+  
+  alert(info);
 }
-
 async function cetakUlang(noInv) {
   const url = await getInvoiceURL(noInv);
   if (url) {
