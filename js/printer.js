@@ -224,48 +224,29 @@ async function cetakLabelLangsung(barcode) {
   var product = await getProductByBarcode(barcode);
   if (!product) return alert('Produk tidak ditemukan');
 
-  var nama = (product.nama || 'Produk');
-  var namaLine1 = nama.substring(0, 16);
-  var namaLine2 = nama.length > 16 ? nama.substring(16, 32) : '';
-  
+  var nama = (product.nama || 'Produk').substring(0, 16);
   var harga = 'Rp' + (product.harga_jual || 0).toLocaleString('id');
   var barcodeText = product.barcode || '';
-  var tglCetak = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 
   try {
     var encoder = new TextEncoder();
     var cmd = '';
     
-    // Total: 544 dots wide (264 + 16 + 264), 120 dots high (15mm)
-    cmd += 'SIZE 544,120\r\n';
+    // Single label: 264 dots wide, 120 dots high
+    cmd += 'SIZE 264,120\r\n';
     cmd += 'GAP 0,0\r\n';
-    cmd += 'DIRECTION 1\r\n';
-    cmd += 'DENSITY 10\r\n';
     cmd += 'CLS\r\n';
     
-    // ===== LEFT LABEL (Column 1: x=0 to 264) =====
-    cmd += 'TEXT 10,5,"1",0,1,1,"' + namaLine1 + '"\r\n';
-    if (namaLine2) {
-      cmd += 'TEXT 10,25,"1",0,1,1,"' + namaLine2 + '"\r\n';
-    }
-    var priceY = namaLine2 ? 50 : 40;
-    cmd += 'TEXT 10,' + priceY + ',"1",0,1.5,1.5,"' + harga + '"\r\n';
-    cmd += 'BARCODE 10,65,"128",30,1,0,1,1,"' + barcodeText + '"\r\n';
-    cmd += 'TEXT 10,100,"1",0,1,1,"' + tglCetak + '"\r\n';
-    
-    // ===== RIGHT LABEL (Column 2: x=280 to 544) =====
-    var col2 = 280;
-    cmd += 'TEXT ' + (10 + col2) + ',5,"1",0,1,1,"' + namaLine1 + '"\r\n';
-    if (namaLine2) {
-      cmd += 'TEXT ' + (10 + col2) + ',25,"1",0,1,1,"' + namaLine2 + '"\r\n';
-    }
-    cmd += 'TEXT ' + (10 + col2) + ',' + priceY + ',"1",0,1.5,1.5,"' + harga + '"\r\n';
-    cmd += 'BARCODE ' + (10 + col2) + ',65,"128",30,1,0,1,1,"' + barcodeText + '"\r\n';
-    cmd += 'TEXT ' + (10 + col2) + ',100,"1",0,1,1,"' + tglCetak + '"\r\n';
+    // Print at different X positions to find the center
+    cmd += 'TEXT 5,10,"1",0,1,1,"LEFT EDGE"\r\n';
+    cmd += 'TEXT 70,30,"1",0,1,1,"CENTER"\r\n';
+    cmd += 'TEXT 200,50,"1",0,1,1,"RIGHT>"\r\n';
+    cmd += 'TEXT 5,70,"1",0,1,1,"' + nama + '"\r\n';
+    cmd += 'TEXT 5,90,"1",0,1,1,"' + harga + '"\r\n';
     
     cmd += 'PRINT 1\r\n';
     
-    console.log('Sending label...');
+    console.log('Test print - single label positioning');
     
     var data = encoder.encode(cmd);
     for (var i = 0; i < data.byteLength; i += 20) {
@@ -275,12 +256,11 @@ async function cetakLabelLangsung(barcode) {
       await sleep(80);
     }
     
-    console.log('Label sent!');
-    alert('Label dicetak!');
+    alert('Test printed! Tell me:\n1. Is LEFT EDGE at the very left?\n2. Is RIGHT at the right edge?\n3. Is CENTER in the middle?\n4. Is anything cut off?');
     
   } catch (e) {
-    console.error('Print error:', e.message);
-    alert('Gagal cetak: ' + e.message);
+    console.error('Error:', e.message);
+    alert('Gagal: ' + e.message);
   }
 }
 
