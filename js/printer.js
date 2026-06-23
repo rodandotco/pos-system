@@ -225,21 +225,21 @@ async function cetakLabelLangsung(barcode) {
     var encoder = new TextEncoder();
     var cmd = '';
     
+    // DIRECTION 0 = portrait, DIRECTION 1 = landscape
+    // Try landscape mode since labels are 33mm wide
     cmd += 'SIZE 264,120\r\n';
     cmd += 'GAP 16,0\r\n';
+    cmd += 'DIRECTION 0\r\n';
     cmd += 'CLS\r\n';
     
-    // Test from right edge going left
-    cmd += 'TEXT 250,10,"1",0,1,1,"R1"\r\n';
-    cmd += 'TEXT 200,10,"1",0,1,1,"R2"\r\n';
-    cmd += 'TEXT 150,10,"1",0,1,1,"R3"\r\n';
-    cmd += 'TEXT 100,10,"1",0,1,1,"R4"\r\n';
-    cmd += 'TEXT 50,10,"1",0,1,1,"R5"\r\n';
-    cmd += 'TEXT 10,10,"1",0,1,1,"R6"\r\n';
+    // Simple test markers from top-left
+    cmd += 'TEXT 10,10,"1",0,1,1,"TOP LEFT"\r\n';
+    cmd += 'TEXT 10,50,"1",0,1,1,"MIDDLE"\r\n';
+    cmd += 'TEXT 10,90,"1",0,1,1,"BOTTOM"\r\n';
     
     cmd += 'PRINT 1\r\n';
     
-    console.log('Test reverse markers');
+    console.log('Orientation test');
     
     var data = encoder.encode(cmd);
     for (var i = 0; i < data.byteLength; i += 20) {
@@ -249,7 +249,7 @@ async function cetakLabelLangsung(barcode) {
       await sleep(80);
     }
     
-    alert('What do you see? R1 should be leftmost, R6 rightmost.');
+    alert('Check: TOP LEFT at top? MIDDLE in middle? BOTTOM at bottom?');
     
   } catch (e) {
     console.error('Error:', e.message);
