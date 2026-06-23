@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Label Printer Test - POS</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+    body { background: #f0f2f5; padding: 20px; min-height: 100vh; }
+    .container { max-width: 500px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    h2 { color: #00695c; margin-bottom: 16px; }
+    .status { padding: 10px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; }
+    .status.connected { background: #e8f5e9; color: #2e7d32; }
+    .status.disconnected { background: #fff3e0; color: #e65100; }
+    .form-group { margin-bottom: 12px; }
+    label { display: block; font-size: 13px; font-weight: 600; color: #455a64; margin-bottom: 4px; }
+    input, select { width: 100%; padding: 10px; border: 1.5px solid #e0e4e8; border-radius: 8px; font-size: 14px; }
+    input:focus, select:focus { outline: none; border-color: #00897b; }
+    .btn { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; margin: 4px; }
+    .btn-primary { background: #00897b; color: white; }
+    .btn-warning { background: #ff9800; color: white; }
+    .btn-danger { background: #e53935; color: white; }
+    .btn-info { background: #2196f3; color: white; }
+    .btn-block { width: 100%; display: block; margin: 8px 0; }
+    .row { display: flex; gap: 8px; }
+    .row > * { flex: 1; }
+    .led { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+    .led-green { background: #4caf50; }
+    .led-red { background: #f44336; }
+    small { color: #666; font-size: 11px; }
+    hr { margin: 16px 0; border: none; border-top: 1px solid #e0e0e0; }
+    .log { background: #263238; color: #aed581; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 11px; max-height: 200px; overflow-y: auto; margin-top: 12px; white-space: pre-wrap; }
+    .checkbox-group { display: flex; gap: 12px; flex-wrap: wrap; }
+    .checkbox-group label { font-weight: normal; display: flex; align-items: center; gap: 4px; }
+    .checkbox-group input[type="checkbox"] { width: auto; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h2>🏷️ Label Printer Test</h2>
+  
+  <div id="statusBox" class="status disconnected">
+    <span id="statusIcon">🔴</span> <span id="statusText">Label printer tidak terhubung</span>
+  </div>
+  
+  <div class="row">
+    <button class="btn btn-primary" onclick="connectPrinter()">🔗 Sambung Printer</button>
+    <button class="btn btn-danger" onclick="disconnectPrinter()">Putus</button>
+  </div>
+  
+  <hr>
+  
+  <h3>Pengaturan Label</h3>
+  
+  <div class="row">
+    <div class="form-group">
+      <label>Lebar Label (dots)</label>
+      <input type="number" id="labelW" value="264" min="50" max="600">
+    </div>
+    <div class="form-group">
+      <label>Tinggi Label (dots)</label>
+      <input type="number" id="labelH" value="120" min="30" max="300">
+    </div>
+  </div>
+  
+  <div class="row">
+    <div class="form-group">
+      <label>Jarak Kolom (dots)</label>
+      <input type="number" id="labelGap" value="16" min="0" max="50">
+    </div>
+    <div class="form-group">
+      <label>Jumlah Kolom</label>
+      <select id="labelCols"><option value="1">1 Kolom</option><option value="2" selected>2 Kolom</option></select>
+    </div>
+  </div>
+  
+  <div class="row">
+    <div class="form-group">
+      <label>Offset X</label>
+      <input type="number" id="offsetX" value="0" min="-200" max="300">
+    </div>
+    <div class="form-group">
+      <label>Offset Y</label>
+      <input type="number" id="offsetY" value="0" min="-200" max="300">
+    </div>
+  </div>
+  
+  <div class="form-group">
+    <label>Konten</label>
+    <div class="checkbox-group">
+      <label><input type="checkbox" id="chkNama" checked> Nama</label>
+      <label><input type="checkbox" id="chkHarga" checked> Harga</label>
+      <label><input type="checkbox" id="chkBarcode" checked> Barcode</label>
+      <label><input type="checkbox" id="chkDate"> Tanggal</label>
+    </div>
+  </div>
+  
+  <div class="row">
+    <div class="form-group">
+      <label>Nama Produk (test)</label>
+      <input type="text" id="testNama" value="Indomie Goreng">
+    </div>
+    <div class="form-group">
+      <label>Harga (test)</label>
+      <input type="text" id="testHarga" value="Rp 3.500">
+    </div>
+  </div>
+  
+  <div class="form-group">
+    <label>Barcode (test)</label>
+    <input type="text" id="testBarcode" value="899123456789">
+  </div>
+  
+  <button class="btn btn-warning btn-block" onclick="printLabel()">🖨️ CETAK LABEL</button>
+  
+  <div class="row">
+    <button class="btn btn-sm" onclick="saveSettings()">💾 Simpan Pengaturan</button>
+    <button class="btn btn-sm" onclick="loadSettings()">📂 Muat Pengaturan</button>
+  </div>
+  
+  <hr>
+  
+  <h3>Log</h3>
+  <div class="log" id="logBox">Menunggu perintah...</div>
+  <button class="btn btn-sm btn-danger" onclick="document.getElementById('logBox').innerHTML = ''">Bersihkan Log</button>
+</div>
+
+<script>
+// ===================== LABEL PRINTER TEST =====================
+var printer = null;
+var charac = null;
+
+function log(msg) {
+  var box = document.getElementById('logBox');
+  var time = new Date().toLocaleTimeString('id-ID');
+  box.innerHTML += '[' + time + '] ' + msg + '\n';
+  box.scrollTop = box.scrollHeight;
+}
+
+async function connectPrinter() {
+  try {
+    log('Mencari printer Bluetooth...');
+    
+    printer = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: [
+        '000018f0-0000-1000-8000-00805f9b34fb',
+        '00001101-0000-1000-8000-00805f9b34fb',
+        '49535343-fe7d-4ae5-8fa9-9fafd205e455',
+        'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
+        '0000ff00-0000-1000-8000-00805f9b34fb'
+      ]
+    });
+    
+    log('Device: ' + printer.name + ' (' + printer.id + ')');
+    
+    var server = await printer.gatt.connect();
+    log('GATT connected');
+    
+    var services = await server.getPrimaryServices();
+    log('Found ' + services.length + ' services');
+    
+    for (var i = 0; i < services.length; i++) {
+      log('Service: ' + services[i].uuid);
+      try {
+        var chars = await services[i].getCharacteristics();
+        for (var j = 0; j < chars.length; j++) {
+          log('  Char: ' + chars[j].uuid + ' write=' + chars[j].properties.write + ' woResp=' + chars[j].properties.writeWithoutResponse);
+          if (chars[j].properties.write || chars[j].properties.writeWithoutResponse) {
+            charac = chars[j];
+            log('  >>> USING THIS CHARACTERISTIC');
+          }
+        }
+      } catch(e) {
+        log('  Error: ' + e.message);
+      }
+    }
+    
+    if (charac) {
+      document.getElementById('statusBox').className = 'status connected';
+      document.getElementById('statusIcon').textContent = '🟢';
+      document.getElementById('statusText').textContent = 'Label printer terhubung!';
+      log('SUCCESS: Printer siap digunakan!');
+    } else {
+      log('ERROR: Tidak ada characteristic writable ditemukan');
+      alert('Tidak dapat menemukan characteristic untuk menulis.');
+    }
+    
+  } catch(e) {
+    log('ERROR: ' + e.name + ' - ' + e.message);
+    if (e.name === 'NotFoundError') {
+      alert('Printer tidak ditemukan. Pastikan menyala dan dalam mode pairing.');
+    } else if (e.name === 'SecurityError') {
+      alert('Izin Bluetooth ditolak. Cek permission Chrome.');
+    } else {
+      alert('Gagal: ' + e.message);
+    }
+  }
+}
+
+function disconnectPrinter() {
+  if (printer && printer.gatt.connected) {
+    printer.gatt.disconnect();
+    log('Printer diputus');
+  }
+  printer = null;
+  charac = null;
+  document.getElementById('statusBox').className = 'status disconnected';
+  document.getElementById('statusIcon').textContent = '🔴';
+  document.getElementById('statusText').textContent = 'Label printer tidak terhubung';
+}
+
+async function printLabel() {
+  if (!printer || !charac) {
+    alert('Sambungkan printer dulu!');
+    return;
+  }
+  
+  var w = parseInt(document.getElementById('labelW').value) || 264;
+  var h = parseInt(document.getElementById('labelH').value) || 120;
+  var gap = parseInt(document.getElementById('labelGap').value) || 16;
+  var cols = parseInt(document.getElementById('labelCols').value) || 2;
+  var ox = parseInt(document.getElementById('offsetX').value) || 0;
+  var oy = parseInt(document.getElementById('offsetY').value) || 0;
+  
+  var showNama = document.getElementById('chkNama').checked;
+  var showHarga = document.getElementById('chkHarga').checked;
+  var showBarcode = document.getElementById('chkBarcode').checked;
+  var showDate = document.getElementById('chkDate').checked;
+  
+  var nama = document.getElementById('testNama').value.substring(0, 20);
+  var harga = document.getElementById('testHarga').value;
+  var barcode = document.getElementById('testBarcode').value;
+  var tgl = new Date().toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' });
+  
+  var totalW = cols === 2 ? (w * 2 + gap) : w;
+  
+  try {
+    var cmd = '';
+    cmd += 'SIZE ' + totalW + ',' + h + '\r\n';
+    cmd += 'GAP 0,0\r\n';
+    cmd += 'CLS\r\n';
+    
+    log('Printing: ' + totalW + 'x' + h + ' dots, ' + cols + ' cols, offset(' + ox + ',' + oy + ')');
+    
+    for (var col = 0; col < cols; col++) {
+      var x = (col * (w + gap)) + 10 + ox;
+      var y = 10 + oy;
+      
+      if (showNama) {
+        cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + nama + '"\r\n';
+        y += 25;
+      }
+      if (showHarga) {
+        cmd += 'TEXT ' + x + ',' + y + ',"1",0,1.5,1.5,"' + harga + '"\r\n';
+        y += 30;
+      }
+      if (showBarcode) {
+        cmd += 'BARCODE ' + x + ',' + y + ',"128",30,1,0,1,1,"' + barcode + '"\r\n';
+        y += 35;
+      }
+      if (showDate) {
+        cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + tgl + '"\r\n';
+      }
+    }
+    
+    cmd += 'PRINT 1\r\n';
+    
+    log('Sending ' + cmd.length + ' chars...');
+    
+    var encoder = new TextEncoder();
+    var data = encoder.encode(cmd);
+    
+    for (var i = 0; i < data.byteLength; i += 20) {
+      var end = Math.min(i + 20, data.byteLength);
+      var chunk = data.slice(i, end);
+      await charac.writeValue(chunk);
+      await sleep(80);
+    }
+    
+    log('SUCCESS: Label printed!');
+    alert('Label dicetak!');
+    
+  } catch(e) {
+    log('ERROR: ' + e.message);
+    alert('Gagal cetak: ' + e.message);
+  }
+}
+
+function saveSettings() {
+  var s = {
+    w: document.getElementById('labelW').value,
+    h: document.getElementById('labelH').value,
+    gap: document.getElementById('labelGap').value,
+    cols: document.getElementById('labelCols').value,
+    ox: document.getElementById('offsetX').value,
+    oy: document.getElementById('offsetY').value,
+    nama: document.getElementById('chkNama').checked,
+    harga: document.getElementById('chkHarga').checked,
+    barcode: document.getElementById('chkBarcode').checked,
+    date: document.getElementById('chkDate').checked,
+    testNama: document.getElementById('testNama').value,
+    testHarga: document.getElementById('testHarga').value,
+    testBarcode: document.getElementById('testBarcode').value
+  };
+  localStorage.setItem('labelTestSettings', JSON.stringify(s));
+  log('Settings saved!');
+  alert('Pengaturan disimpan!');
+}
+
+function loadSettings() {
+  var saved = localStorage.getItem('labelTestSettings');
+  if (saved) {
+    var s = JSON.parse(saved);
+    document.getElementById('labelW').value = s.w || 264;
+    document.getElementById('labelH').value = s.h || 120;
+    document.getElementById('labelGap').value = s.gap || 16;
+    document.getElementById('labelCols').value = s.cols || 2;
+    document.getElementById('offsetX').value = s.ox || 0;
+    document.getElementById('offsetY').value = s.oy || 0;
+    document.getElementById('chkNama').checked = s.nama !== false;
+    document.getElementById('chkHarga').checked = s.harga !== false;
+    document.getElementById('chkBarcode').checked = s.barcode !== false;
+    document.getElementById('chkDate').checked = s.date === true;
+    document.getElementById('testNama').value = s.testNama || '';
+    document.getElementById('testHarga').value = s.testHarga || '';
+    document.getElementById('testBarcode').value = s.testBarcode || '';
+    log('Settings loaded!');
+  }
+}
+
+function sleep(ms) {
+  return new Promise(function(resolve) { setTimeout(resolve, ms); });
+}
+
+// Load saved settings on start
+loadSettings();
+log('Label Printer Test ready. Sambungkan printer untuk mulai.');
+</script>
+</body>
+</html>
