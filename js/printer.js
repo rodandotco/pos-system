@@ -221,32 +221,28 @@ async function cetakLabelLangsung(barcode) {
     return;
   }
 
-  var product = await getProductByBarcode(barcode);
-  if (!product) return alert('Produk tidak ditemukan');
-
-  var nama = (product.nama || 'Produk').substring(0, 16);
-  var harga = 'Rp' + (product.harga_jual || 0).toLocaleString('id');
-  var barcodeText = product.barcode || '';
-
   try {
     var encoder = new TextEncoder();
     var cmd = '';
     
-    // Single label: 264 dots wide, 120 dots high
-    cmd += 'SIZE 264,120\r\n';
+    // Use very small width, see what happens
+    cmd += 'SIZE 384,120\r\n';
     cmd += 'GAP 0,0\r\n';
     cmd += 'CLS\r\n';
     
-    // Print at different X positions to find the center
-    cmd += 'TEXT 5,10,"1",0,1,1,"LEFT EDGE"\r\n';
-    cmd += 'TEXT 70,30,"1",0,1,1,"CENTER"\r\n';
-    cmd += 'TEXT 200,50,"1",0,1,1,"RIGHT>"\r\n';
-    cmd += 'TEXT 5,70,"1",0,1,1,"' + nama + '"\r\n';
-    cmd += 'TEXT 5,90,"1",0,1,1,"' + harga + '"\r\n';
+    // Simple markers at different positions
+    cmd += 'TEXT 10,10,"1",0,1,1,"A"\r\n';
+    cmd += 'TEXT 50,10,"1",0,1,1,"B"\r\n';
+    cmd += 'TEXT 100,10,"1",0,1,1,"C"\r\n';
+    cmd += 'TEXT 150,10,"1",0,1,1,"D"\r\n';
+    cmd += 'TEXT 200,10,"1",0,1,1,"E"\r\n';
+    cmd += 'TEXT 250,10,"1",0,1,1,"F"\r\n';
+    cmd += 'TEXT 300,10,"1",0,1,1,"G"\r\n';
+    cmd += 'TEXT 350,10,"1",0,1,1,"H"\r\n';
     
     cmd += 'PRINT 1\r\n';
     
-    console.log('Test print - single label positioning');
+    console.log('Test markers A-H');
     
     var data = encoder.encode(cmd);
     for (var i = 0; i < data.byteLength; i += 20) {
@@ -256,7 +252,7 @@ async function cetakLabelLangsung(barcode) {
       await sleep(80);
     }
     
-    alert('Test printed! Tell me:\n1. Is LEFT EDGE at the very left?\n2. Is RIGHT at the right edge?\n3. Is CENTER in the middle?\n4. Is anything cut off?');
+    alert('Check the label! Which letters do you see? Where are they?');
     
   } catch (e) {
     console.error('Error:', e.message);
