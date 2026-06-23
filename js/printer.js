@@ -225,138 +225,95 @@ async function cetakLabelLangsung(barcode) {
   if (!product) return alert('Produk tidak ditemukan');
 
   var nama = (product.nama || 'Produk');
-  var namaLine1 = nama.substring(0, 18);
-  var namaLine2 = nama.length > 18 ? nama.substring(18, 36) : '';
+  var namaLine1 = nama.substring(0, 16);
+  var namaLine2 = nama.length > 16 ? nama.substring(16, 32) : '';
   
-  var harga = 'Rp ' + (product.harga_jual || 0).toLocaleString('id');
+  var harga = 'Rp' + (product.harga_jual || 0).toLocaleString('id');
   var barcodeText = product.barcode || '';
   var tglCetak = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 
-  // Try Style 1: With QRCODE command
   try {
     var encoder = new TextEncoder();
     var cmd = '';
     
-    cmd += 'SIZE 33 mm,15 mm\r\n';
-    cmd += 'GAP 2 mm,0\r\n';
+    // Label: 264 x 120 dots (33mm x 15mm at 203dpi), gap 16 dots (2mm)
+    cmd += 'SIZE 264,120\r\n';
+    cmd += 'GAP 16,0\r\n';
     cmd += 'DIRECTION 1\r\n';
+    cmd += 'DENSITY 10\r\n';
     cmd += 'CLS\r\n';
     
-    // ===== LEFT LABEL =====
-    cmd += 'QRCODE 5,5,L,3,A,"' + barcodeText + '"\r\n';
-    cmd += 'TEXT 55,5,"1",0,1,1,"' + namaLine1 + '"\r\n';
+    // ===== LEFT LABEL (x: 0 to 124) =====
+    cmd += 'TEXT 5,5,"1",0,1,1,"' + namaLine1 + '"\r\n';
     if (namaLine2) {
-      cmd += 'TEXT 55,20,"1",0,1,1,"' + namaLine2 + '"\r\n';
+      cmd += 'TEXT 5,25,"1",0,1,1,"' + namaLine2 + '"\r\n';
     }
-    cmd += 'TEXT 55,45,"1",0,2,2,"' + harga + '"\r\n';
-    cmd += 'TEXT 5,100,"1",0,1,1,"' + barcodeText + '"\r\n';
-    cmd += 'TEXT 55,100,"1",0,1,1,"' + tglCetak + '"\r\n';
+    var priceY = namaLine2 ? 50 : 40;
+    cmd += 'TEXT 5,' + priceY + ',"1",0,1.5,1.5,"' + harga + '"\r\n';
+    cmd += 'TEXT 5,85,"1",0,1,1,"' + barcodeText + '"\r\n';
+    cmd += 'TEXT 5,105,"1",0,1,1,"' + tglCetak + '"\r\n';
     
-    // ===== RIGHT LABEL =====
-    var offsetX = 140;
-    cmd += 'QRCODE ' + (5 + offsetX) + ',5,L,3,A,"' + barcodeText + '"\r\n';
-    cmd += 'TEXT ' + (55 + offsetX) + ',5,"1",0,1,1,"' + namaLine1 + '"\r\n';
+    // ===== RIGHT LABEL (x: 140 to 264) =====
+    var col2 = 140;
+    cmd += 'TEXT ' + (5 + col2) + ',5,"1",0,1,1,"' + namaLine1 + '"\r\n';
     if (namaLine2) {
-      cmd += 'TEXT ' + (55 + offsetX) + ',20,"1",0,1,1,"' + namaLine2 + '"\r\n';
+      cmd += 'TEXT ' + (5 + col2) + ',25,"1",0,1,1,"' + namaLine2 + '"\r\n';
     }
-    cmd += 'TEXT ' + (55 + offsetX) + ',45,"1",0,2,2,"' + harga + '"\r\n';
-    cmd += 'TEXT ' + (5 + offsetX) + ',100,"1",0,1,1,"' + barcodeText + '"\r\n';
-    cmd += 'TEXT ' + (55 + offsetX) + ',100,"1",0,1,1,"' + tglCetak + '"\r\n';
+    cmd += 'TEXT ' + (5 + col2) + ',' + priceY + ',"1",0,1.5,1.5,"' + harga + '"\r\n';
+    cmd += 'TEXT ' + (5 + col2) + ',85,"1",0,1,1,"' + barcodeText + '"\r\n';
+    cmd += 'TEXT ' + (5 + col2) + ',105,"1",0,1,1,"' + tglCetak + '"\r\n';
+    
+    // BARCODE for both
+    cmd += 'BARCODE 5,60,"128",20,1,0,1,1,"' + barcodeText + '"\r\n';
+    cmd += 'BARCODE ' + (5 + col2) + ',60,"128",20,1,0,1,1,"' + barcodeText + '"\r\n';
     
     cmd += 'PRINT 1\r\n';
     
-    console.log('Sending label with QR...');
+    console.log('Sending label...');
     
     var data = encoder.encode(cmd);
     for (var i = 0; i < data.byteLength; i += 20) {
       var end = Math.min(i + 20, data.byteLength);
       var chunk = data.slice(i, end);
       await labelPrinterCharacteristic.writeValue(chunk);
-      await sleep(100);
+      await sleep(80);
     }
     
     console.log('Label sent!');
     alert('Label dicetak!');
-    return;
     
-  } catch (e1) {
-    console.error('QR style failed:', e1.message);
-  }
-  
-  // Try Style 2: Without QRCODE, use BARCODE instead
-  try {
-    var encoder2 = new TextEncoder();
-    var cmd2 = '';
+  } catch (e) {
+    console.error('Print error:', e.message);
     
-    cmd2 += 'SIZE 33 mm,15 mm\r\n';
-    cmd2 += 'GAP 2 mm,0\r\n';
-    cmd2 += 'DIRECTION 1\r\n';
-    cmd2 += 'CLS\r\n';
-    
-    // Left label
-    cmd2 += 'TEXT 5,5,"1",0,1,1,"' + namaLine1 + '"\r\n';
-    if (namaLine2) cmd2 += 'TEXT 5,20,"1",0,1,1,"' + namaLine2 + '"\r\n';
-    var priceY = namaLine2 ? 40 : 30;
-    cmd2 += 'TEXT 5,' + priceY + ',"1",0,2,2,"' + harga + '"\r\n';
-    cmd2 += 'TEXT 5,65,"1",0,1,1,"' + barcodeText + '"\r\n';
-    cmd2 += 'TEXT 5,80,"1",0,1,1,"' + tglCetak + '"\r\n';
-    cmd2 += 'BARCODE 5,95,"128",30,1,0,1,1,"' + barcodeText + '"\r\n';
-    
-    // Right label
-    var offsetX2 = 140;
-    cmd2 += 'TEXT ' + (5 + offsetX2) + ',5,"1",0,1,1,"' + namaLine1 + '"\r\n';
-    if (namaLine2) cmd2 += 'TEXT ' + (5 + offsetX2) + ',20,"1",0,1,1,"' + namaLine2 + '"\r\n';
-    cmd2 += 'TEXT ' + (5 + offsetX2) + ',' + priceY + ',"1",0,2,2,"' + harga + '"\r\n';
-    cmd2 += 'TEXT ' + (5 + offsetX2) + ',65,"1",0,1,1,"' + barcodeText + '"\r\n';
-    cmd2 += 'TEXT ' + (5 + offsetX2) + ',80,"1",0,1,1,"' + tglCetak + '"\r\n';
-    cmd2 += 'BARCODE ' + (5 + offsetX2) + ',95,"128",30,1,0,1,1,"' + barcodeText + '"\r\n';
-    
-    cmd2 += 'PRINT 1\r\n';
-    
-    console.log('Trying without QR...');
-    
-    var data2 = encoder2.encode(cmd2);
-    for (var k = 0; k < data2.byteLength; k += 20) {
-      var chunk2 = data2.slice(k, Math.min(k + 20, data2.byteLength));
-      await labelPrinterCharacteristic.writeValue(chunk2);
-      await sleep(100);
-    }
-    
-    alert('Label dicetak! (barcode)');
-    return;
-    
-  } catch (e2) {
-    console.error('Barcode style failed:', e2.message);
-    
-    // Last resort: Just text
+    // Fallback: simpler format without barcode
     try {
-      var encoder3 = new TextEncoder();
-      var cmd3 = '';
+      var encoder2 = new TextEncoder();
+      var cmd2 = '';
       
-      cmd3 += 'SIZE 33 mm,15 mm\r\n';
-      cmd3 += 'GAP 2 mm,0\r\n';
-      cmd3 += 'CLS\r\n';
+      cmd2 += 'SIZE 264,120\r\n';
+      cmd2 += 'GAP 16,0\r\n';
+      cmd2 += 'CLS\r\n';
       
-      cmd3 += 'TEXT 5,10,"1",0,1,1,"' + namaLine1 + '"\r\n';
-      cmd3 += 'TEXT 5,40,"1",0,2,2,"' + harga + '"\r\n';
-      cmd3 += 'TEXT 5,80,"1",0,1,1,"' + barcodeText + '"\r\n';
+      cmd2 += 'TEXT 10,10,"1",0,1,1,"' + namaLine1 + '"\r\n';
+      cmd2 += 'TEXT 10,40,"1",0,2,2,"' + harga + '"\r\n';
+      cmd2 += 'TEXT 10,80,"1",0,1,1,"' + barcodeText + '"\r\n';
       
-      cmd3 += 'TEXT 145,10,"1",0,1,1,"' + namaLine1 + '"\r\n';
-      cmd3 += 'TEXT 145,40,"1",0,2,2,"' + harga + '"\r\n';
-      cmd3 += 'TEXT 145,80,"1",0,1,1,"' + barcodeText + '"\r\n';
+      cmd2 += 'TEXT 150,10,"1",0,1,1,"' + namaLine1 + '"\r\n';
+      cmd2 += 'TEXT 150,40,"1",0,2,2,"' + harga + '"\r\n';
+      cmd2 += 'TEXT 150,80,"1",0,1,1,"' + barcodeText + '"\r\n';
       
-      cmd3 += 'PRINT 1\r\n';
+      cmd2 += 'PRINT 1\r\n';
       
-      var data3 = encoder3.encode(cmd3);
-      for (var m = 0; m < data3.byteLength; m += 20) {
-        var chunk3 = data3.slice(m, Math.min(m + 20, data3.byteLength));
-        await labelPrinterCharacteristic.writeValue(chunk3);
-        await sleep(100);
+      var data2 = encoder2.encode(cmd2);
+      for (var k = 0; k < data2.byteLength; k += 20) {
+        var chunk2 = data2.slice(k, Math.min(k + 20, data2.byteLength));
+        await labelPrinterCharacteristic.writeValue(chunk2);
+        await sleep(80);
       }
       
-      alert('Label dicetak! (text only)');
-    } catch (e3) {
-      alert('Gagal cetak: ' + e3.message);
+      alert('Label dicetak! (simple)');
+    } catch (e2) {
+      alert('Gagal cetak: ' + e2.message);
     }
   }
 }
