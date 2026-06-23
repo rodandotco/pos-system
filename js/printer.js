@@ -126,13 +126,43 @@ async function sambungLabelPrinter() {
   try {
     labelPrinterDevice = await navigator.bluetooth.requestDevice({
       acceptAllDevices: true,
-      optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
+      optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb', '0000ff00-0000-1000-8000-00805f9b34fb', '0000180a-0000-1000-8000-00805f9b34fb']
     });
+    
     var server = await labelPrinterDevice.gatt.connect();
-    var service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
-    labelPrinterCharacteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
+    
+    // Try to find any available service
+    var services = await server.getPrimaryServices();
+    console.log('Available services:', services);
+    
+    var service = null;
+    var characteristic = null;
+    
+    // Find first service with a writable characteristic
+    for (var i = 0; i < services.length; i++) {
+      try {
+        var chars = await services[i].getCharacteristics();
+        for (var j = 0; j < chars.length; j++) {
+          if (chars[j].properties.write || chars[j].properties.writeWithoutResponse) {
+            service = services[i];
+            characteristic = chars[j];
+            console.log('Found service:', service.uuid, 'characteristic:', characteristic.uuid);
+            break;
+          }
+        }
+      } catch (e) {
+        console.log('Error getting characteristics for service:', services[i].uuid);
+      }
+      if (characteristic) break;
+    }
+    
+    if (!characteristic) {
+      throw new Error('No writable characteristic found');
+    }
+    
+    labelPrinterCharacteristic = characteristic;
     updateLabelPrinterStatus(true);
-    alert('Label printer terhubung!');
+    alert('Label printer terhubung!\nService: ' + service.uuid);
   } catch (e) {
     console.error(e);
     updateLabelPrinterStatus(false);
