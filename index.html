@@ -133,6 +133,14 @@
     <h3>Daftar Produk (<span id="productCount">0</span>)</h3>
     <input type="text" id="invSearch" placeholder="Cari..." oninput="filterProductList()">
     <button class="btn btn-sm" onclick="refreshProductList()">🔄 Refresh</button>
+    
+    <!-- Label Printer Status -->
+    <div id="labelPrinterStatus" class="printer-status" style="margin-top:8px;">
+      <span class="led led-red"></span> Label printer tidak terhubung
+      <button class="btn btn-sm" onclick="sambungLabelPrinter()" style="margin-left:8px;">🔗 Sambung Label</button>
+      <button class="btn btn-sm btn-danger" onclick="putusLabelPrinter()">Putus</button>
+    </div>
+    
     <div class="table-wrapper"><table class="product-table" id="productListTable"><thead><tr><th>Barcode</th><th>Nama</th><th>Kategori</th><th>Keterangan</th><th>Harga Jual</th><th>Stok</th><th id="thAksi">Aksi</th></tr></thead><tbody></tbody></table></div>
   </div>
 
