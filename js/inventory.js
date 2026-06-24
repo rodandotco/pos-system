@@ -152,7 +152,7 @@ function generateBarcode() {
 
 // ===================== LABEL PRINT DIALOG =====================
 function mmToDots(mm) {
-  return Math.round(mm * 8); // 203 DPI = 8 dots/mm
+  return Math.round(mm * 8);
 }
 
 function updateLabelDialogStatus() {
@@ -268,22 +268,37 @@ async function cetakLabelWithSettings() {
   try {
     var encoder = new TextEncoder();
     var cmd = '';
-    var totalWidth = cols === 2 ? (width * 2 + gap) : width;
-    cmd += 'SIZE ' + totalWidth + ',' + height + '\r\n';
-    cmd += 'GAP 0,0\r\n';
+    
+    // Use single column width, print each column as separate label
+    cmd += 'SIZE ' + width + ',' + height + '\r\n';
+    cmd += 'GAP ' + gap + ',0\r\n';
     cmd += 'DIRECTION ' + direction + '\r\n';
-    cmd += 'CLS\r\n';
     
-    for (var col = 0; col < cols; col++) {
-      var xBase = (col * (width + gap)) + 10 + offsetX;
-      var yPos = 10 + offsetY;
-      if (showNama) { cmd += 'TEXT ' + xBase + ',' + yPos + ',"1",0,1,1,"' + nama + '"\r\n'; yPos += 25; }
-      if (showHarga) { cmd += 'TEXT ' + xBase + ',' + yPos + ',"1",0,1.5,1.5,"' + harga + '"\r\n'; yPos += 30; }
-      if (showBarcode) { cmd += 'BARCODE ' + xBase + ',' + yPos + ',"128",30,1,0,1,1,"' + barcodeText + '"\r\n'; yPos += 35; }
-      if (showDate) { cmd += 'TEXT ' + xBase + ',' + yPos + ',"1",0,1,1,"' + tgl + '"\r\n'; }
+    for (var copy = 0; copy < printCount; copy++) {
+      for (var col = 0; col < cols; col++) {
+        cmd += 'CLS\r\n';
+        var xBase = 10 + offsetX;
+        var yPos = 10 + offsetY;
+        
+        if (showNama) {
+          cmd += 'TEXT ' + xBase + ',' + yPos + ',"1",0,1,1,"' + nama + '"\r\n';
+          yPos += 25;
+        }
+        if (showHarga) {
+          cmd += 'TEXT ' + xBase + ',' + yPos + ',"1",0,1.5,1.5,"' + harga + '"\r\n';
+          yPos += 30;
+        }
+        if (showBarcode) {
+          cmd += 'BARCODE ' + xBase + ',' + yPos + ',"128",30,1,0,1,1,"' + barcodeText + '"\r\n';
+          yPos += 35;
+        }
+        if (showDate) {
+          cmd += 'TEXT ' + xBase + ',' + yPos + ',"1",0,1,1,"' + tgl + '"\r\n';
+        }
+        
+        cmd += 'PRINT 1\r\n';
+      }
     }
-    
-    cmd += 'PRINT ' + printCount + '\r\n';
     
     var data = encoder.encode(cmd);
     for (var i = 0; i < data.byteLength; i += 20) {
@@ -294,7 +309,7 @@ async function cetakLabelWithSettings() {
     }
     
     document.getElementById('labelPrintModal').style.display = 'none';
-    alert('Label dicetak! (' + printCount + 'x)');
+    alert('Label dicetak! (' + (printCount * cols) + ' pcs)');
   } catch (e) {
     console.error('Error:', e.message);
     alert('Gagal cetak: ' + e.message);
