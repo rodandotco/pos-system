@@ -166,7 +166,6 @@ async function sambungLabelPrinterDariDialog() { await sambungLabelPrinter(); up
 function bukaLabelDialog(barcode) {
   currentLabelBarcode = barcode;
   
-  // Fresh defaults - user must fill in, cols default = 2
   document.getElementById('labelWidthMM').value = '';
   document.getElementById('labelHeightMM').value = '';
   document.getElementById('labelGapMM').value = '';
@@ -214,7 +213,6 @@ async function cetakLabelPDF() {
   };
   qrImage.onerror = function() { alert('Gagal memuat QR code.'); };
   qrImage.src = qrUrl;
-  // Stay on dialog - no close
 }
 
 async function cetakLabelWithSettings() {
@@ -254,31 +252,39 @@ async function cetakLabelWithSettings() {
   var tgl = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
   
   try {
-    var encoder = new TextEncoder();
-    var cmd = '';
     var totalW = cols === 2 ? (w * 2 + gap) : w;
-    cmd += 'SIZE ' + totalW + ',' + h + '\r\n';
-    cmd += 'GAP 0,0\r\n';
-    cmd += 'DIRECTION ' + direction + '\r\n';
-    cmd += 'CLS\r\n';
-    for (var col = 0; col < cols; col++) {
-      var x = (col * (w + gap)) + 10 + ox;
-      var y = 10 + oy;
-      if (showNama) { cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + nama + '"\r\n'; y += 25; }
-      if (showHarga) { cmd += 'TEXT ' + x + ',' + y + ',"1",0,1.5,1.5,"' + harga + '"\r\n'; y += 30; }
-      if (showBarcode) { cmd += 'BARCODE ' + x + ',' + y + ',"128",30,1,0,1,1,"' + barcodeText + '"\r\n'; y += 35; }
-      if (showDate) { cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + tgl + '"\r\n'; }
-    }
-    cmd += 'PRINT ' + printCount + '\r\n';
     console.log('Label - w:' + w + ' h:' + h + ' gap:' + gap + ' totalW:' + totalW + ' ox:' + ox + ' oy:' + oy + ' cols:' + cols + ' qty:' + qty + ' printCount:' + printCount);
-    var data = encoder.encode(cmd);
+    
+    var encoder = new TextEncoder();
+    var allData = '';
+    
+    // Send each print separately for reliable multi-copy printing
+    for (var p = 0; p < printCount; p++) {
+      var cmd = '';
+      cmd += 'SIZE ' + totalW + ',' + h + '\r\n';
+      cmd += 'GAP 0,0\r\n';
+      cmd += 'DIRECTION ' + direction + '\r\n';
+      cmd += 'CLS\r\n';
+      for (var col = 0; col < cols; col++) {
+        var x = (col * (w + gap)) + 10 + ox;
+        var y = 10 + oy;
+        if (showNama) { cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + nama + '"\r\n'; y += 25; }
+        if (showHarga) { cmd += 'TEXT ' + x + ',' + y + ',"1",0,1.5,1.5,"' + harga + '"\r\n'; y += 30; }
+        if (showBarcode) { cmd += 'BARCODE ' + x + ',' + y + ',"128",30,1,0,1,1,"' + barcodeText + '"\r\n'; y += 35; }
+        if (showDate) { cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + tgl + '"\r\n'; }
+      }
+      cmd += 'PRINT 1\r\n';
+      allData += cmd;
+    }
+    
+    var data = encoder.encode(allData);
     for (var i = 0; i < data.byteLength; i += 20) {
       var chunk = data.slice(i, Math.min(i + 20, data.byteLength));
       await labelPrinterCharacteristic.writeValue(chunk);
       await sleep(80);
     }
+    
     alert('✅ Label dicetak! (' + qty + ' pcs, ' + printCount + 'x cetak)');
-    // Stay on dialog - no close
   } catch (e) { console.error(e); alert('Gagal cetak: ' + e.message); }
 }
 
