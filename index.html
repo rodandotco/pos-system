@@ -43,7 +43,7 @@
   <!-- ================== INVENTORY ================== -->
   <div id="page-inventory" class="page">
     <div class="form-group"><label>Barcode</label><div style="display:flex; gap:4px;"><input type="text" id="prodBarcode" placeholder="Scan barcode atau ketik manual..." autocomplete="off" style="flex:1;"><button class="btn btn-sm" onclick="generateBarcode()" title="Generate barcode otomatis">🔢 Generate</button></div><button class="btn" onclick="cariAtauTambahProduk()" style="margin-top:4px;">Cari / Tambah Produk</button></div>
-    <div id="productForm" style="display:none;"><h3 id="formTitle"></h3><div id="fotoPreviewContainer" style="text-align:center; margin-bottom:12px; display:none;"><img id="fotoPreview" src="" alt="Foto Produk" style="max-width:150px; max-height:150px; border-radius:8px;"><button class="btn btn-sm btn-danger" id="btnHapusFoto" onclick="hapusFoto()">🗑 Hapus Foto</button></div><div class="form-group"><label>Nama Produk</label><input type="text" id="prodNama"></div><div class="form-group"><label>Kategori</label><input type="text" id="prodKategori"></div><div class="form-group"><label>Keterangan</label><input type="text" id="prodKeterangan"></div><div class="form-group"><label>Harga Beli</label><input type="number" id="prodHargaBeli" step="1"></div><div class="form-group"><label>Harga Jual</label><input type="number" id="prodHargaJual" step="1"></div><div class="form-group"><label>Harga Grosir (opsional)</label><div style="display:flex; gap:8px; align-items:center;"><span>Diskon</span><input type="number" id="prodDiskonPersen" placeholder="%" min="0" max="100" step="1" style="width:60px;"><span>% setiap pembelian</span><input type="number" id="prodDiskonMinQty" placeholder="Qty" min="0" step="1" style="width:60px;"><span>pcs</span></div><small style="color:#666;">Contoh: Diskon 5% setiap 12 pcs. Harga otomatis berubah jadi Harga Grosir.</small></div>
+    <div id="productForm" style="display:none;"><h3 id="formTitle"></h3><div id="fotoPreviewContainer" style="text-align:center; margin-bottom:12px; display:none;"><img id="fotoPreview" src="" alt="Foto Produk" style="max-width:150px; max-height:150px; border-radius:8px;"><button class="btn btn-sm btn-danger" id="btnHapusFoto" onclick="hapusFoto()">🗑 Hapus Foto</button></div><div class="form-group"><label>Nama Produk</label><input type="text" id="prodNama"></div><div class="form-group"><label>Kategori</label><input type="text" id="prodKategori"></div><div class="form-group"><label>Keterangan</label><input type="text" id="prodKeterangan"></div><div class="form-group"><label>Harga Beli</label><input type="number" id="prodHargaBeli" step="1"></div><div class="form-group"><label>Harga Jual</label><input type="number" id="prodHargaJual" step="1"></div><div class="form-group"><label>Harga Grosir (opsional)</label><div style="display:flex; gap:8px; align-items:center;"><span>Diskon</span><input type="number" id="prodDiskonPersen" placeholder="%" min="0" max="100" step="1" style="width:60px;"><span>% setiap pembelian</span><input type="number" id="prodDiskonMinQty" placeholder="Qty" min="0" step="1" style="width:60px;"><span>pcs</span></div><small style="color:#666;">Contoh: Diskon 5% setiap 12 pcs.</small></div>
       <div class="stok-info"><div class="form-group"><label>Minimum Stok</label><input type="number" id="prodMinStok" value="10" min="0" step="1"></div>Stok Saat Ini: <span id="stokSaatIni">0</span><br><label>Tambah/Kurangi Stok</label><input type="number" id="perubahanStok" value="0" oninput="hitungStokAkhir()"><br>Stok Akhir: <span id="stokAkhir">0</span></div>
       <div class="form-group"><label>Foto</label><input type="file" id="prodFoto" accept="image/*" onchange="previewFoto()"></div>
       <button class="btn" id="btnSimpanProduk">Simpan</button><button class="btn btn-danger" id="btnHapusProduk" style="display:none;">Hapus Produk</button>
@@ -96,15 +96,16 @@
       <span id="labelStatusLed" class="led led-red"></span>
       <span id="labelStatusText">Label printer tidak terhubung</span>
       <button class="btn btn-sm" onclick="sambungLabelPrinterDariDialog()" style="margin-left:8px;">🔗 Sambung</button>
+      <button class="btn btn-sm btn-danger" onclick="putusLabelPrinterDariDialog()">Putus</button>
     </div>
     
     <div style="display:flex; gap:8px;">
-      <div class="form-group" style="flex:1;"><label>Lebar Label (mm)</label><input type="number" id="labelWidthMM" value="" min="1" max="200" step="0.5"></div>
-      <div class="form-group" style="flex:1;"><label>Tinggi Label (mm)</label><input type="number" id="labelHeightMM" value="" min="1" max="100" step="0.5"></div>
+      <div class="form-group" style="flex:1;"><label>Lebar Label (mm)</label><input type="number" id="labelWidthMM" placeholder="33" min="0" step="0.5"></div>
+      <div class="form-group" style="flex:1;"><label>Tinggi Label (mm)</label><input type="number" id="labelHeightMM" placeholder="15" min="0" step="0.5"></div>
     </div>
     
     <div style="display:flex; gap:8px;">
-      <div class="form-group" style="flex:1;"><label>Jarak Kolom (mm)</label><input type="number" id="labelGapMM" value="" min="0" max="50" step="0.5"></div>
+      <div class="form-group" style="flex:1;"><label>Jarak Kolom (mm)</label><input type="number" id="labelGapMM" placeholder="2" min="0" step="0.5"></div>
       <div class="form-group" style="flex:1;"><label>Jumlah Kolom</label><select id="labelCols" onchange="hitungJumlahCetak()"><option value="1">1 Kolom</option><option value="2" selected>2 Kolom</option></select></div>
     </div>
     
@@ -114,18 +115,13 @@
     </div>
     
     <div style="display:flex; gap:8px;">
-      <div class="form-group" style="flex:1;"><label>Offset X (mm)</label><input type="number" id="labelOffsetX" value="" min="-100" max="100" step="0.5"><small>+ kanan, - kiri</small></div>
-      <div class="form-group" style="flex:1;"><label>Offset Y (mm)</label><input type="number" id="labelOffsetY" value="" min="-100" max="100" step="0.5"><small>+ bawah, - atas</small></div>
+      <div class="form-group" style="flex:1;"><label>Offset X (mm)</label><input type="number" id="labelOffsetX" placeholder="0" step="0.5"><small>+ kanan, - kiri</small></div>
+      <div class="form-group" style="flex:1;"><label>Offset Y (mm)</label><input type="number" id="labelOffsetY" placeholder="0" step="0.5"><small>+ bawah, - atas</small></div>
     </div>
     
     <div style="display:flex; gap:8px;">
-      <div class="form-group" style="flex:1;"><label>Jarak Antar Baris (mm)</label><input type="number" id="labelRowGap" value="" min="-20" max="20" step="0.5"><small>0 = normal, + turun, - naik</small></div>
-      <div class="form-group" style="flex:1;"></div>
-    </div>
-    
-    <div style="display:flex; gap:8px;">
-      <div class="form-group" style="flex:1;"><label>Jumlah Label (pcs)</label><input type="number" id="labelQty" value="" min="1" max="999" onchange="hitungJumlahCetak()"></div>
-      <div class="form-group" style="flex:1;"><label>Jumlah Cetak</label><input type="number" id="labelPrintCount" value="0" min="1" max="999" readonly style="background:#e8f5e9; font-weight:bold;"><small style="color:#00695c;">Label / kolom = cetak</small></div>
+      <div class="form-group" style="flex:1;"><label>Jumlah Label (pcs)</label><input type="number" id="labelQty" placeholder="0" min="0" onchange="hitungJumlahCetak()"></div>
+      <div class="form-group" style="flex:1;"><label>Jumlah Cetak</label><input type="number" id="labelPrintCount" value="0" readonly style="background:#e8f5e9; font-weight:bold;"><small style="color:#00695c;">Label / kolom = cetak</small></div>
     </div>
     
     <div class="form-group"><label>Konten</label><div style="display:flex; gap:8px; flex-wrap:wrap;"><label><input type="checkbox" id="showNama" checked> Nama</label><label><input type="checkbox" id="showHarga" checked> Harga</label><label><input type="checkbox" id="showBarcode" checked> Barcode</label><label><input type="checkbox" id="showDate"> Tanggal</label></div></div>
