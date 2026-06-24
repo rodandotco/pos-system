@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>RodanPOS Retail</title>
-  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlJvZGFuUE9TIFJldGFpbCIsCiAgInNob3J0X25hbWUiOiAiUm9kYW5QT1MiLAogICJzdGFydF91cmwiOiAiLi8iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmZmYiLAogICJ0aGVtZV9jb2xvciI6ICIjMDA5Njg4IiwKICAib3JpZW50YXRpb24iOiAicG9ydHJhaXQiLAogICJpY29ucyI6IFt7CiAgICAic3JjIjogImRhdGE6aW1hZ2Uvc3ZnK3htbDtiYXNlNjQsUEhOMlp5QjRiV3h1Y3owaWFIUjBjRG92TDNkM2R5NTNNeTV2Y21jdk1qQXdNQzl6ZG1jaUlIUm9aVzFsTHpndlBqNDhkM0QzWkdSMmR5QmhiV1E5SW1Gdkx6SXdNaUF5TURBeExURTBMVEF3SURBd09qSXdPakF4SWo0OFBDOG5KejQ4TDJKeVBtSnZjbVJsY2p3dlptbHVZMmhoY3k4KyIKICB9XQp9" />
+  <title>POS Retail Andal</title>
+  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlBPUyBSZXRhaWwgQW5kYWwiLAogICJzaG9ydF9uYW1lIjogIlBPUyIsCiAgInN0YXJ0X3VybCI6ICIuLyIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiI2ZmZiIsCiAgInRoZW1lX2NvbG9yIjogIiMwMDk2ODgiLAogICJvcmllbnRhdGlvbiI6ICJwb3J0cmFpdCIsCiAgImljb25zIjogW3sKICAgICJzcmMiOiAiZGF0YTppbWFnZS9zdmcreG1sO2Jhc2U2NCxQSE4yWnlCNGJXeHVjejBpYUhSMGNEb3ZMM2QzZHk1M015NXZjbWN2TWpBd01DOXpkbWNpSUhSb1pXMWxMemd2UGo0OGRkM0QzWkdSMmR5QmhiV1E5SW1Gdkx6SXdNaUF5TURBeExURTBMVEF3SURBd09qSXdPakF4SWo0OFBDOG5KejQ4TDJKeVBtSnZjbVJsY2p3dlptbHVZMmhoY3k4KyIKICB9XQp9" />
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -31,100 +31,30 @@
     <div id="lowStockBanner" style="display:none; background:#fff3e0; border:1px solid #ff9800; border-radius:8px; padding:10px; margin-bottom:12px; font-size:13px;">
       ⚠️ <b>Stok Rendah:</b> <span id="lowStockBannerText"></span>
     </div>
-
-    <div class="form-group">
-      <label>Nama Customer (opsional)</label>
-      <div style="position:relative; display:inline-block; width:200px;">
-        <input type="text" id="custName" placeholder="Nama Customer" maxlength="25" style="width:100%; padding-right:25px; box-sizing:border-box;">
-        <button class="clear-btn" onclick="document.getElementById('custName').value=''" style="position:absolute; right:0; top:50%; transform:translateY(-50%); border:none; background:transparent; cursor:pointer; padding:0 5px;">✕</button>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label>Cari Produk</label>
-      <div style="position:relative; display:inline-block; width:200px;">
-        <input type="text" id="searchProduct" placeholder="Nama / Barcode..." oninput="searchProductFn(this.value)" onfocus="searchProductFn(this.value)" autocomplete="off" maxlength="25" style="width:100%; padding-right:25px; box-sizing:border-box;">
-        <button class="clear-btn" onclick="var s=document.getElementById('searchProduct'); if(s)s.value=''; var sr=document.getElementById('searchResults'); if(sr)sr.style.display='none';" style="position:absolute; right:0; top:50%; transform:translateY(-50%); border:none; background:transparent; cursor:pointer; padding:0 5px;">✕</button>
-      </div>
-      <div class="search-results" id="searchResults" style="display:none;"></div>
-    </div>
-
-    <div class="form-group">
-      <label>Scan Barcode</label>
-      <div style="position:relative; display:inline-block; width:200px;">
-        <input type="text" id="scanInputTrans" placeholder="Scan barcode di sini..." autocomplete="off" maxlength="25" style="width:100%; padding-right:25px; box-sizing:border-box;">
-        <button class="clear-btn" onclick="document.getElementById('scanInputTrans').value=''" style="position:absolute; right:0; top:50%; transform:translateY(-50%); border:none; background:transparent; cursor:pointer; padding:0 5px;">✕</button>
-      </div>
-    </div>
-
-    <table class="cart-table" id="cartTable">
-      <thead><tr><th>Produk</th><th>Harga</th><th>Qty</th><th>Subtotal</th><th></th></tr></thead>
-      <tbody></tbody>
-    </table>
-
-    <div style="display:flex; gap:8px; margin-top:8px;">
-      <button class="btn" onclick="simpanPesanan()" style="background:#ff9800;">💾 Simpan Pesanan</button>
-      <button class="btn" onclick="tampilkanPesananTersimpan()">📋 Pesanan Tersimpan</button>
-    </div>
-
-    <div class="form-group" id="pembayaranGroup">
-      <label>Pembayaran</label>
-      <div class="nominal-grid" id="nominalButtons"></div>
-      <input type="number" id="bayar" placeholder="Uang dibayar" oninput="hitungKembalian()" value="0">
-      <button class="clear-btn" onclick="document.getElementById('bayar').value='0';hitungKembalian();" style="top:auto; bottom:8px;">✕</button>
-    </div>
+    <div class="form-group"><label>Nama Customer (opsional)</label><div style="position:relative; display:inline-block; width:200px;"><input type="text" id="custName" placeholder="Nama Customer" maxlength="25" style="width:100%; padding-right:25px; box-sizing:border-box;"><button class="clear-btn" onclick="document.getElementById('custName').value=''" style="position:absolute; right:0; top:50%; transform:translateY(-50%); border:none; background:transparent; cursor:pointer; padding:0 5px;">✕</button></div></div>
+    <div class="form-group"><label>Cari Produk</label><div style="position:relative; display:inline-block; width:200px;"><input type="text" id="searchProduct" placeholder="Nama / Barcode..." oninput="searchProductFn(this.value)" onfocus="searchProductFn(this.value)" autocomplete="off" maxlength="25" style="width:100%; padding-right:25px; box-sizing:border-box;"><button class="clear-btn" onclick="var s=document.getElementById('searchProduct'); if(s)s.value=''; var sr=document.getElementById('searchResults'); if(sr)sr.style.display='none';" style="position:absolute; right:0; top:50%; transform:translateY(-50%); border:none; background:transparent; cursor:pointer; padding:0 5px;">✕</button></div><div class="search-results" id="searchResults" style="display:none;"></div></div>
+    <div class="form-group"><label>Scan Barcode</label><div style="position:relative; display:inline-block; width:200px;"><input type="text" id="scanInputTrans" placeholder="Scan barcode di sini..." autocomplete="off" maxlength="25" style="width:100%; padding-right:25px; box-sizing:border-box;"><button class="clear-btn" onclick="document.getElementById('scanInputTrans').value=''" style="position:absolute; right:0; top:50%; transform:translateY(-50%); border:none; background:transparent; cursor:pointer; padding:0 5px;">✕</button></div></div>
+    <table class="cart-table" id="cartTable"><thead><tr><th>Produk</th><th>Harga</th><th>Qty</th><th>Subtotal</th><th></th></tr></thead><tbody></tbody></table>
+    <div style="display:flex; gap:8px; margin-top:8px;"><button class="btn" onclick="simpanPesanan()" style="background:#ff9800;">💾 Simpan Pesanan</button><button class="btn" onclick="tampilkanPesananTersimpan()">📋 Pesanan Tersimpan</button></div>
+    <div class="form-group" id="pembayaranGroup"><label>Pembayaran</label><div class="nominal-grid" id="nominalButtons"></div><input type="number" id="bayar" placeholder="Uang dibayar" oninput="hitungKembalian()" value="0"><button class="clear-btn" onclick="document.getElementById('bayar').value='0';hitungKembalian();" style="top:auto; bottom:8px;">✕</button></div>
     <div>Kembalian: Rp <span id="kembalian">0</span></div>
     <button class="btn" onclick="bayarDanCetak()" style="font-size:16px; padding:12px 24px; margin-top:8px;">💳 BAYAR & CETAK</button>
-
-    <div id="printerStatusTrans" class="printer-status" style="margin-top:8px;">
-      <span class="led led-red" id="ledTrans"></span>
-      <span id="printerStatusText">Printer tidak terhubung</span>
-      <button class="btn btn-sm btn-danger" id="btnPutusTrans" onclick="putusPrinter()" style="display:none;">Putus</button>
-    </div>
+    <div id="printerStatusTrans" class="printer-status" style="margin-top:8px;"><span class="led led-red" id="ledTrans"></span><span id="printerStatusText">Printer tidak terhubung</span><button class="btn btn-sm btn-danger" id="btnPutusTrans" onclick="putusPrinter()" style="display:none;">Putus</button></div>
   </div>
 
   <!-- ================== INVENTORY ================== -->
   <div id="page-inventory" class="page">
-    <div class="form-group">
-      <label>Barcode</label>
-      <div style="display:flex; gap:4px;">
-        <input type="text" id="prodBarcode" placeholder="Scan barcode atau ketik manual..." autocomplete="off" style="flex:1;">
-        <button class="btn btn-sm" onclick="generateBarcode()" title="Generate barcode otomatis">🔢 Generate</button>
-      </div>
-      <button class="btn" onclick="cariAtauTambahProduk()" style="margin-top:4px;">Cari / Tambah Produk</button>
-    </div>
+    <div class="form-group"><label>Barcode</label><div style="display:flex; gap:4px;"><input type="text" id="prodBarcode" placeholder="Scan barcode atau ketik manual..." autocomplete="off" style="flex:1;"><button class="btn btn-sm" onclick="generateBarcode()" title="Generate barcode otomatis">🔢 Generate</button></div><button class="btn" onclick="cariAtauTambahProduk()" style="margin-top:4px;">Cari / Tambah Produk</button></div>
     <div id="productForm" style="display:none;">
       <h3 id="formTitle"></h3>
-      <div id="fotoPreviewContainer" style="text-align:center; margin-bottom:12px; display:none;">
-        <img id="fotoPreview" src="" alt="Foto Produk" style="max-width:150px; max-height:150px; border-radius:8px;">
-        <button class="btn btn-sm btn-danger" id="btnHapusFoto" onclick="hapusFoto()">🗑 Hapus Foto</button>
-      </div>
+      <div id="fotoPreviewContainer" style="text-align:center; margin-bottom:12px; display:none;"><img id="fotoPreview" src="" alt="Foto Produk" style="max-width:150px; max-height:150px; border-radius:8px;"><button class="btn btn-sm btn-danger" id="btnHapusFoto" onclick="hapusFoto()">🗑 Hapus Foto</button></div>
       <div class="form-group"><label>Nama Produk</label><input type="text" id="prodNama"></div>
       <div class="form-group"><label>Kategori</label><input type="text" id="prodKategori"></div>
       <div class="form-group"><label>Keterangan</label><input type="text" id="prodKeterangan"></div>
       <div class="form-group"><label>Harga Beli</label><input type="number" id="prodHargaBeli" step="1"></div>
       <div class="form-group"><label>Harga Jual</label><input type="number" id="prodHargaJual" step="1"></div>
-      <div class="form-group">
-        <label>Harga Grosir (opsional)</label>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <span>Diskon</span>
-          <input type="number" id="prodDiskonPersen" placeholder="%" min="0" max="100" step="1" style="width:60px;">
-          <span>% setiap pembelian</span>
-          <input type="number" id="prodDiskonMinQty" placeholder="Qty" min="0" step="1" style="width:60px;">
-          <span>pcs</span>
-        </div>
-        <small style="color:#666;">Contoh: Diskon 5% setiap 12 pcs. Harga otomatis berubah jadi Harga Grosir.</small>
-      </div>
-      <div class="stok-info">
-        <div class="form-group">
-          <label>Minimum Stok</label>
-          <input type="number" id="prodMinStok" value="10" min="0" step="1">
-          <small style="color:#666;">Peringatan jika stok ≤ nilai ini</small>
-        </div>
-        Stok Saat Ini: <span id="stokSaatIni">0</span><br>
-        <label>Tambah/Kurangi Stok</label><input type="number" id="perubahanStok" value="0" oninput="hitungStokAkhir()"><br>
-        Stok Akhir: <span id="stokAkhir">0</span>
-      </div>
+      <div class="form-group"><label>Harga Grosir (opsional)</label><div style="display:flex; gap:8px; align-items:center;"><span>Diskon</span><input type="number" id="prodDiskonPersen" placeholder="%" min="0" max="100" step="1" style="width:60px;"><span>% setiap pembelian</span><input type="number" id="prodDiskonMinQty" placeholder="Qty" min="0" step="1" style="width:60px;"><span>pcs</span></div><small style="color:#666;">Contoh: Diskon 5% setiap 12 pcs. Harga otomatis berubah jadi Harga Grosir.</small></div>
+      <div class="stok-info"><div class="form-group"><label>Minimum Stok</label><input type="number" id="prodMinStok" value="10" min="0" step="1"><small style="color:#666;">Peringatan jika stok ≤ nilai ini</small></div>Stok Saat Ini: <span id="stokSaatIni">0</span><br><label>Tambah/Kurangi Stok</label><input type="number" id="perubahanStok" value="0" oninput="hitungStokAkhir()"><br>Stok Akhir: <span id="stokAkhir">0</span></div>
       <div class="form-group"><label>Foto</label><input type="file" id="prodFoto" accept="image/*" onchange="previewFoto()"></div>
       <button class="btn" id="btnSimpanProduk">Simpan</button>
       <button class="btn btn-danger" id="btnHapusProduk" style="display:none;">Hapus Produk</button>
@@ -133,239 +63,84 @@
     <h3>Daftar Produk (<span id="productCount">0</span>)</h3>
     <input type="text" id="invSearch" placeholder="Cari..." oninput="filterProductList()">
     <button class="btn btn-sm" onclick="refreshProductList()">🔄 Refresh</button>
-    
-    <div id="labelPrinterStatus" class="printer-status" style="margin-top:8px;">
-      <span class="led led-red"></span> Label printer tidak terhubung
-      <button class="btn btn-sm" onclick="sambungLabelPrinter()" style="margin-left:8px;">🔗 Sambung Label</button>
-      <button class="btn btn-sm btn-danger" onclick="putusLabelPrinter()">Putus</button>
-    </div>
-    
+    <div id="labelPrinterStatus" class="printer-status" style="margin-top:8px;"><span class="led led-red"></span> Label printer tidak terhubung<button class="btn btn-sm" onclick="sambungLabelPrinter()" style="margin-left:8px;">🔗 Sambung Label</button><button class="btn btn-sm btn-danger" onclick="putusLabelPrinter()">Putus</button></div>
     <div class="table-wrapper"><table class="product-table" id="productListTable"><thead><tr><th>Barcode</th><th>Nama</th><th>Kategori</th><th>Keterangan</th><th>Harga Jual</th><th>Stok</th><th id="thAksi">Aksi</th></tr></thead><tbody></tbody></table></div>
   </div>
 
   <!-- ================== LAPORAN ================== -->
   <div id="page-laporan" class="page">
     <h3>Ringkasan</h3>
-    <div id="lowStockAlert" style="display:none; background:#fff3e0; border:1px solid #ff9800; border-radius:8px; padding:12px; margin-bottom:12px;">
-      <strong>⚠️ Peringatan Stok Rendah:</strong>
-      <ul id="lowStockList" style="margin:8px 0 0 20px; font-size:13px;"></ul>
-    </div>
-    <div style="display:flex; gap:12px; margin-bottom:12px;">
-      <div style="flex:1; background:#e0f2f1; padding:10px; border-radius:8px;"><small>Total Transaksi</small><br><strong id="totalTransaksi">0</strong></div>
-      <div style="flex:1; background:#e0f2f1; padding:10px; border-radius:8px;"><small>Total Pendapatan</small><br><strong id="totalPendapatan">Rp 0</strong></div>
-    </div>
+    <div id="lowStockAlert" style="display:none; background:#fff3e0; border:1px solid #ff9800; border-radius:8px; padding:12px; margin-bottom:12px;"><strong>⚠️ Peringatan Stok Rendah:</strong><ul id="lowStockList" style="margin:8px 0 0 20px; font-size:13px;"></ul></div>
+    <div style="display:flex; gap:12px; margin-bottom:12px;"><div style="flex:1; background:#e0f2f1; padding:10px; border-radius:8px;"><small>Total Transaksi</small><br><strong id="totalTransaksi">0</strong></div><div style="flex:1; background:#e0f2f1; padding:10px; border-radius:8px;"><small>Total Pendapatan</small><br><strong id="totalPendapatan">Rp 0</strong></div></div>
     <div class="chart-container"><canvas id="chartPenjualan" style="max-height:250px;"></canvas></div>
     <h4>Top Selling Products</h4>
     <div class="chart-container" style="max-width:400px; margin:0 auto;"><canvas id="chartTopProducts" style="max-height:250px;"></canvas></div>
     <hr>
-    <div class="filter-row">
-      <input type="date" id="tglAwal"> s/d <input type="date" id="tglAkhir">
-      <button class="btn btn-sm" onclick="filterToday()">Today</button>
-      <button class="btn btn-sm" onclick="filterThisWeek()">This Week</button>
-      <button class="btn btn-sm" onclick="filterMTD()">MTD</button>
-      <button class="btn btn-sm" onclick="filterYTD()">YTD</button>
-      <button class="btn btn-sm" onclick="muatLaporan()">Tampilkan</button>
-    </div>
+    <div class="filter-row"><input type="date" id="tglAwal"> s/d <input type="date" id="tglAkhir"><button class="btn btn-sm" onclick="filterToday()">Today</button><button class="btn btn-sm" onclick="filterThisWeek()">This Week</button><button class="btn btn-sm" onclick="filterMTD()">MTD</button><button class="btn btn-sm" onclick="filterYTD()">YTD</button><button class="btn btn-sm" onclick="muatLaporan()">Tampilkan</button></div>
     <table class="report-table" id="reportTable"><thead><tr><th>No Invoice</th><th>Tanggal</th><th>Customer</th><th>Total</th><th>Aksi</th></tr></thead><tbody></tbody></table>
-    <div style="margin-top:12px; padding:12px; background:#f8fafb; border-radius:8px; border:1px solid #e8ecf0;">
-      <h4 style="margin:0 0 8px 0;">📧 Kirim Laporan via Email</h4>
-      <p style="font-size:12px; color:#666; margin:0 0 8px 0;">Pilih tanggal di atas, lalu klik Email Periode</p>
-      <button class="btn" onclick="exportCSV()">📥 Export CSV</button>
-      <button class="btn" onclick="emailLaporanHarian()">📧 Email Hari Ini</button>
-      <button class="btn" onclick="emailLaporanPeriode()">📧 Email Periode</button>
-    </div>
+    <div style="margin-top:12px; padding:12px; background:#f8fafb; border-radius:8px; border:1px solid #e8ecf0;"><h4 style="margin:0 0 8px 0;">📧 Kirim Laporan via Email</h4><p style="font-size:12px; color:#666; margin:0 0 8px 0;">Pilih tanggal di atas, lalu klik Email Periode</p><button class="btn" onclick="exportCSV()">📥 Export CSV</button><button class="btn" onclick="emailLaporanHarian()">📧 Email Hari Ini</button><button class="btn" onclick="emailLaporanPeriode()">📧 Email Periode</button></div>
   </div>
 
   <!-- ================== SETTING ================== -->
   <div id="page-setting" class="page">
-    <div id="manajemenProfilSection">
-      <h3>Manajemen Profil</h3>
-      <div id="logoPreviewContainer" style="margin-bottom:12px; display:none;">
-        <img id="logoPreview" class="logo-preview" src=""><br>
-        <button class="btn btn-sm btn-danger" id="btnHapusLogo" onclick="hapusLogoToko()">🗑 Hapus Logo</button>
-      </div>
-      <div class="form-group"><label>Nama Toko</label><input type="text" id="tokoNama"></div>
-      <div class="form-group"><label>Alamat</label><input type="text" id="tokoAlamat"></div>
-      <div class="form-group"><label>Telepon</label><input type="text" id="tokoTelp"></div>
-      <div class="form-group"><label>Logo Toko</label><input type="file" id="tokoLogo" accept="image/*" onchange="previewLogoToko()"></div>
-      <div class="form-group"><label>Footer Struk</label><textarea id="tokoFooter" rows="2" placeholder="Contoh: Terima kasih..."></textarea></div>
-      <button class="btn" id="btnSimpanProfil" onclick="simpanProfil()">Simpan Profil</button>
-      <hr>
-    </div>
-
-    <h3>📊 Manajemen Laporan</h3>
-    <div class="card" style="margin-bottom:16px;">
-      <div class="card-header">📧 Email Laporan Otomatis</div>
-      <div class="form-group"><label>Email Tujuan</label><input type="email" id="reportEmail" placeholder="contoh@email.com"></div>
-      <div class="form-group"><label>Frekuensi Laporan</label><select id="reportFrequency" onchange="toggleReportOptions()"><option value="none">Matikan</option><option value="daily">Setiap Hari</option><option value="weekly">Setiap Minggu</option><option value="monthly">Setiap Bulan</option></select></div>
-      <div id="dailyOptions" style="display:none;"><div class="form-group"><label>Jam Kirim</label><select id="dailyTime"><option value="20">20:00</option><option value="21" selected>21:00</option><option value="22">22:00</option><option value="23">23:00</option><option value="0">00:00</option></select></div></div>
-      <div id="weeklyOptions" style="display:none;"><div class="form-group"><label>Hari Kirim</label><select id="weeklyDay"><option value="1" selected>Senin</option><option value="2">Selasa</option><option value="3">Rabu</option><option value="4">Kamis</option><option value="5">Jumat</option><option value="6">Sabtu</option><option value="0">Minggu</option></select></div><div class="form-group"><label>Jam Kirim</label><select id="weeklyTime"><option value="20">20:00</option><option value="21" selected>21:00</option><option value="22">22:00</option><option value="23">23:00</option></select></div></div>
-      <div id="monthlyOptions" style="display:none;"><div class="form-group"><label>Tanggal Kirim</label><select id="monthlyDate"><option value="1" selected>Tanggal 1</option><option value="2">Tanggal 2</option><option value="3">Tanggal 3</option><option value="5">Tanggal 5</option><option value="10">Tanggal 10</option><option value="15">Tanggal 15</option><option value="28">Tanggal 28</option></select></div><div class="form-group"><label>Jam Kirim</label><select id="monthlyTime"><option value="20">20:00</option><option value="21" selected>21:00</option><option value="22">22:00</option><option value="23">23:00</option></select></div></div>
-      <button class="btn" onclick="simpanPengaturanLaporan()">💾 Simpan Pengaturan Laporan</button>
-      <button class="btn btn-sm" onclick="tesKirimLaporan()" style="margin-top:8px;">🧪 Tes Kirim Laporan</button>
-    </div>
-    <hr>
-
-    <h3>Manajemen Cetak</h3>
-    <div class="form-group">
-      <label>Printer <button class="info-btn" onclick="alert('Untuk printer Bluetooth:\n1. Nyalakan printer dan pastikan dalam mode pairing.\n2. Buka Pengaturan Android > Bluetooth > pindai dan pasangkan dengan printer.\n3. Setelah terhubung, pilih \"Bluetooth Printer\" di dropdown.\n4. Saat mencetak, Android akan menanyakan printer tujuan.\n\nUntuk printer USB:\n1. Colokkan kabel OTG ke tablet.\n2. Sambungkan printer.\n3. Pilih \"USB Printer\".')">ℹ️</button></label>
-      <div style="display:flex; gap:4px;">
-        <select id="printerPilihan" style="flex:1;"><option value="default">Default (bawaan browser)</option><option value="bluetooth">Bluetooth Printer</option><option value="usb">USB Printer</option></select>
-        <button class="btn btn-sm" onclick="sambungPrinter()">🔗 Sambung</button>
-        <button class="btn btn-sm" onclick="testPrint()" title="Cetak halaman uji">🖨️ Test</button>
-      </div>
-      <div id="printerStatusSetting" class="printer-status" style="margin-top:8px;"><span class="led led-red" id="ledSetting"></span><span id="printerStatusTextSetting">Printer tidak terhubung</span><button class="btn btn-sm btn-danger" id="btnPutusSetting" onclick="putusPrinter()" style="display:none;">Putus</button></div>
-    </div>
-    <div class="form-group"><label>Lebar Kertas</label><select id="kertasLebar"><option value="80">80 mm</option><option value="58">58 mm</option></select></div>
-    <div class="form-group"><label>Jenis Kertas</label><select id="jenisKertas" onchange="toggleLabelSettings()"><option value="thermal">Thermal Plain (tanpa label)</option><option value="label">Thermal Label (stiker)</option></select></div>
-    <div id="labelSettings" style="display:none;"><div class="form-group"><label>Lebar Label (mm)</label><input type="number" id="labelWidth" value="50" step="1"></div><div class="form-group"><label>Tinggi Label (mm)</label><input type="number" id="labelHeight" value="30" step="1"></div><div class="form-group"><label>Jarak Antar Label (mm)</label><input type="number" id="labelGap" value="3" step="0.5"></div><div class="form-group"><label>Jumlah Kolom</label><input type="number" id="labelCols" value="1" min="1" step="1"></div><p style="font-size:12px; color:#666;">Sesuaikan dengan stok label yang digunakan.</p></div>
-    <button class="btn" onclick="simpanPengaturanCetak()">Simpan Pengaturan Cetak</button>
-    <hr>
-
-    <div id="manajemenUserSection">
-      <h3>Manajemen User</h3>
-      <table class="user-table"><thead><tr><th>Username</th><th>Role</th><th>Aksi</th></tr></thead><tbody id="userListBody"></tbody></table>
-      <div style="margin-top:8px;"><input type="text" id="newUsername" placeholder="Username"><input type="password" id="newPassword" placeholder="Password"><select id="newRole"><option value="kasir">Kasir</option><option value="staff">Staff</option><option value="gudang">Gudang</option><option value="admin">Admin</option></select><button class="btn" id="btnTambahUser" onclick="tambahUser()">Tambah</button></div>
-      <hr>
-    </div>
-
-    <div id="manajemenDataSection">
-      <h3>Manajemen Data</h3>
-      <button class="btn" id="btnPilihFolder" onclick="pilihFolder()">📁 Pilih Folder Kerja</button>
-      <p>Folder aktif: <span id="folderPath">Belum dipilih</span></p>
-      <button class="btn" id="btnBackup" onclick="backupData()">⬇ Backup (ZIP)</button>
-      <button class="btn" id="btnRestore" onclick="restoreData()">⬆ Restore (dari ZIP)</button>
-      <button class="btn btn-danger" id="btnResetDB" onclick="resetDatabase()">🗑 Reset Database</button>
-    </div>
+    <div id="manajemenProfilSection"><h3>Manajemen Profil</h3><div id="logoPreviewContainer" style="margin-bottom:12px; display:none;"><img id="logoPreview" class="logo-preview" src=""><br><button class="btn btn-sm btn-danger" id="btnHapusLogo" onclick="hapusLogoToko()">🗑 Hapus Logo</button></div><div class="form-group"><label>Nama Toko</label><input type="text" id="tokoNama"></div><div class="form-group"><label>Alamat</label><input type="text" id="tokoAlamat"></div><div class="form-group"><label>Telepon</label><input type="text" id="tokoTelp"></div><div class="form-group"><label>Logo Toko</label><input type="file" id="tokoLogo" accept="image/*" onchange="previewLogoToko()"></div><div class="form-group"><label>Footer Struk</label><textarea id="tokoFooter" rows="2" placeholder="Contoh: Terima kasih..."></textarea></div><button class="btn" id="btnSimpanProfil" onclick="simpanProfil()">Simpan Profil</button><hr></div>
+    <h3>📊 Manajemen Laporan</h3><div class="card" style="margin-bottom:16px;"><div class="card-header">📧 Email Laporan Otomatis</div><div class="form-group"><label>Email Tujuan</label><input type="email" id="reportEmail" placeholder="contoh@email.com"></div><div class="form-group"><label>Frekuensi Laporan</label><select id="reportFrequency" onchange="toggleReportOptions()"><option value="none">Matikan</option><option value="daily">Setiap Hari</option><option value="weekly">Setiap Minggu</option><option value="monthly">Setiap Bulan</option></select></div><div id="dailyOptions" style="display:none;"><div class="form-group"><label>Jam Kirim</label><select id="dailyTime"><option value="20">20:00</option><option value="21" selected>21:00</option><option value="22">22:00</option><option value="23">23:00</option><option value="0">00:00</option></select></div></div><div id="weeklyOptions" style="display:none;"><div class="form-group"><label>Hari Kirim</label><select id="weeklyDay"><option value="1" selected>Senin</option><option value="2">Selasa</option><option value="3">Rabu</option><option value="4">Kamis</option><option value="5">Jumat</option><option value="6">Sabtu</option><option value="0">Minggu</option></select></div><div class="form-group"><label>Jam Kirim</label><select id="weeklyTime"><option value="20">20:00</option><option value="21" selected>21:00</option><option value="22">22:00</option><option value="23">23:00</option></select></div></div><div id="monthlyOptions" style="display:none;"><div class="form-group"><label>Tanggal Kirim</label><select id="monthlyDate"><option value="1" selected>Tanggal 1</option><option value="2">Tanggal 2</option><option value="3">Tanggal 3</option><option value="5">Tanggal 5</option><option value="10">Tanggal 10</option><option value="15">Tanggal 15</option><option value="28">Tanggal 28</option></select></div><div class="form-group"><label>Jam Kirim</label><select id="monthlyTime"><option value="20">20:00</option><option value="21" selected>21:00</option><option value="22">22:00</option><option value="23">23:00</option></select></div></div><button class="btn" onclick="simpanPengaturanLaporan()">💾 Simpan Pengaturan Laporan</button><button class="btn btn-sm" onclick="tesKirimLaporan()" style="margin-top:8px;">🧪 Tes Kirim Laporan</button></div><hr>
+    <h3>Manajemen Cetak</h3><div class="form-group"><label>Printer <button class="info-btn" onclick="alert('Untuk printer Bluetooth:\n1. Nyalakan printer dan pastikan dalam mode pairing.\n2. Buka Pengaturan Android > Bluetooth > pindai dan pasangkan dengan printer.\n3. Setelah terhubung, pilih \"Bluetooth Printer\" di dropdown.\n4. Saat mencetak, Android akan menanyakan printer tujuan.\n\nUntuk printer USB:\n1. Colokkan kabel OTG ke tablet.\n2. Sambungkan printer.\n3. Pilih \"USB Printer\".')">ℹ️</button></label><div style="display:flex; gap:4px;"><select id="printerPilihan" style="flex:1;"><option value="default">Default (bawaan browser)</option><option value="bluetooth">Bluetooth Printer</option><option value="usb">USB Printer</option></select><button class="btn btn-sm" onclick="sambungPrinter()">🔗 Sambung</button><button class="btn btn-sm" onclick="testPrint()" title="Cetak halaman uji">🖨️ Test</button></div><div id="printerStatusSetting" class="printer-status" style="margin-top:8px;"><span class="led led-red" id="ledSetting"></span><span id="printerStatusTextSetting">Printer tidak terhubung</span><button class="btn btn-sm btn-danger" id="btnPutusSetting" onclick="putusPrinter()" style="display:none;">Putus</button></div></div><div class="form-group"><label>Lebar Kertas</label><select id="kertasLebar"><option value="80">80 mm</option><option value="58">58 mm</option></select></div><div class="form-group"><label>Jenis Kertas</label><select id="jenisKertas" onchange="toggleLabelSettings()"><option value="thermal">Thermal Plain (tanpa label)</option><option value="label">Thermal Label (stiker)</option></select></div><div id="labelSettings" style="display:none;"><div class="form-group"><label>Lebar Label (mm)</label><input type="number" id="labelWidth" value="50" step="1"></div><div class="form-group"><label>Tinggi Label (mm)</label><input type="number" id="labelHeight" value="30" step="1"></div><div class="form-group"><label>Jarak Antar Label (mm)</label><input type="number" id="labelGap" value="3" step="0.5"></div><div class="form-group"><label>Jumlah Kolom</label><input type="number" id="labelCols" value="1" min="1" step="1"></div><p style="font-size:12px; color:#666;">Sesuaikan dengan stok label yang digunakan.</p></div><button class="btn" onclick="simpanPengaturanCetak()">Simpan Pengaturan Cetak</button><hr>
+    <div id="manajemenUserSection"><h3>Manajemen User</h3><table class="user-table"><thead><tr><th>Username</th><th>Role</th><th>Aksi</th></tr></thead><tbody id="userListBody"></tbody></table><div style="margin-top:8px;"><input type="text" id="newUsername" placeholder="Username"><input type="password" id="newPassword" placeholder="Password"><select id="newRole"><option value="kasir">Kasir</option><option value="staff">Staff</option><option value="gudang">Gudang</option><option value="admin">Admin</option></select><button class="btn" id="btnTambahUser" onclick="tambahUser()">Tambah</button></div><hr></div>
+    <div id="manajemenDataSection"><h3>Manajemen Data</h3><button class="btn" id="btnPilihFolder" onclick="pilihFolder()">📁 Pilih Folder Kerja</button><p>Folder aktif: <span id="folderPath">Belum dipilih</span></p><button class="btn" id="btnBackup" onclick="backupData()">⬇ Backup (ZIP)</button><button class="btn" id="btnRestore" onclick="restoreData()">⬆ Restore (dari ZIP)</button><button class="btn btn-danger" id="btnResetDB" onclick="resetDatabase()">🗑 Reset Database</button></div>
   </div>
 </div>
 
 <!-- Login Overlay -->
-<div id="loginOverlay" class="overlay" style="display:flex;">
-  <div class="login-box">
-    <h2>RodanPOS</h2>
-    <input type="text" id="loginUser" placeholder="Username"><br><br>
-    <input type="password" id="loginPass" placeholder="Password"><br><br>
-    <button class="btn" onclick="login()">Masuk</button>
-    <p id="loginError" style="color:red;"></p>
-  </div>
-</div>
+<div id="loginOverlay" class="overlay" style="display:flex;"><div class="login-box"><h2>Login</h2><input type="text" id="loginUser" placeholder="Username"><br><br><input type="password" id="loginPass" placeholder="Password"><br><br><button class="btn" onclick="login()">Masuk</button><p id="loginError" style="color:red;"></p></div></div>
 
 <!-- Modal Edit User -->
-<div id="editUserModal" class="overlay" style="display:none;">
-  <div class="modal-content">
-    <h3>Edit User</h3>
-    <input type="hidden" id="editUsername">
-    <input type="text" id="editUsernameDisplay" disabled><br><br>
-    <input type="password" id="editPassword" placeholder="Password baru"><br><br>
-    <select id="editRole"><option value="kasir">Kasir</option><option value="staff">Staff</option><option value="gudang">Gudang</option><option value="admin">Admin</option></select><br><br>
-    <button class="btn" onclick="simpanEditUser()">Simpan</button> <button class="btn btn-danger" onclick="document.getElementById('editUserModal').style.display='none'">Batal</button>
-  </div>
-</div>
+<div id="editUserModal" class="overlay" style="display:none;"><div class="modal-content"><h3>Edit User</h3><input type="hidden" id="editUsername"><input type="text" id="editUsernameDisplay" disabled><br><br><input type="password" id="editPassword" placeholder="Password baru"><br><br><select id="editRole"><option value="kasir">Kasir</option><option value="staff">Staff</option><option value="gudang">Gudang</option><option value="admin">Admin</option></select><br><br><button class="btn" onclick="simpanEditUser()">Simpan</button> <button class="btn btn-danger" onclick="document.getElementById('editUserModal').style.display='none'">Batal</button></div></div>
 
 <!-- Modal Detail Produk -->
-<div id="productDetailModal" class="overlay" style="display:none;">
-  <div class="modal-content" style="text-align:center;">
-    <h3 id="detailNama"></h3>
-    <img id="detailFoto" style="max-width:150px; display:none;"><br>
-    <p>Barcode: <span id="detailBarcode"></span></p>
-    <p>Kategori: <span id="detailKategori"></span></p>
-    <p>Keterangan: <span id="detailKeterangan"></span></p>
-    <p>Harga Jual: <span id="detailHargaJual"></span></p>
-    <p>Stok: <span id="detailStok"></span></p>
-    <button class="btn" onclick="document.getElementById('productDetailModal').style.display='none'">Tutup</button>
-  </div>
-</div>
+<div id="productDetailModal" class="overlay" style="display:none;"><div class="modal-content" style="text-align:center;"><h3 id="detailNama"></h3><img id="detailFoto" style="max-width:150px; display:none;"><br><p>Barcode: <span id="detailBarcode"></span></p><p>Kategori: <span id="detailKategori"></span></p><p>Keterangan: <span id="detailKeterangan"></span></p><p>Harga Jual: <span id="detailHargaJual"></span></p><p>Stok: <span id="detailStok"></span></p><button class="btn" onclick="document.getElementById('productDetailModal').style.display='none'">Tutup</button></div></div>
 
 <!-- Modal Pesanan Tersimpan -->
-<div id="pesananModal" class="overlay" style="display:none;">
-  <div class="modal-content" style="max-width:500px;">
-    <h3>📋 Pesanan Tersimpan</h3>
-    <div id="pesananList" style="max-height:400px; overflow-y:auto;"></div>
-    <button class="btn btn-danger" onclick="document.getElementById('pesananModal').style.display='none'">Tutup</button>
-  </div>
-</div>
+<div id="pesananModal" class="overlay" style="display:none;"><div class="modal-content" style="max-width:500px;"><h3>📋 Pesanan Tersimpan</h3><div id="pesananList" style="max-height:400px; overflow-y:auto;"></div><button class="btn btn-danger" onclick="document.getElementById('pesananModal').style.display='none'">Tutup</button></div></div>
 
 <!-- Modal Label Printer Settings -->
 <div id="labelPrintModal" class="overlay" style="display:none;">
   <div class="modal-content" style="max-width:500px; max-height:90vh; overflow-y:auto;">
     <h3>🏷️ Cetak Label</h3>
     
-    <div id="labelMainButtons" style="display:flex; gap:8px; margin-bottom:16px;">
-      <button class="btn" onclick="cetakLabelPDF()" style="flex:1; background:#2196f3;">📄 Cetak PDF</button>
-      <button class="btn" id="btnPrintLabel" onclick="tampilkanLabelSettings()" style="flex:1; background:#ff9800;">🖨️ Label Printer</button>
+    <div style="display:flex; gap:8px;">
+      <div class="form-group" style="flex:1;"><label>Lebar Label (dots)</label><input type="number" id="labelWidthDots" value="264" min="50" max="600"></div>
+      <div class="form-group" style="flex:1;"><label>Tinggi Label (dots)</label><input type="number" id="labelHeightDots" value="120" min="30" max="300"></div>
     </div>
     
-    <div id="labelPrinterSettings" style="display:none;">
-      <div style="display:flex; gap:8px;">
-        <div class="form-group" style="flex:1;">
-          <label>Lebar Label (dots)</label>
-          <input type="number" id="labelWidthDots" value="264" min="50" max="600">
-        </div>
-        <div class="form-group" style="flex:1;">
-          <label>Tinggi Label (dots)</label>
-          <input type="number" id="labelHeightDots" value="120" min="30" max="300">
-        </div>
-      </div>
-      
-      <div style="display:flex; gap:8px;">
-        <div class="form-group" style="flex:1;">
-          <label>Jarak Kolom (dots)</label>
-          <input type="number" id="labelGapDots" value="16" min="0" max="50">
-        </div>
-        <div class="form-group" style="flex:1;">
-          <label>Jumlah Kolom</label>
-          <select id="labelCols" onchange="updateLabelCount()">
-            <option value="1">1 Kolom</option>
-            <option value="2" selected>2 Kolom</option>
-          </select>
-        </div>
-      </div>
-      
-      <div style="display:flex; gap:8px;">
-        <div class="form-group" style="flex:1;">
-          <label>Offset X</label>
-          <input type="number" id="labelOffsetX" value="160" min="-200" max="300">
-          <small>+ kanan, - kiri</small>
-        </div>
-        <div class="form-group" style="flex:1;">
-          <label>Offset Y</label>
-          <input type="number" id="labelOffsetY" value="0" min="-200" max="300">
-          <small>+ bawah, - atas</small>
-        </div>
-      </div>
-      
-      <div style="display:flex; gap:8px;">
-        <div class="form-group" style="flex:1;">
-          <label>Jumlah Label</label>
-          <input type="number" id="labelCount" value="1" min="1" max="500" step="1" onchange="updateLabelCount()">
-        </div>
-        <div class="form-group" style="flex:1;">
-          <label>Estimasi Cetak</label>
-          <div style="padding:10px; background:#f5f5f5; border-radius:8px; font-size:13px;">
-            <span id="labelEstimate">1</span> pasang (2 label)
-          </div>
-        </div>
-      </div>
-      
-      <div class="form-group">
-        <label>Konten</label>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <label><input type="checkbox" id="showNama" checked> Nama</label>
-          <label><input type="checkbox" id="showHarga" checked> Harga</label>
-          <label><input type="checkbox" id="showBarcode" checked> Barcode</label>
-          <label><input type="checkbox" id="showDate"> Tanggal</label>
-        </div>
-      </div>
-      
-      <button class="btn" onclick="cetakLabelWithSettings()" style="width:100%; margin-top:8px; background:#ff9800; color:white; font-size:16px;">🖨️ CETAK LABEL</button>
-      <div style="display:flex; gap:8px; margin-top:4px;">
-        <button class="btn btn-sm" onclick="simpanLabelSettings()" style="flex:1;">💾 Simpan</button>
-        <button class="btn btn-sm" onclick="muatLabelSettings()" style="flex:1;">📂 Muat</button>
-      </div>
+    <div style="display:flex; gap:8px;">
+      <div class="form-group" style="flex:1;"><label>Jarak Kolom (dots)</label><input type="number" id="labelGapDots" value="16" min="0" max="50"></div>
+      <div class="form-group" style="flex:1;"><label>Jumlah Kolom</label><select id="labelCols" onchange="hitungJumlahCetak()"><option value="1">1 Kolom</option><option value="2" selected>2 Kolom</option></select></div>
     </div>
     
-    <button class="btn btn-danger" onclick="document.getElementById('labelPrintModal').style.display='none'" style="margin-top:12px; width:100%;">Tutup</button>
+    <div style="display:flex; gap:8px;">
+      <div class="form-group" style="flex:1;"><label>Offset X</label><input type="number" id="labelOffsetX" value="160" min="-200" max="300"><small>+ kanan, - kiri</small></div>
+      <div class="form-group" style="flex:1;"><label>Offset Y</label><input type="number" id="labelOffsetY" value="0" min="-200" max="300"><small>+ bawah, - atas</small></div>
+    </div>
+    
+    <div style="display:flex; gap:8px;">
+      <div class="form-group" style="flex:1;"><label>Jumlah Label (pcs)</label><input type="number" id="labelQty" value="2" min="1" max="500" onchange="hitungJumlahCetak()"></div>
+      <div class="form-group" style="flex:1;"><label>Jumlah Cetak</label><input type="number" id="labelPrintCount" value="1" min="1" max="500" readonly style="background:#e8f5e9; font-weight:bold;"><small style="color:#00695c;">Label / kolom = cetak</small></div>
+    </div>
+    
+    <div class="form-group"><label>Konten</label><div style="display:flex; gap:8px; flex-wrap:wrap;"><label><input type="checkbox" id="showNama" checked> Nama</label><label><input type="checkbox" id="showHarga" checked> Harga</label><label><input type="checkbox" id="showBarcode" checked> Barcode</label><label><input type="checkbox" id="showDate"> Tanggal</label></div></div>
+    
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <button class="btn" onclick="cetakLabelPDF()" style="flex:1; background:#2196f3;">📄 PDF</button>
+      <button class="btn" id="btnPrintLabelDirect" onclick="cetakLabelWithSettings()" style="flex:1; background:#ff9800; color:white; font-size:16px;">🖨️ CETAK</button>
+    </div>
+    
+    <div style="display:flex; gap:8px; margin-top:4px;">
+      <button class="btn btn-sm" onclick="simpanLabelSettings()" style="flex:1;">💾 Simpan</button>
+      <button class="btn btn-sm" onclick="muatLabelSettings()" style="flex:1;">📂 Muat</button>
+    </div>
+    
+    <button class="btn btn-danger" onclick="document.getElementById('labelPrintModal').style.display='none'" style="margin-top:8px; width:100%;">Tutup</button>
   </div>
 </div>
 
