@@ -181,7 +181,9 @@ function bukaLabelDialog(barcode) {
       document.getElementById('labelDirection').value = settings.direction || '0';
       document.getElementById('labelOffsetX').value = settings.offsetXMM || 0;
       document.getElementById('labelOffsetY').value = settings.offsetYMM || 0;
-      document.getElementById('labelCols').value = settings.cols || 2;
+      if (settings.cols !== undefined) {
+        document.getElementById('labelCols').value = settings.cols;
+      }
       document.getElementById('labelQty').value = settings.qty || 2;
       if (settings.showNama !== undefined) document.getElementById('showNama').checked = settings.showNama;
       if (settings.showHarga !== undefined) document.getElementById('showHarga').checked = settings.showHarga;
@@ -381,7 +383,9 @@ function muatLabelPreset() {
     document.getElementById('labelDirection').value = s.direction || '0';
     document.getElementById('labelOffsetX').value = s.offsetXMM || 0;
     document.getElementById('labelOffsetY').value = s.offsetYMM || 0;
-    document.getElementById('labelCols').value = s.cols || 2;
+    if (s.cols !== undefined) {
+      document.getElementById('labelCols').value = s.cols;
+    }
     document.getElementById('labelQty').value = s.qty || 2;
     document.getElementById('showNama').checked = s.showNama !== false;
     document.getElementById('showHarga').checked = s.showHarga !== false;
