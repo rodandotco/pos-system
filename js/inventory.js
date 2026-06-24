@@ -172,6 +172,7 @@ function bukaLabelDialog(barcode) {
   document.getElementById('labelDirection').value = '0';
   document.getElementById('labelOffsetX').value = '';
   document.getElementById('labelOffsetY').value = '';
+  document.getElementById('labelRowGap').value = '';
   document.getElementById('labelCols').value = '2';
   document.getElementById('labelQty').value = '';
   document.getElementById('showNama').checked = true;
@@ -229,6 +230,7 @@ async function cetakLabelWithSettings() {
   var direction = document.getElementById('labelDirection').value || '0';
   var offsetXMM = parseFloat(document.getElementById('labelOffsetX').value) || 0;
   var offsetYMM = parseFloat(document.getElementById('labelOffsetY').value) || 0;
+  var rowGapMM = parseFloat(document.getElementById('labelRowGap').value) || 0;
   var cols = parseInt(document.getElementById('labelCols').value) || 2;
   var qty = parseInt(document.getElementById('labelQty').value) || 0;
   var printCount = parseInt(document.getElementById('labelPrintCount').value) || 1;
@@ -241,6 +243,7 @@ async function cetakLabelWithSettings() {
   var gap = mmToDots(gapMM);
   var ox = mmToDots(offsetXMM);
   var oy = mmToDots(offsetYMM);
+  var rowGap = mmToDots(rowGapMM);
   
   var showNama = document.getElementById('showNama').checked;
   var showHarga = document.getElementById('showHarga').checked;
@@ -253,12 +256,12 @@ async function cetakLabelWithSettings() {
   
   try {
     var totalW = cols === 2 ? (w * 2 + gap) : w;
-    console.log('Label - w:' + w + ' h:' + h + ' gap:' + gap + ' totalW:' + totalW + ' ox:' + ox + ' oy:' + oy + ' cols:' + cols + ' qty:' + qty + ' printCount:' + printCount);
+    console.log('Label - w:' + w + ' h:' + h + ' gap:' + gap + ' totalW:' + totalW + ' ox:' + ox + ' oy:' + oy + ' rowGap:' + rowGap + ' cols:' + cols + ' qty:' + qty + ' printCount:' + printCount);
     
     var encoder = new TextEncoder();
     var allData = '';
     
-    // Send each print separately with BACKFEED for alignment
+    // Send each print separately with manual row gap adjustment
     for (var p = 0; p < printCount; p++) {
       var cmd = '';
       cmd += 'SIZE ' + totalW + ',' + h + '\r\n';
@@ -267,14 +270,14 @@ async function cetakLabelWithSettings() {
       cmd += 'CLS\r\n';
       for (var col = 0; col < cols; col++) {
         var x = (col * (w + gap)) + 10 + ox;
-        var y = 10 + oy;
+        // Apply row gap adjustment for subsequent prints
+        var y = 10 + oy + (p * rowGap);
         if (showNama) { cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + nama + '"\r\n'; y += 25; }
         if (showHarga) { cmd += 'TEXT ' + x + ',' + y + ',"1",0,1.5,1.5,"' + harga + '"\r\n'; y += 30; }
         if (showBarcode) { cmd += 'BARCODE ' + x + ',' + y + ',"128",30,1,0,1,1,"' + barcodeText + '"\r\n'; y += 35; }
         if (showDate) { cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + tgl + '"\r\n'; }
       }
       cmd += 'PRINT 1\r\n';
-      cmd += 'BACKFEED\r\n';
       allData += cmd;
     }
     
@@ -300,6 +303,7 @@ function simpanLabelSettings() {
     direction: document.getElementById('labelDirection').value || '0',
     offsetXMM: parseFloat(document.getElementById('labelOffsetX').value) || 0,
     offsetYMM: parseFloat(document.getElementById('labelOffsetY').value) || 0,
+    rowGapMM: parseFloat(document.getElementById('labelRowGap').value) || 0,
     cols: parseInt(document.getElementById('labelCols').value) || 2,
     qty: parseInt(document.getElementById('labelQty').value) || 0,
     showNama: document.getElementById('showNama').checked,
@@ -346,6 +350,7 @@ function muatLabelPreset() {
     document.getElementById('labelDirection').value = s.direction || '0';
     document.getElementById('labelOffsetX').value = s.offsetXMM || '';
     document.getElementById('labelOffsetY').value = s.offsetYMM || '';
+    document.getElementById('labelRowGap').value = s.rowGapMM || '';
     if (s.cols !== undefined) document.getElementById('labelCols').value = s.cols;
     document.getElementById('labelQty').value = s.qty || '';
     document.getElementById('showNama').checked = s.showNama !== false;
@@ -379,6 +384,7 @@ function resetLabelSettings() {
   document.getElementById('labelDirection').value = '0';
   document.getElementById('labelOffsetX').value = '';
   document.getElementById('labelOffsetY').value = '';
+  document.getElementById('labelRowGap').value = '';
   document.getElementById('labelCols').value = '2';
   document.getElementById('labelQty').value = '';
   document.getElementById('showNama').checked = true;
