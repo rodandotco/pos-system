@@ -141,11 +141,14 @@
       <button class="btn btn-sm" onclick="simpanLabelSettings()" style="white-space:nowrap;">💾 Simpan</button>
     </div>
     
-    <div class="form-group" style="margin-top:8px;">
-      <label>Template Tersimpan</label>
-      <select id="presetList" onchange="muatLabelPreset()" style="width:100%;"><option value="">-- Pilih template --</option></select>
-      <button class="btn btn-sm btn-danger" onclick="hapusLabelPreset()" style="margin-top:4px;">🗑 Hapus Template</button>
-    </div>
+    <<div class="form-group" style="margin-top:8px;">
+  <label>Template Tersimpan</label>
+  <div style="display:flex; gap:8px;">
+    <select id="presetList" style="flex:1;"><option value="">-- Pilih template --</option></select>
+    <button class="btn btn-sm" onclick="muatLabelPreset()" style="white-space:nowrap;">📂 Muat</button>
+  </div>
+  <button class="btn btn-sm btn-danger" onclick="hapusLabelPreset()" style="margin-top:4px;">🗑 Hapus Template</button>
+</div>
     
     <div style="display:flex; gap:8px; margin-top:8px;">
       <button class="btn" onclick="cetakLabelPDF()" style="flex:1; background:#2196f3;">📄 PDF</button>
