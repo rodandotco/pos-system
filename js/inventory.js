@@ -166,22 +166,22 @@ async function sambungLabelPrinterDariDialog() { await sambungLabelPrinter(); up
 function bukaLabelDialog(barcode) {
   currentLabelBarcode = barcode;
   
-  // Always fresh defaults - no localStorage auto-load
-  document.getElementById('labelWidthMM').value = 33;
-  document.getElementById('labelHeightMM').value = 15;
-  document.getElementById('labelGapMM').value = 2;
+  // All defaults to 0 - user must fill in
+  document.getElementById('labelWidthMM').value = 0;
+  document.getElementById('labelHeightMM').value = 0;
+  document.getElementById('labelGapMM').value = 0;
   document.getElementById('labelDirection').value = '0';
   document.getElementById('labelOffsetX').value = 0;
   document.getElementById('labelOffsetY').value = 0;
-  document.getElementById('labelCols').value = 2;
-  document.getElementById('labelQty').value = 2;
+  document.getElementById('labelCols').value = 1;
+  document.getElementById('labelQty').value = 0;
   document.getElementById('showNama').checked = true;
   document.getElementById('showHarga').checked = true;
   document.getElementById('showBarcode').checked = true;
   document.getElementById('showDate').checked = false;
   document.getElementById('presetName').value = '';
+  document.getElementById('labelPrintCount').value = 0;
   
-  hitungJumlahCetak();
   refreshPresetList();
   updateLabelDialogStatus();
   
@@ -192,9 +192,13 @@ function bukaLabelDialog(barcode) {
 }
 
 function hitungJumlahCetak() {
-  var qty = parseInt(document.getElementById('labelQty').value) || 2;
-  var cols = parseInt(document.getElementById('labelCols').value) || 2;
-  document.getElementById('labelPrintCount').value = Math.ceil(qty / cols);
+  var qty = parseInt(document.getElementById('labelQty').value) || 0;
+  var cols = parseInt(document.getElementById('labelCols').value) || 1;
+  if (qty > 0 && cols > 0) {
+    document.getElementById('labelPrintCount').value = Math.ceil(qty / cols);
+  } else {
+    document.getElementById('labelPrintCount').value = 0;
+  }
 }
 
 async function cetakLabelPDF() {
@@ -225,14 +229,19 @@ async function cetakLabelWithSettings() {
   if (!product) return alert('Produk tidak ditemukan');
   
   // Read fresh values directly from inputs
-  var w = mmToDots(parseFloat(document.getElementById('labelWidthMM').value) || 33);
-  var h = mmToDots(parseFloat(document.getElementById('labelHeightMM').value) || 15);
-  var gap = mmToDots(parseFloat(document.getElementById('labelGapMM').value) || 2);
+  var w = mmToDots(parseFloat(document.getElementById('labelWidthMM').value) || 0);
+  var h = mmToDots(parseFloat(document.getElementById('labelHeightMM').value) || 0);
+  var gap = mmToDots(parseFloat(document.getElementById('labelGapMM').value) || 0);
   var direction = document.getElementById('labelDirection').value || '0';
   var ox = mmToDots(parseFloat(document.getElementById('labelOffsetX').value) || 0);
   var oy = mmToDots(parseFloat(document.getElementById('labelOffsetY').value) || 0);
-  var cols = parseInt(document.getElementById('labelCols').value) || 2;
+  var cols = parseInt(document.getElementById('labelCols').value) || 1;
+  var qty = parseInt(document.getElementById('labelQty').value) || 0;
   var printCount = parseInt(document.getElementById('labelPrintCount').value) || 1;
+  
+  if (w <= 0 || h <= 0) { alert('Isi Lebar dan Tinggi Label terlebih dahulu!'); return; }
+  if (qty <= 0) { alert('Isi Jumlah Label terlebih dahulu!'); return; }
+  
   var showNama = document.getElementById('showNama').checked;
   var showHarga = document.getElementById('showHarga').checked;
   var showBarcode = document.getElementById('showBarcode').checked;
@@ -259,7 +268,7 @@ async function cetakLabelWithSettings() {
       if (showDate) { cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + tgl + '"\r\n'; }
     }
     cmd += 'PRINT ' + printCount + '\r\n';
-    console.log('Label - w:' + w + ' h:' + h + ' gap:' + gap + ' totalW:' + totalW + ' ox:' + ox + ' oy:' + oy + ' cols:' + cols + ' dir:' + direction);
+    console.log('Label - w:' + w + ' h:' + h + ' gap:' + gap + ' totalW:' + totalW + ' ox:' + ox + ' oy:' + oy + ' cols:' + cols + ' qty:' + qty + ' printCount:' + printCount);
     var data = encoder.encode(cmd);
     for (var i = 0; i < data.byteLength; i += 20) {
       var chunk = data.slice(i, Math.min(i + 20, data.byteLength));
@@ -267,23 +276,23 @@ async function cetakLabelWithSettings() {
       await sleep(80);
     }
     document.getElementById('labelPrintModal').style.display = 'none';
-    alert('Label dicetak! (' + (printCount * cols) + ' pcs)');
+    alert('Label dicetak! (' + qty + ' pcs, ' + printCount + 'x cetak)');
   } catch (e) { console.error(e); alert('Gagal cetak: ' + e.message); }
 }
 
-// ===================== LABEL PRESETS (Manual only) =====================
+// ===================== LABEL PRESETS =====================
 function simpanLabelSettings() {
   var name = document.getElementById('presetName').value.trim();
   if (!name) { alert('Beri nama template!'); return; }
   var settings = {
-    widthMM: parseFloat(document.getElementById('labelWidthMM').value) || 33,
-    heightMM: parseFloat(document.getElementById('labelHeightMM').value) || 15,
-    gapMM: parseFloat(document.getElementById('labelGapMM').value) || 2,
+    widthMM: parseFloat(document.getElementById('labelWidthMM').value) || 0,
+    heightMM: parseFloat(document.getElementById('labelHeightMM').value) || 0,
+    gapMM: parseFloat(document.getElementById('labelGapMM').value) || 0,
     direction: document.getElementById('labelDirection').value || '0',
     offsetXMM: parseFloat(document.getElementById('labelOffsetX').value) || 0,
     offsetYMM: parseFloat(document.getElementById('labelOffsetY').value) || 0,
-    cols: parseInt(document.getElementById('labelCols').value) || 2,
-    qty: parseInt(document.getElementById('labelQty').value) || 2,
+    cols: parseInt(document.getElementById('labelCols').value) || 1,
+    qty: parseInt(document.getElementById('labelQty').value) || 0,
     showNama: document.getElementById('showNama').checked,
     showHarga: document.getElementById('showHarga').checked,
     showBarcode: document.getElementById('showBarcode').checked,
@@ -322,14 +331,14 @@ function muatLabelPreset() {
     var presets = JSON.parse(saved);
     var s = presets[name];
     if (!s) return;
-    document.getElementById('labelWidthMM').value = s.widthMM || 33;
-    document.getElementById('labelHeightMM').value = s.heightMM || 15;
-    document.getElementById('labelGapMM').value = s.gapMM || 2;
+    document.getElementById('labelWidthMM').value = s.widthMM || 0;
+    document.getElementById('labelHeightMM').value = s.heightMM || 0;
+    document.getElementById('labelGapMM').value = s.gapMM || 0;
     document.getElementById('labelDirection').value = s.direction || '0';
     document.getElementById('labelOffsetX').value = s.offsetXMM || 0;
     document.getElementById('labelOffsetY').value = s.offsetYMM || 0;
     if (s.cols !== undefined) document.getElementById('labelCols').value = s.cols;
-    document.getElementById('labelQty').value = s.qty || 2;
+    document.getElementById('labelQty').value = s.qty || 0;
     document.getElementById('showNama').checked = s.showNama !== false;
     document.getElementById('showHarga').checked = s.showHarga !== false;
     document.getElementById('showBarcode').checked = s.showBarcode !== false;
@@ -355,20 +364,20 @@ function hapusLabelPreset() {
 }
 
 function resetLabelSettings() {
-  document.getElementById('labelWidthMM').value = 33;
-  document.getElementById('labelHeightMM').value = 15;
-  document.getElementById('labelGapMM').value = 2;
+  document.getElementById('labelWidthMM').value = 0;
+  document.getElementById('labelHeightMM').value = 0;
+  document.getElementById('labelGapMM').value = 0;
   document.getElementById('labelDirection').value = '0';
   document.getElementById('labelOffsetX').value = 0;
   document.getElementById('labelOffsetY').value = 0;
-  document.getElementById('labelCols').value = 2;
-  document.getElementById('labelQty').value = 2;
+  document.getElementById('labelCols').value = 1;
+  document.getElementById('labelQty').value = 0;
   document.getElementById('showNama').checked = true;
   document.getElementById('showHarga').checked = true;
   document.getElementById('showBarcode').checked = true;
   document.getElementById('showDate').checked = false;
   document.getElementById('presetName').value = '';
-  hitungJumlahCetak();
+  document.getElementById('labelPrintCount').value = 0;
   alert('Pengaturan label direset!');
 }
 
