@@ -340,7 +340,7 @@ function refreshPresetList() {
 
 function muatLabelPreset() {
   var name = document.getElementById('presetList').value;
-  if (!name) return;
+  if (!name) { alert('Pilih template terlebih dahulu!'); return; }
   
   var saved = localStorage.getItem('labelPresets');
   if (!saved) return;
@@ -364,6 +364,7 @@ function muatLabelPreset() {
     hitungJumlahCetak();
     
     localStorage.setItem('labelSettings', JSON.stringify(s));
+    alert('Template "' + name + '" dimuat!');
   } catch(e) {}
 }
 
