@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>POS Retail Andal</title>
+  <title>RodanPOS</title>
   <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlBPUyBSZXRhaWwgQW5kYWwiLAogICJzaG9ydF9uYW1lIjogIlBPUyIsCiAgInN0YXJ0X3VybCI6ICIuLyIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiI2ZmZiIsCiAgInRoZW1lX2NvbG9yIjogIiMwMDk2ODgiLAogICJvcmllbnRhdGlvbiI6ICJwb3J0cmFpdCIsCiAgImljb25zIjogW3sKICAgICJzcmMiOiAiZGF0YTppbWFnZS9zdmcreG1sO2Jhc2U2NCxQSE4yWnlCNGJXeHVjejBpYUhSMGNEb3ZMM2QzZHk1M015NXZjbWN2TWpBd01DOXpkbWNpSUhSb1pXMWxMemd2UGo0OGRkM0QzWkdSMmR5QmhiV1E5SW1Gdkx6SXdNaUF5TURBeExURTBMVEF3SURBd09qSXdPakF4SWo0OFBDOG5KejQ4TDJKeVBtSnZjbVJsY2p3dlptbHVZMmhoY3k4KyIKICB9XQp9" />
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -43,7 +43,7 @@
   <!-- ================== INVENTORY ================== -->
   <div id="page-inventory" class="page">
     <div class="form-group"><label>Barcode</label><div style="display:flex; gap:4px;"><input type="text" id="prodBarcode" placeholder="Scan barcode atau ketik manual..." autocomplete="off" style="flex:1;"><button class="btn btn-sm" onclick="generateBarcode()" title="Generate barcode otomatis">🔢 Generate</button></div><button class="btn" onclick="cariAtauTambahProduk()" style="margin-top:4px;">Cari / Tambah Produk</button></div>
-    <div id="productForm" style="display:none;"><h3 id="formTitle"></h3><div id="fotoPreviewContainer" style="text-align:center; margin-bottom:12px; display:none;"><img id="fotoPreview" src="" alt="Foto Produk" style="max-width:150px; max-height:150px; border-radius:8px;"><button class="btn btn-sm btn-danger" id="btnHapusFoto" onclick="hapusFoto()">🗑 Hapus Foto</button></div><div class="form-group"><label>Nama Produk</label><input type="text" id="prodNama"></div><div class="form-group"><label>Kategori</label><input type="text" id="prodKategori"></div><div class="form-group"><label>Keterangan</label><input type="text" id="prodKeterangan"></div><div class="form-group"><label>Harga Beli</label><input type="number" id="prodHargaBeli" step="1"></div><div class="form-group"><label>Harga Jual</label><input type="number" id="prodHargaJual" step="1"></div><div class="form-group"><label>Harga Grosir (opsional)</label><div style="display:flex; gap:8px; align-items:center;"><span>Diskon</span><input type="number" id="prodDiskonPersen" placeholder="%" min="0" max="100" step="1" style="width:60px;"><span>% setiap pembelian</span><input type="number" id="prodDiskonMinQty" placeholder="Qty" min="0" step="1" style="width:60px;"><span>pcs</span></div><small style="color:#666;">Contoh: Diskon 5% setiap 12 pcs.</small></div>
+    <div id="productForm" style="display:none;"><h3 id="formTitle"></h3><div id="fotoPreviewContainer" style="text-align:center; margin-bottom:12px; display:none;"><img id="fotoPreview" src="" alt="Foto Produk" style="max-width:150px; max-height:150px; border-radius:8px;"><button class="btn btn-sm btn-danger" id="btnHapusFoto" onclick="hapusFoto()">🗑 Hapus Foto</button></div><div class="form-group"><label>Nama Produk</label><input type="text" id="prodNama"></div><div class="form-group"><label>Kategori</label><input type="text" id="prodKategori"></div><div class="form-group"><label>Keterangan</label><input type="text" id="prodKeterangan"></div><div class="form-group"><label>Harga Beli</label><input type="number" id="prodHargaBeli" step="1"></div><div class="form-group"><label>Harga Jual</label><input type="number" id="prodHargaJual" step="1"></div><div class="form-group"><label>Harga Grosir (opsional)</label><div style="display:flex; gap:8px; align-items:center;"><span>Diskon</span><input type="number" id="prodDiskonPersen" placeholder="%" min="0" max="100" step="1" style="width:60px;"><span>% setiap pembelian</span><input type="number" id="prodDiskonMinQty" placeholder="Qty" min="0" step="1" style="width:60px;"><span>pcs</span></div><small style="color:#666;">Contoh: Diskon 5% setiap 12 pcs. Harga otomatis berubah jadi Harga Grosir.</small></div>
       <div class="stok-info"><div class="form-group"><label>Minimum Stok</label><input type="number" id="prodMinStok" value="10" min="0" step="1"></div>Stok Saat Ini: <span id="stokSaatIni">0</span><br><label>Tambah/Kurangi Stok</label><input type="number" id="perubahanStok" value="0" oninput="hitungStokAkhir()"><br>Stok Akhir: <span id="stokAkhir">0</span></div>
       <div class="form-group"><label>Foto</label><input type="file" id="prodFoto" accept="image/*" onchange="previewFoto()"></div>
       <button class="btn" id="btnSimpanProduk">Simpan</button><button class="btn btn-danger" id="btnHapusProduk" style="display:none;">Hapus Produk</button>
@@ -110,13 +110,7 @@
     </div>
     
     <div style="display:flex; gap:8px;">
-      <div class="form-group" style="flex:1;">
-        <label>Orientasi Cetak</label>
-        <select id="labelDirection">
-          <option value="0">Normal</option>
-          <option value="1">Rotasi 180°</option>
-        </select>
-      </div>
+      <div class="form-group" style="flex:1;"><label>Orientasi Cetak</label><select id="labelDirection"><option value="0">Normal</option><option value="1">Rotasi 180°</option></select></div>
       <div class="form-group" style="flex:1;"></div>
     </div>
     
@@ -136,13 +130,11 @@
       <div class="form-group" style="flex:1; margin:0;"><input type="text" id="presetName" placeholder="Nama template..." style="padding:8px;"></div>
       <button class="btn btn-sm" onclick="simpanLabelSettings()" style="white-space:nowrap;">💾 Simpan</button>
     </div>
+    <button class="btn btn-sm btn-danger" onclick="resetLabelSettings()" style="width:100%; margin-top:4px;">🔄 Reset ke Default</button>
     
     <div class="form-group" style="margin-top:8px;">
       <label>Template Tersimpan</label>
-      <div style="display:flex; gap:8px;">
-        <select id="presetList" style="flex:1;"><option value="">-- Pilih template --</option></select>
-        <button class="btn btn-sm" onclick="muatLabelPreset()" style="white-space:nowrap;">📂 Muat</button>
-      </div>
+      <div style="display:flex; gap:8px;"><select id="presetList" style="flex:1;"><option value="">-- Pilih template --</option></select><button class="btn btn-sm" onclick="muatLabelPreset()" style="white-space:nowrap;">📂 Muat</button></div>
       <button class="btn btn-sm btn-danger" onclick="hapusLabelPreset()" style="margin-top:4px;">🗑 Hapus Template</button>
     </div>
     
