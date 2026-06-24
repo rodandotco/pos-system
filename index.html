@@ -28,9 +28,7 @@
 
   <!-- ================== TRANSAKSI ================== -->
   <div id="page-transaksi" class="page active">
-    <div id="lowStockBanner" style="display:none; background:#fff3e0; border:1px solid #ff9800; border-radius:8px; padding:10px; margin-bottom:12px; font-size:13px;">
-      ⚠️ <b>Stok Rendah:</b> <span id="lowStockBannerText"></span>
-    </div>
+    <div id="lowStockBanner" style="display:none; background:#fff3e0; border:1px solid #ff9800; border-radius:8px; padding:10px; margin-bottom:12px; font-size:13px;"><span>⚠️ <b>Stok Rendah:</b> <span id="lowStockBannerText"></span></span></div>
     <div class="form-group"><label>Nama Customer (opsional)</label><div style="position:relative; display:inline-block; width:200px;"><input type="text" id="custName" placeholder="Nama Customer" maxlength="25" style="width:100%; padding-right:25px; box-sizing:border-box;"><button class="clear-btn" onclick="document.getElementById('custName').value=''" style="position:absolute; right:0; top:50%; transform:translateY(-50%); border:none; background:transparent; cursor:pointer; padding:0 5px;">✕</button></div></div>
     <div class="form-group"><label>Cari Produk</label><div style="position:relative; display:inline-block; width:200px;"><input type="text" id="searchProduct" placeholder="Nama / Barcode..." oninput="searchProductFn(this.value)" onfocus="searchProductFn(this.value)" autocomplete="off" maxlength="25" style="width:100%; padding-right:25px; box-sizing:border-box;"><button class="clear-btn" onclick="var s=document.getElementById('searchProduct'); if(s)s.value=''; var sr=document.getElementById('searchResults'); if(sr)sr.style.display='none';" style="position:absolute; right:0; top:50%; transform:translateY(-50%); border:none; background:transparent; cursor:pointer; padding:0 5px;">✕</button></div><div class="search-results" id="searchResults" style="display:none;"></div></div>
     <div class="form-group"><label>Scan Barcode</label><div style="position:relative; display:inline-block; width:200px;"><input type="text" id="scanInputTrans" placeholder="Scan barcode di sini..." autocomplete="off" maxlength="25" style="width:100%; padding-right:25px; box-sizing:border-box;"><button class="clear-btn" onclick="document.getElementById('scanInputTrans').value=''" style="position:absolute; right:0; top:50%; transform:translateY(-50%); border:none; background:transparent; cursor:pointer; padding:0 5px;">✕</button></div></div>
@@ -115,18 +113,18 @@
     </div>
     
     <div style="display:flex; gap:8px;">
-      <div class="form-group" style="flex:1;"><label>Lebar Label (dots)</label><input type="number" id="labelWidthDots" value="264" min="50" max="600"></div>
-      <div class="form-group" style="flex:1;"><label>Tinggi Label (dots)</label><input type="number" id="labelHeightDots" value="120" min="30" max="300"></div>
+      <div class="form-group" style="flex:1;"><label>Lebar Label (mm)</label><input type="number" id="labelWidthMM" value="33" min="10" max="80" step="0.5"></div>
+      <div class="form-group" style="flex:1;"><label>Tinggi Label (mm)</label><input type="number" id="labelHeightMM" value="15" min="5" max="40" step="0.5"></div>
     </div>
     
     <div style="display:flex; gap:8px;">
-      <div class="form-group" style="flex:1;"><label>Jarak Kolom (dots)</label><input type="number" id="labelGapDots" value="16" min="0" max="50"></div>
+      <div class="form-group" style="flex:1;"><label>Jarak Kolom (mm)</label><input type="number" id="labelGapMM" value="2" min="0" max="10" step="0.5"></div>
       <div class="form-group" style="flex:1;"><label>Jumlah Kolom</label><select id="labelCols" onchange="hitungJumlahCetak()"><option value="1">1 Kolom</option><option value="2" selected>2 Kolom</option></select></div>
     </div>
     
     <div style="display:flex; gap:8px;">
-      <div class="form-group" style="flex:1;"><label>Offset X</label><input type="number" id="labelOffsetX" value="160" min="-200" max="300"><small>+ kanan, - kiri</small></div>
-      <div class="form-group" style="flex:1;"><label>Offset Y</label><input type="number" id="labelOffsetY" value="0" min="-200" max="300"><small>+ bawah, - atas</small></div>
+      <div class="form-group" style="flex:1;"><label>Offset X (mm)</label><input type="number" id="labelOffsetX" value="0" min="-20" max="30" step="0.5"><small>+ kanan, - kiri</small></div>
+      <div class="form-group" style="flex:1;"><label>Offset Y (mm)</label><input type="number" id="labelOffsetY" value="0" min="-20" max="30" step="0.5"><small>+ bawah, - atas</small></div>
     </div>
     
     <div style="display:flex; gap:8px;">
@@ -141,14 +139,14 @@
       <button class="btn btn-sm" onclick="simpanLabelSettings()" style="white-space:nowrap;">💾 Simpan</button>
     </div>
     
-    <<div class="form-group" style="margin-top:8px;">
-  <label>Template Tersimpan</label>
-  <div style="display:flex; gap:8px;">
-    <select id="presetList" style="flex:1;"><option value="">-- Pilih template --</option></select>
-    <button class="btn btn-sm" onclick="muatLabelPreset()" style="white-space:nowrap;">📂 Muat</button>
-  </div>
-  <button class="btn btn-sm btn-danger" onclick="hapusLabelPreset()" style="margin-top:4px;">🗑 Hapus Template</button>
-</div>
+    <div class="form-group" style="margin-top:8px;">
+      <label>Template Tersimpan</label>
+      <div style="display:flex; gap:8px;">
+        <select id="presetList" style="flex:1;"><option value="">-- Pilih template --</option></select>
+        <button class="btn btn-sm" onclick="muatLabelPreset()" style="white-space:nowrap;">📂 Muat</button>
+      </div>
+      <button class="btn btn-sm btn-danger" onclick="hapusLabelPreset()" style="margin-top:4px;">🗑 Hapus Template</button>
+    </div>
     
     <div style="display:flex; gap:8px; margin-top:8px;">
       <button class="btn" onclick="cetakLabelPDF()" style="flex:1; background:#2196f3;">📄 PDF</button>
