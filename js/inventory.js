@@ -178,6 +178,7 @@ function bukaLabelDialog(barcode) {
       document.getElementById('labelWidthMM').value = settings.widthMM || 33;
       document.getElementById('labelHeightMM').value = settings.heightMM || 15;
       document.getElementById('labelGapMM').value = settings.gapMM || 2;
+      document.getElementById('labelDirection').value = settings.direction || '0';
       document.getElementById('labelOffsetX').value = settings.offsetXMM || 0;
       document.getElementById('labelOffsetY').value = settings.offsetYMM || 0;
       document.getElementById('labelCols').value = settings.cols || 2;
@@ -242,6 +243,7 @@ async function cetakLabelWithSettings() {
   var widthMM = parseFloat(document.getElementById('labelWidthMM').value) || 33;
   var heightMM = parseFloat(document.getElementById('labelHeightMM').value) || 15;
   var gapMM = parseFloat(document.getElementById('labelGapMM').value) || 2;
+  var direction = document.getElementById('labelDirection').value || '0';
   var offsetXMM = parseFloat(document.getElementById('labelOffsetX').value) || 0;
   var offsetYMM = parseFloat(document.getElementById('labelOffsetY').value) || 0;
   var cols = parseInt(document.getElementById('labelCols').value) || 2;
@@ -269,6 +271,7 @@ async function cetakLabelWithSettings() {
     var totalWidth = cols === 2 ? (width * 2 + gap) : width;
     cmd += 'SIZE ' + totalWidth + ',' + height + '\r\n';
     cmd += 'GAP 0,0\r\n';
+    cmd += 'DIRECTION ' + direction + '\r\n';
     cmd += 'CLS\r\n';
     
     for (var col = 0; col < cols; col++) {
@@ -307,6 +310,7 @@ function simpanLabelSettings() {
     widthMM: parseFloat(document.getElementById('labelWidthMM').value) || 33,
     heightMM: parseFloat(document.getElementById('labelHeightMM').value) || 15,
     gapMM: parseFloat(document.getElementById('labelGapMM').value) || 2,
+    direction: document.getElementById('labelDirection').value || '0',
     offsetXMM: parseFloat(document.getElementById('labelOffsetX').value) || 0,
     offsetYMM: parseFloat(document.getElementById('labelOffsetY').value) || 0,
     cols: parseInt(document.getElementById('labelCols').value) || 2,
@@ -364,6 +368,7 @@ function muatLabelPreset() {
     document.getElementById('labelWidthMM').value = s.widthMM || 33;
     document.getElementById('labelHeightMM').value = s.heightMM || 15;
     document.getElementById('labelGapMM').value = s.gapMM || 2;
+    document.getElementById('labelDirection').value = s.direction || '0';
     document.getElementById('labelOffsetX').value = s.offsetXMM || 0;
     document.getElementById('labelOffsetY').value = s.offsetYMM || 0;
     document.getElementById('labelCols').value = s.cols || 2;
