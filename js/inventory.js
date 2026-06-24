@@ -154,9 +154,6 @@ function generateBarcode() {
 function bukaLabelDialog(barcode) {
   currentLabelBarcode = barcode;
   
-  document.getElementById('labelMainButtons').style.display = 'flex';
-  document.getElementById('labelPrinterSettings').style.display = 'none';
-  
   var savedSettings = localStorage.getItem('labelSettings');
   if (savedSettings) {
     try {
@@ -167,7 +164,7 @@ function bukaLabelDialog(barcode) {
       document.getElementById('labelOffsetX').value = settings.offsetX || 160;
       document.getElementById('labelOffsetY').value = settings.offsetY || 0;
       document.getElementById('labelCols').value = settings.cols || 2;
-      document.getElementById('labelCount').value = settings.count || 1;
+      document.getElementById('labelQty').value = settings.qty || 2;
       if (settings.showNama !== undefined) document.getElementById('showNama').checked = settings.showNama;
       if (settings.showHarga !== undefined) document.getElementById('showHarga').checked = settings.showHarga;
       if (settings.showBarcode !== undefined) document.getElementById('showBarcode').checked = settings.showBarcode;
@@ -175,28 +172,20 @@ function bukaLabelDialog(barcode) {
     } catch(e) {}
   }
   
-  updateLabelCount();
+  hitungJumlahCetak();
   
-  var hasLabelPrinter = (typeof labelPrinterDevice !== 'undefined' && labelPrinterDevice && 
-                         typeof labelPrinterCharacteristic !== 'undefined' && labelPrinterCharacteristic);
-  
-  var btnPrintLabel = document.getElementById('btnPrintLabel');
-  if (btnPrintLabel) btnPrintLabel.style.display = hasLabelPrinter ? '' : 'none';
+  var hasLabelPrinter = (typeof labelPrinterDevice !== 'undefined' && labelPrinterDevice && typeof labelPrinterCharacteristic !== 'undefined' && labelPrinterCharacteristic);
+  var btnPrint = document.getElementById('btnPrintLabelDirect');
+  if (btnPrint) btnPrint.style.display = hasLabelPrinter ? '' : 'none';
   
   document.getElementById('labelPrintModal').style.display = 'flex';
 }
 
-function tampilkanLabelSettings() {
-  document.getElementById('labelMainButtons').style.display = 'none';
-  document.getElementById('labelPrinterSettings').style.display = 'block';
-  updateLabelCount();
-}
-
-function updateLabelCount() {
-  var count = parseInt(document.getElementById('labelCount').value) || 1;
+function hitungJumlahCetak() {
+  var qty = parseInt(document.getElementById('labelQty').value) || 2;
   var cols = parseInt(document.getElementById('labelCols').value) || 2;
-  var labelText = cols === 2 ? ' pasang (' + (count * 2) + ' label)' : ' label';
-  document.getElementById('labelEstimate').textContent = count + labelText;
+  var printCount = Math.ceil(qty / cols);
+  document.getElementById('labelPrintCount').value = printCount;
 }
 
 async function cetakLabelPDF() {
@@ -206,37 +195,25 @@ async function cetakLabelPDF() {
   var qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(currentLabelBarcode);
   var nama = product.nama || 'Produk';
   var harga = 'Rp ' + (product.harga_jual || 0).toLocaleString('id');
-  var barcodeText = currentLabelBarcode;
   
   var doc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: [33, 15] });
   var qrImage = new Image();
   qrImage.crossOrigin = 'Anonymous';
   qrImage.onload = function() {
     doc.addImage(qrImage, 'PNG', 2, 2, 9, 9);
-    doc.setFontSize(5);
-    var namaLines = doc.splitTextToSize(nama, 23);
-    doc.text(namaLines, 12, 3);
-    doc.setFontSize(6);
-    doc.setFont(undefined, 'bold');
-    doc.text(harga, 12, 9);
-    doc.setFontSize(3);
-    doc.setFont(undefined, 'normal');
-    doc.text(barcodeText, 2, 12);
-    doc.setFontSize(2);
-    doc.text(new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }), 12, 12);
+    doc.setFontSize(5); var namaLines = doc.splitTextToSize(nama, 23); doc.text(namaLines, 12, 3);
+    doc.setFontSize(6); doc.setFont(undefined, 'bold'); doc.text(harga, 12, 9);
+    doc.setFontSize(3); doc.setFont(undefined, 'normal'); doc.text(currentLabelBarcode, 2, 12);
+    doc.setFontSize(2); doc.text(new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }), 12, 12);
     window.open(URL.createObjectURL(doc.output('blob')), '_blank');
   };
   qrImage.onerror = function() { alert('Gagal memuat QR code.'); };
   qrImage.src = qrUrl;
-  
   document.getElementById('labelPrintModal').style.display = 'none';
 }
 
 async function cetakLabelWithSettings() {
-  if (!labelPrinterDevice || !labelPrinterCharacteristic) {
-    alert('Label printer tidak terhubung.');
-    return;
-  }
+  if (!labelPrinterDevice || !labelPrinterCharacteristic) { cetakLabelPDF(); return; }
   
   var product = await getProductByBarcode(currentLabelBarcode);
   if (!product) return alert('Produk tidak ditemukan');
@@ -247,8 +224,7 @@ async function cetakLabelWithSettings() {
   var offsetX = parseInt(document.getElementById('labelOffsetX').value) || 160;
   var offsetY = parseInt(document.getElementById('labelOffsetY').value) || 0;
   var cols = parseInt(document.getElementById('labelCols').value) || 2;
-  var count = parseInt(document.getElementById('labelCount').value) || 1;
-  
+  var printCount = parseInt(document.getElementById('labelPrintCount').value) || 1;
   var showNama = document.getElementById('showNama').checked;
   var showHarga = document.getElementById('showHarga').checked;
   var showBarcode = document.getElementById('showBarcode').checked;
@@ -262,7 +238,6 @@ async function cetakLabelWithSettings() {
   try {
     var encoder = new TextEncoder();
     var cmd = '';
-    
     var totalWidth = cols === 2 ? (width * 2 + gap) : width;
     cmd += 'SIZE ' + totalWidth + ',' + height + '\r\n';
     cmd += 'GAP 0,0\r\n';
@@ -271,27 +246,13 @@ async function cetakLabelWithSettings() {
     for (var col = 0; col < cols; col++) {
       var xBase = (col * (width + gap)) + 10 + offsetX;
       var yPos = 10 + offsetY;
-      
-      if (showNama) {
-        cmd += 'TEXT ' + xBase + ',' + yPos + ',"1",0,1,1,"' + nama + '"\r\n';
-        yPos += 25;
-      }
-      if (showHarga) {
-        cmd += 'TEXT ' + xBase + ',' + yPos + ',"1",0,1.5,1.5,"' + harga + '"\r\n';
-        yPos += 30;
-      }
-      if (showBarcode) {
-        cmd += 'BARCODE ' + xBase + ',' + yPos + ',"128",30,1,0,1,1,"' + barcodeText + '"\r\n';
-        yPos += 35;
-      }
-      if (showDate) {
-        cmd += 'TEXT ' + xBase + ',' + yPos + ',"1",0,1,1,"' + tgl + '"\r\n';
-      }
+      if (showNama) { cmd += 'TEXT ' + xBase + ',' + yPos + ',"1",0,1,1,"' + nama + '"\r\n'; yPos += 25; }
+      if (showHarga) { cmd += 'TEXT ' + xBase + ',' + yPos + ',"1",0,1.5,1.5,"' + harga + '"\r\n'; yPos += 30; }
+      if (showBarcode) { cmd += 'BARCODE ' + xBase + ',' + yPos + ',"128",30,1,0,1,1,"' + barcodeText + '"\r\n'; yPos += 35; }
+      if (showDate) { cmd += 'TEXT ' + xBase + ',' + yPos + ',"1",0,1,1,"' + tgl + '"\r\n'; }
     }
     
-    cmd += 'PRINT ' + count + '\r\n';
-    
-    console.log('Printing ' + count + ' copies...');
+    cmd += 'PRINT ' + printCount + '\r\n';
     
     var data = encoder.encode(cmd);
     for (var i = 0; i < data.byteLength; i += 20) {
@@ -301,10 +262,8 @@ async function cetakLabelWithSettings() {
       await sleep(80);
     }
     
-    var totalLabels = cols === 2 ? count * 2 : count;
     document.getElementById('labelPrintModal').style.display = 'none';
-    alert('Mencetak ' + count + 'x (' + totalLabels + ' label)...');
-    
+    alert('Label dicetak! (' + printCount + 'x)');
   } catch (e) {
     console.error('Error:', e.message);
     alert('Gagal cetak: ' + e.message);
@@ -319,7 +278,7 @@ function simpanLabelSettings() {
     offsetX: parseInt(document.getElementById('labelOffsetX').value) || 160,
     offsetY: parseInt(document.getElementById('labelOffsetY').value) || 0,
     cols: parseInt(document.getElementById('labelCols').value) || 2,
-    count: parseInt(document.getElementById('labelCount').value) || 1,
+    qty: parseInt(document.getElementById('labelQty').value) || 2,
     showNama: document.getElementById('showNama').checked,
     showHarga: document.getElementById('showHarga').checked,
     showBarcode: document.getElementById('showBarcode').checked,
@@ -339,18 +298,14 @@ function muatLabelSettings() {
     document.getElementById('labelOffsetX').value = s.offsetX || 160;
     document.getElementById('labelOffsetY').value = s.offsetY || 0;
     document.getElementById('labelCols').value = s.cols || 2;
-    document.getElementById('labelCount').value = s.count || 1;
+    document.getElementById('labelQty').value = s.qty || 2;
     document.getElementById('showNama').checked = s.showNama !== false;
     document.getElementById('showHarga').checked = s.showHarga !== false;
     document.getElementById('showBarcode').checked = s.showBarcode !== false;
     document.getElementById('showDate').checked = s.showDate === true;
-    updateLabelCount();
+    hitungJumlahCetak();
     alert('Pengaturan dimuat!');
-  } else {
-    alert('Belum ada pengaturan tersimpan.');
-  }
+  } else { alert('Belum ada pengaturan tersimpan.'); }
 }
 
-async function cetakLabelQR(barcode) {
-  bukaLabelDialog(barcode);
-}
+async function cetakLabelQR(barcode) { bukaLabelDialog(barcode); }
