@@ -258,7 +258,7 @@ async function cetakLabelWithSettings() {
     var encoder = new TextEncoder();
     var allData = '';
     
-    // Send each print separately for reliable multi-copy printing
+    // Send each print separately with BACKFEED for alignment
     for (var p = 0; p < printCount; p++) {
       var cmd = '';
       cmd += 'SIZE ' + totalW + ',' + h + '\r\n';
@@ -274,6 +274,7 @@ async function cetakLabelWithSettings() {
         if (showDate) { cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + tgl + '"\r\n'; }
       }
       cmd += 'PRINT 1\r\n';
+      cmd += 'BACKFEED\r\n';
       allData += cmd;
     }
     
