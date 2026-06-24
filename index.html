@@ -134,7 +134,6 @@
     <input type="text" id="invSearch" placeholder="Cari..." oninput="filterProductList()">
     <button class="btn btn-sm" onclick="refreshProductList()">🔄 Refresh</button>
     
-    <!-- Label Printer Status -->
     <div id="labelPrinterStatus" class="printer-status" style="margin-top:8px;">
       <span class="led led-red"></span> Label printer tidak terhubung
       <button class="btn btn-sm" onclick="sambungLabelPrinter()" style="margin-left:8px;">🔗 Sambung Label</button>
@@ -289,46 +288,55 @@
 
 <!-- Modal Label Printer Settings -->
 <div id="labelPrintModal" class="overlay" style="display:none;">
-  <div class="modal-content" style="max-width:450px;">
+  <div class="modal-content" style="max-width:500px; max-height:90vh; overflow-y:auto;">
     <h3>🏷️ Cetak Label</h3>
     
     <div style="display:flex; gap:8px; margin-bottom:16px;">
-      <button class="btn" id="btnPrintPDF" onclick="cetakLabelPDF()" style="flex:1; background:#2196f3;">📄 Cetak PDF</button>
+      <button class="btn" onclick="cetakLabelPDF()" style="flex:1; background:#2196f3;">📄 Cetak PDF</button>
       <button class="btn" id="btnPrintLabel" onclick="tampilkanLabelSettings()" style="flex:1; background:#ff9800;">🖨️ Label Printer</button>
     </div>
     
     <div id="labelPrinterSettings" style="display:none;">
-      <div class="form-group">
-        <label>Lebar Label (dots)</label>
-        <input type="number" id="labelWidthDots" value="264" min="100" max="600" step="1">
+      <div style="display:flex; gap:8px;">
+        <div class="form-group" style="flex:1;">
+          <label>Lebar Label (dots)</label>
+          <input type="number" id="labelWidthDots" value="264" min="50" max="600">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label>Tinggi Label (dots)</label>
+          <input type="number" id="labelHeightDots" value="120" min="30" max="300">
+        </div>
       </div>
-      <div class="form-group">
-        <label>Tinggi Label (dots)</label>
-        <input type="number" id="labelHeightDots" value="120" min="50" max="300" step="1">
+      
+      <div style="display:flex; gap:8px;">
+        <div class="form-group" style="flex:1;">
+          <label>Jarak Kolom (dots)</label>
+          <input type="number" id="labelGapDots" value="16" min="0" max="50">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label>Jumlah Kolom</label>
+          <select id="labelCols">
+            <option value="1">1 Kolom</option>
+            <option value="2" selected>2 Kolom</option>
+          </select>
+        </div>
       </div>
-      <div class="form-group">
-        <label>Jarak Antar Kolom (dots)</label>
-        <input type="number" id="labelGapDots" value="16" min="0" max="50" step="1">
+      
+      <div style="display:flex; gap:8px;">
+        <div class="form-group" style="flex:1;">
+          <label>Offset X</label>
+          <input type="number" id="labelOffsetX" value="160" min="-200" max="300">
+          <small>+ kanan, - kiri</small>
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label>Offset Y</label>
+          <input type="number" id="labelOffsetY" value="0" min="-200" max="300">
+          <small>+ bawah, - atas</small>
+        </div>
       </div>
+      
       <div class="form-group">
-        <label>Offset X (geser kiri/kanan)</label>
-        <input type="number" id="labelOffsetX" value="0" min="-100" max="300" step="1">
-        <small>+ ke kanan, - ke kiri</small>
-      </div>
-      <div class="form-group">
-        <label>Offset Y (geser atas/bawah)</label>
-        <input type="number" id="labelOffsetY" value="0" min="-100" max="300" step="1">
-        <small>+ ke bawah, - ke atas</small>
-      </div>
-      <div class="form-group">
-        <label>Jumlah Kolom</label>
-        <select id="labelCols">
-          <option value="1">1 Kolom</option>
-          <option value="2" selected>2 Kolom</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Konten Label</label>
+        <label>Konten</label>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
           <label><input type="checkbox" id="showNama" checked> Nama</label>
           <label><input type="checkbox" id="showHarga" checked> Harga</label>
@@ -336,11 +344,15 @@
           <label><input type="checkbox" id="showDate"> Tanggal</label>
         </div>
       </div>
-      <button class="btn" onclick="cetakLabelWithSettings()" style="width:100%; margin-top:8px;">🖨️ Cetak Label</button>
-      <button class="btn btn-sm" onclick="simpanLabelSettings()" style="width:100%; margin-top:4px;">💾 Simpan Pengaturan</button>
+      
+      <button class="btn" onclick="cetakLabelWithSettings()" style="width:100%; margin-top:8px; background:#ff9800; color:white; font-size:16px;">🖨️ CETAK LABEL</button>
+      <div style="display:flex; gap:8px; margin-top:4px;">
+        <button class="btn btn-sm" onclick="simpanLabelSettings()" style="flex:1;">💾 Simpan</button>
+        <button class="btn btn-sm" onclick="muatLabelSettings()" style="flex:1;">📂 Muat</button>
+      </div>
     </div>
     
-    <button class="btn btn-danger" onclick="document.getElementById('labelPrintModal').style.display='none'" style="margin-top:12px;">Tutup</button>
+    <button class="btn btn-danger" onclick="document.getElementById('labelPrintModal').style.display='none'" style="margin-top:12px; width:100%;">Tutup</button>
   </div>
 </div>
 
