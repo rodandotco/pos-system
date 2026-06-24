@@ -106,7 +106,13 @@
 <!-- Modal Label Printer Settings -->
 <div id="labelPrintModal" class="overlay" style="display:none;">
   <div class="modal-content" style="max-width:500px; max-height:90vh; overflow-y:auto;">
-    <h3>🏷️ Cetak Label</h3>
+    <h3>🏷️ Manajemen Label</h3>
+    
+    <div id="labelPrinterStatusMsg" class="printer-status" style="margin-bottom:12px; padding:8px 12px;">
+      <span id="labelStatusLed" class="led led-red"></span>
+      <span id="labelStatusText">Label printer tidak terhubung</span>
+      <button class="btn btn-sm" onclick="sambungLabelPrinterDariDialog()" style="margin-left:8px;">🔗 Sambung</button>
+    </div>
     
     <div style="display:flex; gap:8px;">
       <div class="form-group" style="flex:1;"><label>Lebar Label (dots)</label><input type="number" id="labelWidthDots" value="264" min="50" max="600"></div>
@@ -130,14 +136,20 @@
     
     <div class="form-group"><label>Konten</label><div style="display:flex; gap:8px; flex-wrap:wrap;"><label><input type="checkbox" id="showNama" checked> Nama</label><label><input type="checkbox" id="showHarga" checked> Harga</label><label><input type="checkbox" id="showBarcode" checked> Barcode</label><label><input type="checkbox" id="showDate"> Tanggal</label></div></div>
     
-    <div style="display:flex; gap:8px; margin-top:8px;">
-      <button class="btn" onclick="cetakLabelPDF()" style="flex:1; background:#2196f3;">📄 PDF</button>
-      <button class="btn" id="btnPrintLabelDirect" onclick="cetakLabelWithSettings()" style="flex:1; background:#ff9800; color:white; font-size:16px;">🖨️ CETAK</button>
+    <div style="display:flex; gap:8px; margin-top:4px; align-items:center;">
+      <div class="form-group" style="flex:1; margin:0;"><input type="text" id="presetName" placeholder="Nama template..." style="padding:8px;"></div>
+      <button class="btn btn-sm" onclick="simpanLabelSettings()" style="white-space:nowrap;">💾 Simpan</button>
     </div>
     
-    <div style="display:flex; gap:8px; margin-top:4px;">
-      <button class="btn btn-sm" onclick="simpanLabelSettings()" style="flex:1;">💾 Simpan</button>
-      <button class="btn btn-sm" onclick="muatLabelSettings()" style="flex:1;">📂 Muat</button>
+    <div class="form-group" style="margin-top:8px;">
+      <label>Template Tersimpan</label>
+      <select id="presetList" onchange="muatLabelPreset()" style="width:100%;"><option value="">-- Pilih template --</option></select>
+      <button class="btn btn-sm btn-danger" onclick="hapusLabelPreset()" style="margin-top:4px;">🗑 Hapus Template</button>
+    </div>
+    
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <button class="btn" onclick="cetakLabelPDF()" style="flex:1; background:#2196f3;">📄 PDF</button>
+      <button class="btn" id="btnPrintLabelDirect" onclick="cetakLabelWithSettings()" style="flex:1; background:#ff9800; color:white; font-size:16px;">🖨️ Cetak Label</button>
     </div>
     
     <button class="btn btn-danger" onclick="document.getElementById('labelPrintModal').style.display='none'" style="margin-top:8px; width:100%;">Tutup</button>
