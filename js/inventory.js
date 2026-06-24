@@ -240,20 +240,14 @@ async function cetakLabelWithSettings() {
   var product = await getProductByBarcode(currentLabelBarcode);
   if (!product) return alert('Produk tidak ditemukan');
   
-  var widthMM = parseFloat(document.getElementById('labelWidthMM').value) || 33;
-  var heightMM = parseFloat(document.getElementById('labelHeightMM').value) || 15;
-  var gapMM = parseFloat(document.getElementById('labelGapMM').value) || 2;
+  var w = mmToDots(parseFloat(document.getElementById('labelWidthMM').value) || 33);
+  var h = mmToDots(parseFloat(document.getElementById('labelHeightMM').value) || 15);
+  var gap = mmToDots(parseFloat(document.getElementById('labelGapMM').value) || 2);
   var direction = document.getElementById('labelDirection').value || '0';
-  var offsetXMM = parseFloat(document.getElementById('labelOffsetX').value) || 0;
-  var offsetYMM = parseFloat(document.getElementById('labelOffsetY').value) || 0;
+  var ox = mmToDots(parseFloat(document.getElementById('labelOffsetX').value) || 0);
+  var oy = mmToDots(parseFloat(document.getElementById('labelOffsetY').value) || 0);
   var cols = parseInt(document.getElementById('labelCols').value) || 2;
   var printCount = parseInt(document.getElementById('labelPrintCount').value) || 1;
-  
-  var width = mmToDots(widthMM);
-  var height = mmToDots(heightMM);
-  var gap = mmToDots(gapMM);
-  var offsetX = mmToDots(offsetXMM);
-  var offsetY = mmToDots(offsetYMM);
   
   var showNama = document.getElementById('showNama').checked;
   var showHarga = document.getElementById('showHarga').checked;
@@ -269,36 +263,37 @@ async function cetakLabelWithSettings() {
     var encoder = new TextEncoder();
     var cmd = '';
     
-    // Use single column width, print each column as separate label
-    cmd += 'SIZE ' + width + ',' + height + '\r\n';
-    cmd += 'GAP ' + gap + ',0\r\n';
+    // EXACT logic from working labelprinter.html
+    var totalW = cols === 2 ? (w * 2 + gap) : w;
+    cmd += 'SIZE ' + totalW + ',' + h + '\r\n';
+    cmd += 'GAP 0,0\r\n';
     cmd += 'DIRECTION ' + direction + '\r\n';
+    cmd += 'CLS\r\n';
     
-    for (var copy = 0; copy < printCount; copy++) {
-      for (var col = 0; col < cols; col++) {
-        cmd += 'CLS\r\n';
-        var xBase = 10 + offsetX;
-        var yPos = 10 + offsetY;
-        
-        if (showNama) {
-          cmd += 'TEXT ' + xBase + ',' + yPos + ',"1",0,1,1,"' + nama + '"\r\n';
-          yPos += 25;
-        }
-        if (showHarga) {
-          cmd += 'TEXT ' + xBase + ',' + yPos + ',"1",0,1.5,1.5,"' + harga + '"\r\n';
-          yPos += 30;
-        }
-        if (showBarcode) {
-          cmd += 'BARCODE ' + xBase + ',' + yPos + ',"128",30,1,0,1,1,"' + barcodeText + '"\r\n';
-          yPos += 35;
-        }
-        if (showDate) {
-          cmd += 'TEXT ' + xBase + ',' + yPos + ',"1",0,1,1,"' + tgl + '"\r\n';
-        }
-        
-        cmd += 'PRINT 1\r\n';
+    for (var col = 0; col < cols; col++) {
+      var x = (col * (w + gap)) + 10 + ox;
+      var y = 10 + oy;
+      
+      if (showNama) {
+        cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + nama + '"\r\n';
+        y += 25;
+      }
+      if (showHarga) {
+        cmd += 'TEXT ' + x + ',' + y + ',"1",0,1.5,1.5,"' + harga + '"\r\n';
+        y += 30;
+      }
+      if (showBarcode) {
+        cmd += 'BARCODE ' + x + ',' + y + ',"128",30,1,0,1,1,"' + barcodeText + '"\r\n';
+        y += 35;
+      }
+      if (showDate) {
+        cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + tgl + '"\r\n';
       }
     }
+    
+    cmd += 'PRINT ' + printCount + '\r\n';
+    
+    console.log('Label - w:' + w + ' h:' + h + ' gap:' + gap + ' totalW:' + totalW + ' ox:' + ox + ' oy:' + oy + ' cols:' + cols + ' dir:' + direction);
     
     var data = encoder.encode(cmd);
     for (var i = 0; i < data.byteLength; i += 20) {
