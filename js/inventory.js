@@ -260,37 +260,30 @@ async function cetakLabelWithSettings() {
     
     var encoder = new TextEncoder();
     
-    // Send each print separately with delay between prints
+    // Build ALL print commands together, use FORMFEED between prints
+    var allCmd = '';
     for (var p = 0; p < printCount; p++) {
-      var cmd = '';
-      cmd += 'SIZE ' + totalW + ',' + h + '\r\n';
-      cmd += 'GAP 0,0\r\n';
-      cmd += 'DIRECTION ' + direction + '\r\n';
-      cmd += 'CLS\r\n';
+      allCmd += 'SIZE ' + totalW + ',' + h + '\r\n';
+      allCmd += 'GAP 0,0\r\n';
+      allCmd += 'DIRECTION ' + direction + '\r\n';
+      allCmd += 'CLS\r\n';
       for (var col = 0; col < cols; col++) {
         var x = (col * (w + gap)) + 10 + ox;
         var y = 10 + oy + (p * rowGap);
-        if (showNama) { cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + nama + '"\r\n'; y += 25; }
-        if (showHarga) { cmd += 'TEXT ' + x + ',' + y + ',"1",0,1.5,1.5,"' + harga + '"\r\n'; y += 30; }
-        if (showBarcode) { cmd += 'BARCODE ' + x + ',' + y + ',"128",30,1,0,1,1,"' + barcodeText + '"\r\n'; y += 35; }
-        if (showDate) { cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + tgl + '"\r\n'; }
+        if (showNama) { allCmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + nama + '"\r\n'; y += 25; }
+        if (showHarga) { allCmd += 'TEXT ' + x + ',' + y + ',"1",0,1.5,1.5,"' + harga + '"\r\n'; y += 30; }
+        if (showBarcode) { allCmd += 'BARCODE ' + x + ',' + y + ',"128",30,1,0,1,1,"' + barcodeText + '"\r\n'; y += 35; }
+        if (showDate) { allCmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + tgl + '"\r\n'; }
       }
-      cmd += 'PRINT 1\r\n';
-      
-      console.log('Sending print ' + (p + 1) + ' of ' + printCount);
-      
-      // Send this print's data
-      var printData = encoder.encode(cmd);
-      for (var i = 0; i < printData.byteLength; i += 20) {
-        var chunk = printData.slice(i, Math.min(i + 20, printData.byteLength));
-        await labelPrinterCharacteristic.writeValue(chunk);
-        await sleep(50);
-      }
-      
-      // Wait for printer to finish before sending next print
-      if (p < printCount - 1) {
-        await sleep(2000); // 2 second delay between prints
-      }
+      allCmd += 'PRINT 1\r\n';
+      allCmd += 'FORMFEED\r\n';
+    }
+    
+    var data = encoder.encode(allCmd);
+    for (var i = 0; i < data.byteLength; i += 20) {
+      var chunk = data.slice(i, Math.min(i + 20, data.byteLength));
+      await labelPrinterCharacteristic.writeValue(chunk);
+      await sleep(80);
     }
     
     alert('✅ Label dicetak! (' + qty + ' pcs, ' + printCount + 'x cetak)');
