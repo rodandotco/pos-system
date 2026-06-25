@@ -2,263 +2,77 @@
 window.logoTokoDihapus = false;
 
 async function muatProfilToko() {
-  const s = await getSettings();
+  var s = await getSettings();
   if (s) {
-    document.getElementById('tokoNama').value = s.nama || '';
-    document.getElementById('tokoAlamat').value = s.alamat || '';
-    document.getElementById('tokoTelp').value = s.telp || '';
-    document.getElementById('tokoFooter').value = s.footer || '';
-    document.getElementById('kertasLebar').value = s.kertas_lebar || '80';
-    document.getElementById('jenisKertas').value = s.jenis_kertas || 'thermal';
-    document.getElementById('printerPilihan').value = s.printer || 'default';
-    document.getElementById('labelWidth').value = s.label_width || 50;
-    document.getElementById('labelHeight').value = s.label_height || 30;
-    document.getElementById('labelGap').value = s.label_gap || 3;
-    document.getElementById('labelCols').value = s.label_cols || 1;
+    document.getElementById('tokoNama').value = s.nama || ''; document.getElementById('tokoAlamat').value = s.alamat || ''; document.getElementById('tokoTelp').value = s.telp || '';
+    document.getElementById('tokoFooter').value = s.footer || ''; document.getElementById('kertasLebar').value = s.kertas_lebar || '80';
+    document.getElementById('jenisKertas').value = s.jenis_kertas || 'thermal'; document.getElementById('printerPilihan').value = s.printer || 'default';
+    document.getElementById('labelWidth').value = s.label_width || 50; document.getElementById('labelHeight').value = s.label_height || 30;
+    document.getElementById('labelGap').value = s.label_gap || 3; document.getElementById('paperCols').value = s.label_cols || 1;
     toggleLabelSettings();
-    if (s.logo) {
-      document.getElementById('logoPreview').src = s.logo;
-      document.getElementById('logoPreviewContainer').style.display = 'block';
-    } else {
-      document.getElementById('logoPreviewContainer').style.display = 'none';
-    }
-    document.getElementById('reportEmail').value = s.report_email || '';
-    document.getElementById('reportFrequency').value = s.report_frequency || 'none';
-    document.getElementById('dailyTime').value = s.report_daily_time || '21';
-    document.getElementById('weeklyDay').value = s.report_weekly_day || '1';
-    document.getElementById('weeklyTime').value = s.report_weekly_time || '21';
-    document.getElementById('monthlyDate').value = s.report_monthly_date || '1';
-    document.getElementById('monthlyTime').value = s.report_monthly_time || '21';
-    toggleReportOptions();
+    if (s.logo) { document.getElementById('logoPreview').src = s.logo; document.getElementById('logoPreviewContainer').style.display = 'block'; } else document.getElementById('logoPreviewContainer').style.display = 'none';
+    document.getElementById('reportEmail').value = s.report_email || ''; document.getElementById('reportFrequency').value = s.report_frequency || 'none';
+    document.getElementById('dailyTime').value = s.report_daily_time || '21'; document.getElementById('weeklyDay').value = s.report_weekly_day || '1';
+    document.getElementById('weeklyTime').value = s.report_weekly_time || '21'; document.getElementById('monthlyDate').value = s.report_monthly_date || '1';
+    document.getElementById('monthlyTime').value = s.report_monthly_time || '21'; toggleReportOptions();
   } else {
-    document.getElementById('tokoNama').value = '';
-    document.getElementById('tokoAlamat').value = '';
-    document.getElementById('tokoTelp').value = '';
-    document.getElementById('tokoFooter').value = '';
-    document.getElementById('kertasLebar').value = '80';
-    document.getElementById('jenisKertas').value = 'thermal';
-    document.getElementById('printerPilihan').value = 'default';
-    document.getElementById('labelWidth').value = 50;
-    document.getElementById('labelHeight').value = 30;
-    document.getElementById('labelGap').value = 3;
-    document.getElementById('labelCols').value = 1;
-    toggleLabelSettings();
-    document.getElementById('logoPreviewContainer').style.display = 'none';
-    document.getElementById('reportEmail').value = '';
-    document.getElementById('reportFrequency').value = 'none';
-    document.getElementById('dailyTime').value = '21';
-    document.getElementById('weeklyDay').value = '1';
-    document.getElementById('weeklyTime').value = '21';
-    document.getElementById('monthlyDate').value = '1';
-    document.getElementById('monthlyTime').value = '21';
-    toggleReportOptions();
+    document.getElementById('tokoNama').value = ''; document.getElementById('tokoAlamat').value = ''; document.getElementById('tokoTelp').value = ''; document.getElementById('tokoFooter').value = '';
+    document.getElementById('kertasLebar').value = '80'; document.getElementById('jenisKertas').value = 'thermal'; document.getElementById('printerPilihan').value = 'default';
+    document.getElementById('labelWidth').value = 50; document.getElementById('labelHeight').value = 30; document.getElementById('labelGap').value = 3; document.getElementById('paperCols').value = 1;
+    toggleLabelSettings(); document.getElementById('logoPreviewContainer').style.display = 'none';
+    document.getElementById('reportEmail').value = ''; document.getElementById('reportFrequency').value = 'none'; document.getElementById('dailyTime').value = '21';
+    document.getElementById('weeklyDay').value = '1'; document.getElementById('weeklyTime').value = '21'; document.getElementById('monthlyDate').value = '1';
+    document.getElementById('monthlyTime').value = '21'; toggleReportOptions();
   }
 }
 
-function toggleLabelSettings() {
-  const jenis = document.getElementById('jenisKertas').value;
-  document.getElementById('labelSettings').style.display = jenis === 'label' ? 'block' : 'none';
-}
-
-function toggleReportOptions() {
-  const freq = document.getElementById('reportFrequency').value;
-  document.getElementById('dailyOptions').style.display = freq === 'daily' ? 'block' : 'none';
-  document.getElementById('weeklyOptions').style.display = freq === 'weekly' ? 'block' : 'none';
-  document.getElementById('monthlyOptions').style.display = freq === 'monthly' ? 'block' : 'none';
-}
+function toggleLabelSettings() { document.getElementById('labelSettings').style.display = document.getElementById('jenisKertas').value === 'label' ? 'block' : 'none'; }
+function toggleReportOptions() { var f = document.getElementById('reportFrequency').value; document.getElementById('dailyOptions').style.display = f === 'daily' ? 'block' : 'none'; document.getElementById('weeklyOptions').style.display = f === 'weekly' ? 'block' : 'none'; document.getElementById('monthlyOptions').style.display = f === 'monthly' ? 'block' : 'none'; }
 
 async function simpanPengaturanLaporan() {
-  const email = document.getElementById('reportEmail').value.trim();
-  const frequency = document.getElementById('reportFrequency').value;
-  const dailyTime = document.getElementById('dailyTime').value;
-  const weeklyDay = document.getElementById('weeklyDay').value;
-  const weeklyTime = document.getElementById('weeklyTime').value;
-  const monthlyDate = document.getElementById('monthlyDate').value;
-  const monthlyTime = document.getElementById('monthlyTime').value;
-  if (frequency !== 'none' && !email) { alert('Silakan isi email tujuan terlebih dahulu.'); return; }
-  await updateSettings({
-    report_email: email, report_frequency: frequency,
-    report_daily_time: dailyTime, report_weekly_day: weeklyDay,
-    report_weekly_time: weeklyTime, report_monthly_date: monthlyDate,
-    report_monthly_time: monthlyTime
-  });
-  alert('✅ Pengaturan laporan disimpan!');
-  localStorage.removeItem('lastReportSent');
-  localStorage.removeItem('lastReportSchedule');
+  var e = document.getElementById('reportEmail').value.trim(), f = document.getElementById('reportFrequency').value, dt = document.getElementById('dailyTime').value;
+  var wd = document.getElementById('weeklyDay').value, wt = document.getElementById('weeklyTime').value, md = document.getElementById('monthlyDate').value, mt = document.getElementById('monthlyTime').value;
+  if (f !== 'none' && !e) { alert('Silakan isi email tujuan terlebih dahulu.'); return; }
+  await updateSettings({ report_email: e, report_frequency: f, report_daily_time: dt, report_weekly_day: wd, report_weekly_time: wt, report_monthly_date: md, report_monthly_time: mt });
+  alert('✅ Pengaturan laporan disimpan!'); localStorage.removeItem('lastReportSent'); localStorage.removeItem('lastReportSchedule');
 }
 
-async function tesKirimLaporan() {
-  const email = document.getElementById('reportEmail').value.trim();
-  if (!email) { alert('Isi email tujuan terlebih dahulu.'); return; }
-  await simpanPengaturanLaporan();
-  const settings = await getSettings();
-  const today = new Date();
-  try {
-    await sendEmailResend(email, '📊 TES - Laporan POS', '✅ Ini adalah email percobaan dari POS System.\n\nToko: ' + (settings.nama || 'POS') + '\nTanggal: ' + today.toLocaleDateString('id-ID') + '\n\nJika Anda menerima email ini, pengaturan laporan otomatis berhasil!');
-    alert('✅ Email tes berhasil dikirim ke ' + email + '\nSilakan cek inbox (dan folder Spam).');
-  } catch (error) { alert('❌ Gagal mengirim email: ' + error.message); }
-}
+async function tesKirimLaporan() { var e = document.getElementById('reportEmail').value.trim(); if (!e) { alert('Isi email tujuan terlebih dahulu.'); return; } await simpanPengaturanLaporan(); var s = await getSettings(); var t = new Date(); try { await sendEmailResend(e, '📊 TES - Laporan POS', '✅ Ini adalah email percobaan.\n\nToko: ' + (s.nama || 'POS') + '\nTanggal: ' + t.toLocaleDateString('id-ID')); alert('✅ Email tes berhasil dikirim!'); } catch (er) { alert('❌ Gagal: ' + er.message); } }
 
-function previewLogoToko() {
-  const f = document.getElementById('tokoLogo').files[0];
-  if (f) {
-    const reader = new FileReader();
-    reader.onload = e => { document.getElementById('logoPreview').src = e.target.result; document.getElementById('logoPreviewContainer').style.display = 'block'; };
-    reader.readAsDataURL(f);
-    window.logoTokoDihapus = false;
-  }
-}
-
-function hapusLogoToko() {
-  document.getElementById('logoPreview').src = '';
-  document.getElementById('logoPreviewContainer').style.display = 'none';
-  document.getElementById('tokoLogo').value = '';
-  window.logoTokoDihapus = true;
-}
+function previewLogoToko() { var f = document.getElementById('tokoLogo').files[0]; if (f) { var r = new FileReader(); r.onload = function(e) { document.getElementById('logoPreview').src = e.target.result; document.getElementById('logoPreviewContainer').style.display = 'block'; }; r.readAsDataURL(f); window.logoTokoDihapus = false; } }
+function hapusLogoToko() { document.getElementById('logoPreview').src = ''; document.getElementById('logoPreviewContainer').style.display = 'none'; document.getElementById('tokoLogo').value = ''; window.logoTokoDihapus = true; }
 
 async function simpanProfil() {
   if (!currentUser || currentUser.role !== 'admin') return;
-  const nama = document.getElementById('tokoNama').value;
-  const alamat = document.getElementById('tokoAlamat').value;
-  const telp = document.getElementById('tokoTelp').value;
-  const footer = document.getElementById('tokoFooter').value;
-  const kertasLebar = document.getElementById('kertasLebar').value;
-  const jenisKertas = document.getElementById('jenisKertas').value;
-  const printer = document.getElementById('printerPilihan').value;
-  const lw = parseFloat(document.getElementById('labelWidth').value) || 50;
-  const lh = parseFloat(document.getElementById('labelHeight').value) || 30;
-  const lg = parseFloat(document.getElementById('labelGap').value) || 3;
-  const lc = parseInt(document.getElementById('labelCols').value) || 1;
-  let logo = null;
-  if (!window.logoTokoDihapus) {
-    const fi = document.getElementById('tokoLogo');
-    if (fi.files[0]) { logo = await toBase64(fi.files[0]); }
-    else { const s = await getSettings(); logo = s.logo || null; }
-  }
-  await updateSettings({ nama, alamat, telp, logo, footer, kertas_lebar: kertasLebar, jenis_kertas: jenisKertas, printer, label_width: lw, label_height: lh, label_gap: lg, label_cols: lc });
-  alert('Profil disimpan!');
-  window.logoTokoDihapus = false;
-  document.getElementById('tokoLogo').value = '';
-  if (typeof invalidateSettingsCache === 'function') invalidateSettingsCache();
-  await muatProfilToko();
+  var n = document.getElementById('tokoNama').value, a = document.getElementById('tokoAlamat').value, t = document.getElementById('tokoTelp').value, f = document.getElementById('tokoFooter').value;
+  var kl = document.getElementById('kertasLebar').value, jk = document.getElementById('jenisKertas').value, pr = document.getElementById('printerPilihan').value;
+  var lw = parseFloat(document.getElementById('labelWidth').value) || 50, lh = parseFloat(document.getElementById('labelHeight').value) || 30, lg = parseFloat(document.getElementById('labelGap').value) || 3, lc = parseInt(document.getElementById('paperCols').value) || 1;
+  var logo = null; if (!window.logoTokoDihapus) { var fi = document.getElementById('tokoLogo'); if (fi.files[0]) { logo = await toBase64(fi.files[0]); } else { var ss = await getSettings(); logo = ss.logo || null; } }
+  await updateSettings({ nama: n, alamat: a, telp: t, logo: logo, footer: f, kertas_lebar: kl, jenis_kertas: jk, printer: pr, label_width: lw, label_height: lh, label_gap: lg, label_cols: lc });
+  alert('Profil disimpan!'); window.logoTokoDihapus = false; document.getElementById('tokoLogo').value = ''; if (typeof invalidateSettingsCache === 'function') invalidateSettingsCache(); await muatProfilToko();
 }
 
-async function simpanPengaturanCetak() {
-  const s = await getSettings();
-  await updateSettings({ ...s, kertas_lebar: document.getElementById('kertasLebar').value, jenis_kertas: document.getElementById('jenisKertas').value, printer: document.getElementById('printerPilihan').value, label_width: parseFloat(document.getElementById('labelWidth').value) || 50, label_height: parseFloat(document.getElementById('labelHeight').value) || 30, label_gap: parseFloat(document.getElementById('labelGap').value) || 3, label_cols: parseInt(document.getElementById('labelCols').value) || 1 });
-  alert('Pengaturan cetak disimpan!');
-  if (typeof invalidateSettingsCache === 'function') invalidateSettingsCache();
-}
+async function simpanPengaturanCetak() { var s = await getSettings(); await updateSettings({ ...s, kertas_lebar: document.getElementById('kertasLebar').value, jenis_kertas: document.getElementById('jenisKertas').value, printer: document.getElementById('printerPilihan').value, label_width: parseFloat(document.getElementById('labelWidth').value) || 50, label_height: parseFloat(document.getElementById('labelHeight').value) || 30, label_gap: parseFloat(document.getElementById('labelGap').value) || 3, label_cols: parseInt(document.getElementById('paperCols').value) || 1 }); alert('Pengaturan cetak disimpan!'); if (typeof invalidateSettingsCache === 'function') invalidateSettingsCache(); }
 
 function aturHakAkses() {
-  const role = currentUser ? currentUser.role : 'kasir';
-  const isAdmin = role === 'admin';
-  const isKasir = role === 'kasir';
-  const isStaff = role === 'staff';
-  const isGudang = role === 'gudang';
-
-  // Manajemen Profil - Admin only
+  var role = currentUser ? currentUser.role : 'kasir', isAdmin = role === 'admin', isKasir = role === 'kasir', isStaff = role === 'staff', isGudang = role === 'gudang';
   document.getElementById('manajemenProfilSection').style.display = isAdmin ? 'block' : 'none';
-  
-  // Manajemen Laporan section - Admin only
-  const allH3s = document.querySelectorAll('#page-setting h3');
-  allH3s.forEach(h3 => {
-    if (h3.textContent.includes('Manajemen Laporan')) {
-      h3.style.display = isAdmin ? '' : 'none';
-      let next = h3.nextElementSibling;
-      while (next && next.tagName !== 'H3' && next.tagName !== 'HR') {
-        next.style.display = isAdmin ? '' : 'none';
-        next = next.nextElementSibling;
-      }
-      if (next && next.tagName === 'HR') {
-        next.style.display = isAdmin ? '' : 'none';
-      }
-    }
-    if (h3.textContent.includes('Manajemen Cetak')) {
-      // Cetak for Admin & Kasir
-      h3.style.display = (isAdmin || isKasir) ? '' : 'none';
-      let next = h3.nextElementSibling;
-      while (next && next.tagName !== 'H3' && next.tagName !== 'HR') {
-        next.style.display = (isAdmin || isKasir) ? '' : 'none';
-        next = next.nextElementSibling;
-      }
-      if (next && next.tagName === 'HR') {
-        next.style.display = (isAdmin || isKasir) ? '' : 'none';
-      }
-    }
+  document.querySelectorAll('#page-setting h3').forEach(function(h3) {
+    if (h3.textContent.includes('Manajemen Laporan')) { h3.style.display = isAdmin ? '' : 'none'; var n = h3.nextElementSibling; while (n && n.tagName !== 'H3' && n.tagName !== 'HR') { n.style.display = isAdmin ? '' : 'none'; n = n.nextElementSibling; } if (n && n.tagName === 'HR') n.style.display = isAdmin ? '' : 'none'; }
+    if (h3.textContent.includes('Manajemen Cetak')) { h3.style.display = (isAdmin || isKasir) ? '' : 'none'; var n = h3.nextElementSibling; while (n && n.tagName !== 'H3' && n.tagName !== 'HR') { n.style.display = (isAdmin || isKasir) ? '' : 'none'; n = n.nextElementSibling; } if (n && n.tagName === 'HR') n.style.display = (isAdmin || isKasir) ? '' : 'none'; }
   });
-
-  // User & Data sections - Admin only
-  document.getElementById('manajemenUserSection').style.display = isAdmin ? 'block' : 'none';
-  document.getElementById('manajemenDataSection').style.display = isAdmin ? 'block' : 'none';
-  
-  // Inventory Aksi - Admin & Gudang
+  document.getElementById('manajemenUserSection').style.display = isAdmin ? 'block' : 'none'; document.getElementById('manajemenDataSection').style.display = isAdmin ? 'block' : 'none';
   document.getElementById('thAksi').style.display = (isAdmin || isGudang) ? '' : 'none';
-
-  // Bayar button - Admin & Kasir only
-  const bayarBtn = document.querySelector('button[onclick="bayarDanCetak()"]');
-  if (bayarBtn) bayarBtn.style.display = (isAdmin || isKasir) ? '' : 'none';
-
-  // Pembayaran section
-  const pembayaranSummary = document.getElementById('pembayaranSummary');
-  if (pembayaranSummary) pembayaranSummary.style.display = (isAdmin || isKasir) ? '' : 'none';
-
-  // Diskon buttons - Admin only
-  setTimeout(() => {
-    const diskonBtns = document.querySelectorAll('button[onclick^="editDiskonItem"], button[onclick^="bukaPopupDiskonTotal"]');
-    diskonBtns.forEach(b => { if (!isAdmin) b.style.display = 'none'; });
-  }, 500);
-
-  // Email section in Laporan - Admin only
-  const emailSection = document.querySelector('#page-laporan div[style*="margin-top:12px"]');
-  if (emailSection) emailSection.style.display = isAdmin ? '' : 'none';
-
-  if (activeTab === 'inventory') refreshProductList();
-  if (activeTab === 'laporan') muatLaporan();
+  var bb = document.querySelector('button[onclick="bayarDanCetak()"]'); if (bb) bb.style.display = (isAdmin || isKasir) ? '' : 'none';
+  var ps = document.getElementById('pembayaranSummary'); if (ps) ps.style.display = (isAdmin || isKasir) ? '' : 'none';
+  setTimeout(function() { document.querySelectorAll('button[onclick^="editDiskonItem"], button[onclick^="bukaPopupDiskonTotal"]').forEach(function(b) { if (!isAdmin) b.style.display = 'none'; }); }, 500);
+  var es = document.querySelector('#page-laporan div[style*="margin-top:12px"]'); if (es) es.style.display = isAdmin ? '' : 'none';
+  if (activeTab === 'inventory') refreshProductList(); if (activeTab === 'laporan') muatLaporan();
 }
 
-async function pilihFolder() {
-  try { const d = await window.showDirectoryPicker(); workingDirHandle = d; document.getElementById('folderPath').textContent = d.name; alert('Folder dipilih!'); }
-  catch (e) { if (e.name !== 'AbortError') alert('Gagal memilih folder'); }
-}
+async function pilihFolder() { try { var d = await window.showDirectoryPicker(); workingDirHandle = d; document.getElementById('folderPath').textContent = d.name; alert('Folder dipilih!'); } catch (e) { if (e.name !== 'AbortError') alert('Gagal memilih folder'); } }
 
-async function backupData() {
-  try {
-    const zip = new JSZip();
-    const { data: users } = await supabaseClient.from('users').select('*');
-    const { data: products } = await supabaseClient.from('products').select('*');
-    const { data: transactions } = await supabaseClient.from('transactions').select('*');
-    const { data: settings } = await supabaseClient.from('settings').select('*');
-    zip.file('users.json', JSON.stringify(users || []));
-    zip.file('products.json', JSON.stringify(products || []));
-    zip.file('transactions.json', JSON.stringify(transactions || []));
-    zip.file('settings.json', JSON.stringify(settings || []));
-    const blob = await zip.generateAsync({ type: 'blob' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'backup_' + new Date().toISOString().slice(0, 10) + '.zip'; a.click();
-  } catch (e) { alert('Gagal backup: ' + e.message); }
-}
+async function backupData() { try { var zip = new JSZip(); var u = await supabaseClient.from('users').select('*'); var p = await supabaseClient.from('products').select('*'); var t = await supabaseClient.from('transactions').select('*'); var s = await supabaseClient.from('settings').select('*'); zip.file('users.json', JSON.stringify(u.data || [])); zip.file('products.json', JSON.stringify(p.data || [])); zip.file('transactions.json', JSON.stringify(t.data || [])); zip.file('settings.json', JSON.stringify(s.data || [])); var blob = await zip.generateAsync({ type: 'blob' }); var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'backup_' + new Date().toISOString().slice(0, 10) + '.zip'; a.click(); } catch (e) { alert('Gagal backup: ' + e.message); } }
 
-async function restoreData() {
-  const input = document.createElement('input'); input.type = 'file'; input.accept = '.zip';
-  input.onchange = async (e) => {
-    const file = e.target.files[0]; if (!file) return;
-    try {
-      const zip = await JSZip.loadAsync(file);
-      let restored = { users: 0, products: 0, transactions: 0, settings: 0 };
-      if (zip.files['users.json']) { const text = await zip.files['users.json'].async('text'); const users = JSON.parse(text); if (users.length > 0) { const { error } = await supabaseClient.from('users').upsert(users, { onConflict: 'username' }); if (!error) restored.users = users.length; } }
-      if (zip.files['products.json']) { const text = await zip.files['products.json'].async('text'); const products = JSON.parse(text); if (products.length > 0) { const { error } = await supabaseClient.from('products').upsert(products, { onConflict: 'barcode' }); if (!error) restored.products = products.length; } }
-      if (zip.files['transactions.json']) { const text = await zip.files['transactions.json'].async('text'); const transactions = JSON.parse(text); if (transactions.length > 0) { const { error } = await supabaseClient.from('transactions').upsert(transactions, { onConflict: 'no_invoice' }); if (!error) restored.transactions = transactions.length; } }
-      if (zip.files['settings.json']) { const text = await zip.files['settings.json'].async('text'); const settings = JSON.parse(text); if (settings.length > 0) { const { error } = await supabaseClient.from('settings').upsert(settings, { onConflict: 'id' }); if (!error) restored.settings = settings.length; } }
-      alert('Restore berhasil!\nUsers: ' + restored.users + '\nProducts: ' + restored.products + '\nTransactions: ' + restored.transactions + '\nSettings: ' + restored.settings);
-      if (typeof invalidateSettingsCache === 'function') invalidateSettingsCache();
-      location.reload();
-    } catch (err) { alert('Gagal restore: ' + err.message); }
-  };
-  input.click();
-}
-
-function resetDatabase() {
-  if (confirm('Reset semua data? Semua data akan terhapus permanen.')) {
-    alert('Fitur reset harus dilakukan melalui dashboard Supabase. Hapus semua data di tabel secara manual.');
-  }
-}
+async function restoreData() { var inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.zip'; inp.onchange = async function(e) { var file = e.target.files[0]; if (!file) return; try { var zip = await JSZip.loadAsync(file); var rst = { users: 0, products: 0, transactions: 0, settings: 0 }; if (zip.files['users.json']) { var t = await zip.files['users.json'].async('text'); var u = JSON.parse(t); if (u.length > 0) { var r = await supabaseClient.from('users').upsert(u, { onConflict: 'username' }); if (!r.error) rst.users = u.length; } } if (zip.files['products.json']) { var t = await zip.files['products.json'].async('text'); var p = JSON.parse(t); if (p.length > 0) { var r = await supabaseClient.from('products').upsert(p, { onConflict: 'barcode' }); if (!r.error) rst.products = p.length; } } if (zip.files['transactions.json']) { var t = await zip.files['transactions.json'].async('text'); var tr = JSON.parse(t); if (tr.length > 0) { var r = await supabaseClient.from('transactions').upsert(tr, { onConflict: 'no_invoice' }); if (!r.error) rst.transactions = tr.length; } } if (zip.files['settings.json']) { var t = await zip.files['settings.json'].async('text'); var s = JSON.parse(t); if (s.length > 0) { var r = await supabaseClient.from('settings').upsert(s, { onConflict: 'id' }); if (!r.error) rst.settings = s.length; } } alert('Restore berhasil!\nUsers: ' + rst.users + '\nProducts: ' + rst.products + '\nTransactions: ' + rst.transactions + '\nSettings: ' + rst.settings); if (typeof invalidateSettingsCache === 'function') invalidateSettingsCache(); location.reload(); } catch (er) { alert('Gagal restore: ' + er.message); } }; inp.click(); }
+function resetDatabase() { if (confirm('Reset semua data?')) { alert('Fitur reset harus dilakukan melalui dashboard Supabase.'); } }
