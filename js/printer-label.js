@@ -113,15 +113,15 @@ async function cetakLabelLangsung(barcode) {
           y += 22;
         }
 	// ADD THIS to lower the barcode:
-	y += 5;  // Move barcode 5 dots down
+	y += 10;  // Move barcode 15 dots down
         
         // Barcode (readable OFF) + Price (150 dots right)
         if (showBarcode && showHarga) {
-          cmd += 'BARCODE ' + x + ',' + y + ',"128",25,0,0,1,0,"' + barcodeText + '"\r\n';
+          cmd += 'BARCODE ' + x + ',' + y + ',"128",30,0,0,1,0,"' + barcodeText + '"\r\n';
           cmd += 'TEXT ' + (x + 150) + ',' + (y + 10) + ',"1",0,1.3,1.3,"' + harga + '"\r\n';
           y += 45;
         } else if (showBarcode) {
-          cmd += 'BARCODE ' + x + ',' + y + ',"128",25,1,0,1,1,"' + barcodeText + '"\r\n';
+          cmd += 'BARCODE ' + x + ',' + y + ',"128",30,1,0,1,1,"' + barcodeText + '"\r\n';
           y += 45;
         } else if (showHarga) {
           cmd += 'TEXT ' + x + ',' + y + ',"1",0,1.3,1.3,"' + harga + '"\r\n';
