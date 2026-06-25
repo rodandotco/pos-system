@@ -115,11 +115,11 @@ async function cetakLabelLangsung(barcode) {
         
         // Barcode (readable OFF) + Price (150 dots right)
         if (showBarcode && showHarga) {
-          cmd += 'BARCODE ' + x + ',' + y + ',"128",35,0,0,1,0,"' + barcodeText + '"\r\n';
+          cmd += 'BARCODE ' + x + ',' + y + ',"128",30,0,0,1,0,"' + barcodeText + '"\r\n';
           cmd += 'TEXT ' + (x + 150) + ',' + (y + 10) + ',"1",0,1.3,1.3,"' + harga + '"\r\n';
           y += 45;
         } else if (showBarcode) {
-          cmd += 'BARCODE ' + x + ',' + y + ',"128",40,1,0,1,1,"' + barcodeText + '"\r\n';
+          cmd += 'BARCODE ' + x + ',' + y + ',"128",30,1,0,1,1,"' + barcodeText + '"\r\n';
           y += 45;
         } else if (showHarga) {
           cmd += 'TEXT ' + x + ',' + y + ',"1",0,1.3,1.3,"' + harga + '"\r\n';
