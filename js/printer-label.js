@@ -126,7 +126,9 @@ async function cetakLabelLangsung(barcode) {
           y += 22;
         }
         
-        
+        // Barcode number (manual, clean)
+        cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + barcodeText + '"\r\n';
+        y += 18;
         
         // Date (optional)
         if (showDate) {
