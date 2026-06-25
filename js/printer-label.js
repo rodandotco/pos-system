@@ -78,7 +78,6 @@ async function cetakLabelLangsung(barcode) {
   var barcodeText = product.barcode || '';
   var tgl = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 
-  // Get settings from dialog
   var w = mmToDotsLabel(parseFloat(document.getElementById('labelWidthMM').value) || 33);
   var h = mmToDotsLabel(parseFloat(document.getElementById('labelHeightMM').value) || 15);
   var gap = mmToDotsLabel(parseFloat(document.getElementById('labelGapMM').value) || 2);
@@ -104,8 +103,6 @@ async function cetakLabelLangsung(barcode) {
     for (var p = 0; p < printCount; p++) {
       var cmd = '';
       cmd += 'SIZE ' + totalW + ',' + h + '\r\n';
-      cmd += 'GAP 0,0\r\n';
-      cmd += 'DIRECTION ' + direction + '\r\n';
       cmd += 'CLS\r\n';
       for (var col = 0; col < cols; col++) {
         var x = (col * (w + gap)) + 10 + ox;
@@ -119,7 +116,6 @@ async function cetakLabelLangsung(barcode) {
       allData += cmd;
     }
 
-    // Save settings to Supabase
     if (typeof updateSettings === 'function') {
       await updateSettings({
         label_width_mm: document.getElementById('labelWidthMM').value,
