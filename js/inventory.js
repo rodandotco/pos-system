@@ -167,7 +167,6 @@ async function putusLabelPrinterDariDialog() { await putusLabelPrinter(); update
 async function bukaLabelDialog(barcode) {
   currentLabelBarcode = barcode;
   
-  // Load saved settings from Supabase
   var settings = await getSettings();
   
   document.getElementById('labelWidthMM').value = settings.label_width_mm || '33';
@@ -193,7 +192,8 @@ async function bukaLabelDialog(barcode) {
 
 function hitungJumlahCetak() {
   var qty = parseInt(document.getElementById('labelQty').value) || 0;
-  var cols = parseInt(document.getElementById('labelCols').value) || 2;
+  var colsSelect = document.getElementById('labelCols');
+  var cols = parseInt(colsSelect.options[colsSelect.selectedIndex].value) || 2;
   if (qty > 0 && cols > 0) {
     document.getElementById('labelPrintCount').value = Math.ceil(qty / cols);
   } else {
@@ -233,7 +233,11 @@ async function cetakLabelWithSettings() {
   var direction = document.getElementById('labelDirection').value || '0';
   var offsetXMM = parseFloat(document.getElementById('labelOffsetX').value) || 0;
   var offsetYMM = parseFloat(document.getElementById('labelOffsetY').value) || 0;
-  var cols = parseInt(document.getElementById('labelCols').value) || 2;
+  
+  // Read cols from the actual selected option
+  var colsSelect = document.getElementById('labelCols');
+  var cols = parseInt(colsSelect.options[colsSelect.selectedIndex].value) || 2;
+  
   var qty = parseInt(document.getElementById('labelQty').value) || 0;
   var printCount = parseInt(document.getElementById('labelPrintCount').value) || 1;
   
@@ -281,7 +285,7 @@ async function cetakLabelWithSettings() {
       allData += cmd;
     }
     
-    // Save settings to Supabase
+    // Save settings to Supabase using the selected option value
     await updateSettings({
       label_width_mm: document.getElementById('labelWidthMM').value,
       label_height_mm: document.getElementById('labelHeightMM').value,
@@ -289,7 +293,7 @@ async function cetakLabelWithSettings() {
       label_direction: document.getElementById('labelDirection').value,
       label_offset_x: document.getElementById('labelOffsetX').value,
       label_offset_y: document.getElementById('labelOffsetY').value,
-      label_cols: document.getElementById('labelCols').value,
+      label_cols: colsSelect.options[colsSelect.selectedIndex].value,
       label_qty: document.getElementById('labelQty').value
     });
     
@@ -304,10 +308,11 @@ async function cetakLabelWithSettings() {
   } catch (e) { console.error(e); alert('Gagal cetak: ' + e.message); }
 }
 
-// ===================== LABEL PRESETS (localStorage for named templates) =====================
+// ===================== LABEL PRESETS =====================
 function simpanLabelSettings() {
   var name = document.getElementById('presetName').value.trim();
   if (!name) { alert('Beri nama template!'); return; }
+  var colsSelect = document.getElementById('labelCols');
   var settings = {
     widthMM: document.getElementById('labelWidthMM').value,
     heightMM: document.getElementById('labelHeightMM').value,
@@ -315,7 +320,7 @@ function simpanLabelSettings() {
     direction: document.getElementById('labelDirection').value,
     offsetXMM: document.getElementById('labelOffsetX').value,
     offsetYMM: document.getElementById('labelOffsetY').value,
-    cols: document.getElementById('labelCols').value,
+    cols: colsSelect.options[colsSelect.selectedIndex].value,
     qty: document.getElementById('labelQty').value,
     showNama: document.getElementById('showNama').checked,
     showHarga: document.getElementById('showHarga').checked,
