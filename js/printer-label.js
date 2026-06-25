@@ -107,10 +107,27 @@ async function cetakLabelLangsung(barcode) {
       for (var col = 0; col < cols; col++) {
         var x = (col * (w + gap)) + 10 + ox;
         var y = 10 + oy;
-        if (showNama) { cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + nama + '"\r\n'; y += 25; }
-        if (showHarga) { cmd += 'TEXT ' + x + ',' + y + ',"1",0,1.5,1.5,"' + harga + '"\r\n'; y += 30; }
-        if (showBarcode) { cmd += 'BARCODE ' + x + ',' + y + ',"128",30,1,0,1,1,"' + barcodeText + '"\r\n'; y += 35; }
-        if (showDate) { cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + tgl + '"\r\n'; }
+        
+        // Product name at top
+        if (showNama) {
+          cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + nama + '"\r\n';
+          y += 25;
+        }
+        
+        // Barcode in the middle
+        if (showBarcode) {
+          cmd += 'BARCODE ' + x + ',' + y + ',"128",55,2,2,0,1,"' + barcodeText + '"\r\n';
+          y += 60;
+        }
+        
+        // Barcode number + Price + Date on one line
+        var bottomLine = '';
+        if (showBarcode) bottomLine += barcodeText;
+        if (showHarga) bottomLine += '   ' + harga;
+        if (showDate) bottomLine += '   ' + tgl;
+        if (bottomLine) {
+          cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + bottomLine + '"\r\n';
+        }
       }
       cmd += 'PRINT 1\r\n';
       allData += cmd;
