@@ -99,6 +99,8 @@ async function cetakLabelLangsung(barcode) {
     var allData = '';
     var totalW = cols === 2 ? (w * 2 + gap) : w;
 
+    console.log('Label - w:' + w + ' h:' + h + ' gap:' + gap + ' totalW:' + totalW + ' ox:' + ox + ' oy:' + oy + ' cols:' + cols + ' qty:' + qty + ' printCount:' + printCount);
+
     for (var p = 0; p < printCount; p++) {
       var cmd = '';
       cmd += 'SIZE ' + totalW + ',' + h + '\r\n';
@@ -114,7 +116,6 @@ async function cetakLabelLangsung(barcode) {
         if (showDate) { cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + tgl + '"\r\n'; }
       }
       cmd += 'PRINT 1\r\n';
-      cmd += 'BACKFEED\r\n';
       allData += cmd;
     }
 
@@ -131,6 +132,8 @@ async function cetakLabelLangsung(barcode) {
         label_qty: document.getElementById('labelQty').value
       });
     }
+
+    console.log('Sending ' + allData.length + ' chars...');
 
     var data = encoder.encode(allData);
     for (var i = 0; i < data.byteLength; i += 20) {
