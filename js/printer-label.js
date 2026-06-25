@@ -81,7 +81,6 @@ async function cetakLabelLangsung(barcode) {
   var w = mmToDotsLabel(parseFloat(document.getElementById('labelWidthMM').value) || 33);
   var h = mmToDotsLabel(parseFloat(document.getElementById('labelHeightMM').value) || 15);
   var gap = mmToDotsLabel(parseFloat(document.getElementById('labelGapMM').value) || 2);
-  var direction = document.getElementById('labelDirection').value || '0';
   var ox = mmToDotsLabel(parseFloat(document.getElementById('labelOffsetX').value) || 0);
   var oy = mmToDotsLabel(parseFloat(document.getElementById('labelOffsetY').value) || 0);
   var cols = parseInt(document.getElementById('labelCols').value) || 2;
@@ -108,13 +107,13 @@ async function cetakLabelLangsung(barcode) {
         var x = (col * (w + gap)) + 5 + ox;
         var y = 5 + oy;
         
-        // Product name at top
+        // Product name
         if (showNama) {
           cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + nama + '"\r\n';
           y += 22;
         }
         
-        // Barcode on left, Price on right
+        // Barcode + Price
         if (showBarcode && showHarga) {
           cmd += 'BARCODE ' + x + ',' + y + ',"128",40,1,0,1,1,"' + barcodeText + '"\r\n';
           cmd += 'TEXT ' + (x + 100) + ',' + (y + 10) + ',"1",0,1.3,1.3,"' + harga + '"\r\n';
@@ -127,13 +126,11 @@ async function cetakLabelLangsung(barcode) {
           y += 22;
         }
         
-        // Barcode number below
-        if (showBarcode) {
-          cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + barcodeText + '"\r\n';
-          y += 18;
-        }
+        // Barcode number
+        cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + barcodeText + '"\r\n';
+        y += 18;
         
-        // Date at bottom
+        // Date
         if (showDate) {
           cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + tgl + '"\r\n';
         }
@@ -154,8 +151,6 @@ async function cetakLabelLangsung(barcode) {
         label_qty: document.getElementById('labelQty').value
       });
     }
-
-    console.log('Sending ' + allData.length + ' chars...');
 
     var data = encoder.encode(allData);
     for (var i = 0; i < data.byteLength; i += 20) {
