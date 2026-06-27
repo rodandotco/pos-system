@@ -1,4 +1,4 @@
-// ===================== PRINTER LABEL (BeePRT - MP234) =====================
+// ===================== PRINTER LABEL (AD240 + MP234) =====================
 var labelDevice = null;
 var labelCharacteristic = null;
 
@@ -14,8 +14,10 @@ async function sambungPrinterLabel() {
         '0000ff00-0000-1000-8000-00805f9b34fb'
       ]
     });
+    
     var server = await labelDevice.gatt.connect();
     var services = await server.getPrimaryServices();
+    
     for (var i = 0; i < services.length; i++) {
       try {
         var chars = await services[i].getCharacteristics();
@@ -29,6 +31,7 @@ async function sambungPrinterLabel() {
         }
       } catch (e) {}
     }
+    
     throw new Error('No writable characteristic found');
   } catch (e) {
     console.error(e);
@@ -51,6 +54,7 @@ function updateLabelStatus(connected) {
   var text = document.getElementById('labelStatusText');
   if (led) led.className = 'led ' + (connected ? 'led-green' : 'led-red');
   if (text) text.textContent = connected ? 'Label printer terhubung' : 'Label printer tidak terhubung';
+  
   var statusEl = document.getElementById('labelPrinterStatusMsg');
   if (statusEl) {
     var html = (connected ? '<span class="led led-green"></span> Label printer terhubung' : '<span class="led led-red"></span> Label printer tidak terhubung');
@@ -58,6 +62,11 @@ function updateLabelStatus(connected) {
     html += ' <button class="btn btn-sm btn-danger" onclick="putusPrinterLabel()">Putus</button>';
     statusEl.innerHTML = html;
   }
+}
+
+function getPrinterModel() {
+  var sel = document.getElementById('labelPrinterModel');
+  return sel ? sel.value : 'AD240';
 }
 
 async function cetakLabelLangsung(barcode) {
@@ -73,7 +82,6 @@ async function cetakLabelLangsung(barcode) {
   var harga = 'Rp' + (product.harga_jual || 0).toLocaleString('id');
   var barcodeText = product.barcode || '';
 
-  // Read all values from Manajemen Label dialog (in mm)
   var wMM = parseFloat(document.getElementById('labelWidthMM').value) || 33;
   var hMM = parseFloat(document.getElementById('labelHeightMM').value) || 15;
   var gapMM = parseFloat(document.getElementById('labelGapMM').value) || 2;
@@ -82,19 +90,23 @@ async function cetakLabelLangsung(barcode) {
   var cols = parseInt(document.getElementById('labelCols').value) || 2;
   var printCount = parseInt(document.getElementById('labelPrintCount').value) || 1;
   var qty = parseInt(document.getElementById('labelQty').value) || 0;
+  var model = getPrinterModel();
 
   var showNama = document.getElementById('showNama').checked;
   var showHarga = document.getElementById('showHarga').checked;
   var showBarcode = document.getElementById('showBarcode').checked;
 
-  // Total width for 2 columns
+  var w = mmToDotsLabel(wMM);
+  var h = mmToDotsLabel(hMM);
+  var gap = mmToDotsLabel(gapMM);
+  var ox = mmToDotsLabel(oxMM);
+  var totalW = cols === 2 ? (w * 2 + gap) : w;
   var totalWMM = cols === 2 ? (wMM * 2 + gapMM) : wMM;
 
   try {
     var encoder = new TextEncoder();
-    console.log('Label - wMM:' + wMM + ' hMM:' + hMM + ' gapMM:' + gapMM + ' totalWMM:' + totalWMM + ' oxMM:' + oxMM + ' oyMM:' + oyMM + ' cols:' + cols + ' qty:' + qty + ' printCount:' + printCount);
+    console.log('Model: ' + model + ' | wMM:' + wMM + ' hMM:' + hMM + ' totalWMM:' + totalWMM + ' oxMM:' + oxMM + ' cols:' + cols + ' printCount:' + printCount);
 
-    // Save settings to Supabase
     if (typeof updateSettings === 'function') {
       await updateSettings({
         label_width_mm: document.getElementById('labelWidthMM').value,
@@ -104,25 +116,37 @@ async function cetakLabelLangsung(barcode) {
         label_offset_x: document.getElementById('labelOffsetX').value,
         label_offset_y: document.getElementById('labelOffsetY').value,
         label_cols: document.getElementById('labelCols').value,
-        label_qty: document.getElementById('labelQty').value
+        label_qty: document.getElementById('labelQty').value,
+        label_printer_model: model
       });
     }
 
-    // Send each copy as separate print job
     for (var copy = 0; copy < printCount; copy++) {
       var cmd = '';
-      cmd += '\x1B\x40\r\n';
-      cmd += 'AUTOSENSE\r\n';
-      cmd += 'SIZE ' + totalWMM + ' mm,' + hMM + ' mm\r\n';
-      cmd += 'GAP 0 mm,0\r\n';
+      
+      if (model === 'MP234') {
+        cmd += '\x1B\x40\r\n';
+        cmd += 'AUTOSENSE\r\n';
+        cmd += 'SIZE ' + totalWMM + ' mm,' + hMM + ' mm\r\n';
+        cmd += 'GAP 0 mm,0\r\n';
+      } else {
+        cmd += '\x1B\x40\r\n';
+        cmd += 'SIZE ' + totalW + ',' + h + '\r\n';
+        cmd += 'GAP 0,0\r\n';
+      }
+      
       cmd += 'CLS\r\n';
 
       for (var col = 0; col < cols; col++) {
-        // Calculate X position in mm, then convert to dots
-        var xMM = (col * (wMM + gapMM)) + 2 + oxMM;
-        var x = mmToDotsLabel(xMM);
+        var x;
+        
+        if (model === 'MP234') {
+          var xMM = (col * (wMM + gapMM)) + 2 + oxMM;
+          x = mmToDotsLabel(xMM);
+        } else {
+          x = (col * (w + gap)) + 5 + ox;
+        }
 
-        // Product Name (split at 20 chars)
         if (showNama) {
           var maxChars = 20;
           var line1 = nama;
@@ -139,7 +163,6 @@ async function cetakLabelLangsung(barcode) {
           }
         }
 
-        // Barcode & Price
         if (showBarcode && showHarga) {
           cmd += 'BARCODE ' + x + ',43,"128",30,0,0,1,2,"' + barcodeText + '"\r\n';
           cmd += 'TEXT ' + (x + 150) + ',53,"3",0,1.3,1.3,"' + harga + '"\r\n';
@@ -149,7 +172,6 @@ async function cetakLabelLangsung(barcode) {
           cmd += 'TEXT ' + x + ',43,"3",0,1.3,1.3,"' + harga + '"\r\n';
         }
 
-        // Barcode Number
         cmd += 'TEXT ' + x + ',80,"3",0,1,1,"' + barcodeText + '"\r\n';
       }
 

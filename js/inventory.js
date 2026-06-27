@@ -66,29 +66,95 @@ async function hapusProdukDariDaftar(b) { if (!currentUser || currentUser.role !
 function generateBarcode() { var now = new Date(); document.getElementById('prodBarcode').value = now.getFullYear().toString().slice(-2) + ('0'+(now.getMonth()+1)).slice(-2) + ('0'+now.getDate()).slice(-2) + ('0'+now.getHours()).slice(-2) + ('0'+now.getMinutes()).slice(-2) + ('0'+now.getSeconds()).slice(-2); cariAtauTambahProduk(); }
 
 // ===================== LABEL PRINT DIALOG =====================
-function updateLabelDialogStatus() { var c = (typeof labelDevice !== 'undefined' && labelDevice && typeof labelCharacteristic !== 'undefined' && labelCharacteristic); var led=document.getElementById('labelStatusLed'), txt=document.getElementById('labelStatusText'); if(led) led.className='led '+(c?'led-green':'led-red'); if(txt) txt.textContent=c?'Label printer terhubung':'Label printer tidak terhubung'; }
+function updateLabelDialogStatus() {
+  var c = (typeof labelDevice !== 'undefined' && labelDevice && typeof labelCharacteristic !== 'undefined' && labelCharacteristic);
+  var led = document.getElementById('labelStatusLed'), txt = document.getElementById('labelStatusText');
+  if (led) led.className = 'led ' + (c ? 'led-green' : 'led-red');
+  if (txt) txt.textContent = c ? 'Label printer terhubung' : 'Label printer tidak terhubung';
+}
 
 async function bukaLabelDialog(barcode) {
-  currentLabelBarcode = barcode; var s = await getSettings();
-  document.getElementById('labelWidthMM').value = s.label_width_mm || '33'; document.getElementById('labelHeightMM').value = s.label_height_mm || '15';
-  document.getElementById('labelGapMM').value = s.label_gap_mm || '2'; document.getElementById('labelDirection').value = s.label_direction || '0';
-  document.getElementById('labelOffsetX').value = s.label_offset_x || '20'; document.getElementById('labelOffsetY').value = s.label_offset_y || '0';
-  document.getElementById('labelCols').value = s.label_cols || '2'; document.getElementById('labelQty').value = s.label_qty || '10';
-  document.getElementById('showNama').checked = true; document.getElementById('showHarga').checked = true; document.getElementById('showBarcode').checked = true; document.getElementById('showDate').checked = false;
+  currentLabelBarcode = barcode;
+  var s = await getSettings();
+  document.getElementById('labelWidthMM').value = s.label_width_mm || '33';
+  document.getElementById('labelHeightMM').value = s.label_height_mm || '15';
+  document.getElementById('labelGapMM').value = s.label_gap_mm || '2';
+  document.getElementById('labelDirection').value = s.label_direction || '0';
+  document.getElementById('labelOffsetX').value = s.label_offset_x || '20';
+  document.getElementById('labelOffsetY').value = s.label_offset_y || '0';
+  document.getElementById('labelCols').value = s.label_cols || '2';
+  document.getElementById('labelQty').value = s.label_qty || '10';
+  document.getElementById('labelPrinterModel').value = s.label_printer_model || 'AD240';
+  document.getElementById('showNama').checked = true;
+  document.getElementById('showHarga').checked = true;
+  document.getElementById('showBarcode').checked = true;
+  document.getElementById('showDate').checked = false;
   document.getElementById('presetName').value = '';
   hitungJumlahCetak(); refreshPresetList(); updateLabelDialogStatus();
   document.getElementById('labelPrintModal').style.display = 'flex';
 }
 
-function hitungJumlahCetak() { var q=parseInt(document.getElementById('labelQty').value)||0, c=parseInt(document.getElementById('labelCols').value)||2; document.getElementById('labelPrintCount').value = (q>0&&c>0) ? Math.ceil(q/c) : 0; }
+function hitungJumlahCetak() { var q = parseInt(document.getElementById('labelQty').value) || 0, c = parseInt(document.getElementById('labelCols').value) || 2; document.getElementById('labelPrintCount').value = (q > 0 && c > 0) ? Math.ceil(q / c) : 0; }
 
-async function cetakLabelPDF() { var p=await getProductByBarcode(currentLabelBarcode); if(!p)return alert('Produk tidak ditemukan'); var doc=new window.jspdf.jsPDF({orientation:'landscape',unit:'mm',format:[33,15]}); var img=new Image(); img.crossOrigin='Anonymous'; img.onload=function(){doc.addImage(img,'PNG',2,2,9,9);doc.setFontSize(5);doc.text(doc.splitTextToSize(p.nama||'Produk',23),12,3);doc.setFontSize(6);doc.setFont(undefined,'bold');doc.text('Rp '+(p.harga_jual||0).toLocaleString('id'),12,9);doc.setFontSize(3);doc.setFont(undefined,'normal');doc.text(currentLabelBarcode,2,12);doc.setFontSize(2);doc.text(new Date().toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}),12,12);window.open(URL.createObjectURL(doc.output('blob')),'_blank');};img.onerror=function(){alert('Gagal memuat QR code.');};img.src='https://api.qrserver.com/v1/create-qr-code/?size=150x150&data='+encodeURIComponent(currentLabelBarcode); }
+async function cetakLabelPDF() {
+  var p = await getProductByBarcode(currentLabelBarcode); if (!p) return alert('Produk tidak ditemukan');
+  var doc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: [33, 15] });
+  var img = new Image(); img.crossOrigin = 'Anonymous';
+  img.onload = function() { doc.addImage(img, 'PNG', 2, 2, 9, 9); doc.setFontSize(5); doc.text(doc.splitTextToSize(p.nama || 'Produk', 23), 12, 3); doc.setFontSize(6); doc.setFont(undefined, 'bold'); doc.text('Rp ' + (p.harga_jual || 0).toLocaleString('id'), 12, 9); doc.setFontSize(3); doc.setFont(undefined, 'normal'); doc.text(currentLabelBarcode, 2, 12); doc.setFontSize(2); doc.text(new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }), 12, 12); window.open(URL.createObjectURL(doc.output('blob')), '_blank'); };
+  img.onerror = function() { alert('Gagal memuat QR code.'); };
+  img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(currentLabelBarcode);
+}
 
-async function cetakLabelDariDialog() { if(!currentLabelBarcode)return alert('Pilih produk'); if(typeof labelDevice==='undefined'||!labelDevice){alert('⚠️ Label printer tidak terhubung!');return;} await cetakLabelLangsung(currentLabelBarcode); }
+async function cetakLabelDariDialog() {
+  if (!currentLabelBarcode) return alert('Pilih produk terlebih dahulu');
+  if (typeof labelDevice === 'undefined' || !labelDevice || typeof labelCharacteristic === 'undefined' || !labelCharacteristic) {
+    alert('⚠️ Label printer tidak terhubung!\n\nSilakan klik tombol "🔗 Sambung" untuk menghubungkan printer.');
+    return;
+  }
+  await cetakLabelLangsung(currentLabelBarcode);
+}
 
-function simpanLabelSettings() { var n=document.getElementById('presetName').value.trim(); if(!n){alert('Beri nama template!');return;} var s={widthMM:document.getElementById('labelWidthMM').value,heightMM:document.getElementById('labelHeightMM').value,gapMM:document.getElementById('labelGapMM').value,direction:document.getElementById('labelDirection').value,offsetXMM:document.getElementById('labelOffsetX').value,offsetYMM:document.getElementById('labelOffsetY').value,cols:document.getElementById('labelCols').value,qty:document.getElementById('labelQty').value,showNama:document.getElementById('showNama').checked,showHarga:document.getElementById('showHarga').checked,showBarcode:document.getElementById('showBarcode').checked,showDate:document.getElementById('showDate').checked}; var p={},sv=localStorage.getItem('labelPresets'); if(sv){try{p=JSON.parse(sv);}catch(e){}} p[n]=s; localStorage.setItem('labelPresets',JSON.stringify(p)); refreshPresetList(); document.getElementById('presetName').value=''; alert('Template "'+n+'" disimpan!'); }
-function refreshPresetList() { var sel=document.getElementById('presetList'); sel.innerHTML='<option value="">-- Pilih template --</option>'; var sv=localStorage.getItem('labelPresets'); if(sv){try{var p=JSON.parse(sv);Object.keys(p).sort().forEach(function(n){var o=document.createElement('option');o.value=n;o.textContent=n;sel.appendChild(o);});}catch(e){}} }
-function muatLabelPreset() { var n=document.getElementById('presetList').value; if(!n){alert('Pilih template!');return;} var sv=localStorage.getItem('labelPresets'); if(!sv)return; try{var p=JSON.parse(sv),s=p[n]; if(!s)return; document.getElementById('labelWidthMM').value=s.widthMM||'33';document.getElementById('labelHeightMM').value=s.heightMM||'15';document.getElementById('labelGapMM').value=s.gapMM||'2';document.getElementById('labelDirection').value=s.direction||'0';document.getElementById('labelOffsetX').value=s.offsetXMM||'20';document.getElementById('labelOffsetY').value=s.offsetYMM||'0';if(s.cols!==undefined)document.getElementById('labelCols').value=s.cols;document.getElementById('labelQty').value=s.qty||'10';document.getElementById('showNama').checked=s.showNama!==false;document.getElementById('showHarga').checked=s.showHarga!==false;document.getElementById('showBarcode').checked=s.showBarcode!==false;document.getElementById('showDate').checked=s.showDate===true;hitungJumlahCetak();alert('Template "'+n+'" dimuat!');}catch(e){} }
-function hapusLabelPreset() { var n=document.getElementById('presetList').value; if(!n)return; if(!confirm('Hapus template "'+n+'"?'))return; var sv=localStorage.getItem('labelPresets'); if(!sv)return; try{var p=JSON.parse(sv);delete p[n];localStorage.setItem('labelPresets',JSON.stringify(p));refreshPresetList();alert('Template dihapus!');}catch(e){} }
-function resetLabelSettings() { document.getElementById('labelWidthMM').value='33';document.getElementById('labelHeightMM').value='15';document.getElementById('labelGapMM').value='2';document.getElementById('labelDirection').value='0';document.getElementById('labelOffsetX').value='20';document.getElementById('labelOffsetY').value='0';document.getElementById('labelCols').value='2';document.getElementById('labelQty').value='10';document.getElementById('showNama').checked=true;document.getElementById('showHarga').checked=true;document.getElementById('showBarcode').checked=true;document.getElementById('showDate').checked=false;document.getElementById('presetName').value='';hitungJumlahCetak();alert('Pengaturan label direset!'); }
+function simpanLabelSettings() {
+  var n = document.getElementById('presetName').value.trim(); if (!n) { alert('Beri nama template!'); return; }
+  var s = { widthMM: document.getElementById('labelWidthMM').value, heightMM: document.getElementById('labelHeightMM').value, gapMM: document.getElementById('labelGapMM').value, direction: document.getElementById('labelDirection').value, offsetXMM: document.getElementById('labelOffsetX').value, offsetYMM: document.getElementById('labelOffsetY').value, cols: document.getElementById('labelCols').value, qty: document.getElementById('labelQty').value, model: document.getElementById('labelPrinterModel').value, showNama: document.getElementById('showNama').checked, showHarga: document.getElementById('showHarga').checked, showBarcode: document.getElementById('showBarcode').checked, showDate: document.getElementById('showDate').checked };
+  var p = {}, sv = localStorage.getItem('labelPresets'); if (sv) { try { p = JSON.parse(sv); } catch(e) {} }
+  p[n] = s; localStorage.setItem('labelPresets', JSON.stringify(p)); refreshPresetList();
+  document.getElementById('presetName').value = ''; alert('Template "' + n + '" disimpan!');
+}
+
+function refreshPresetList() {
+  var sel = document.getElementById('presetList'); sel.innerHTML = '<option value="">-- Pilih template --</option>';
+  var sv = localStorage.getItem('labelPresets'); if (sv) { try { var p = JSON.parse(sv); Object.keys(p).sort().forEach(function(n) { var o = document.createElement('option'); o.value = n; o.textContent = n; sel.appendChild(o); }); } catch(e) {} }
+}
+
+function muatLabelPreset() {
+  var n = document.getElementById('presetList').value; if (!n) { alert('Pilih template!'); return; }
+  var sv = localStorage.getItem('labelPresets'); if (!sv) return;
+  try { var p = JSON.parse(sv), s = p[n]; if (!s) return;
+    document.getElementById('labelWidthMM').value = s.widthMM || '33'; document.getElementById('labelHeightMM').value = s.heightMM || '15';
+    document.getElementById('labelGapMM').value = s.gapMM || '2'; document.getElementById('labelDirection').value = s.direction || '0';
+    document.getElementById('labelOffsetX').value = s.offsetXMM || '20'; document.getElementById('labelOffsetY').value = s.offsetYMM || '0';
+    if (s.cols !== undefined) document.getElementById('labelCols').value = s.cols;
+    document.getElementById('labelQty').value = s.qty || '10';
+    if (s.model) document.getElementById('labelPrinterModel').value = s.model;
+    document.getElementById('showNama').checked = s.showNama !== false; document.getElementById('showHarga').checked = s.showHarga !== false;
+    document.getElementById('showBarcode').checked = s.showBarcode !== false; document.getElementById('showDate').checked = s.showDate === true;
+    hitungJumlahCetak(); alert('Template "' + n + '" dimuat!');
+  } catch(e) {}
+}
+
+function hapusLabelPreset() { var n = document.getElementById('presetList').value; if (!n) return; if (!confirm('Hapus template "' + n + '"?')) return; var sv = localStorage.getItem('labelPresets'); if (!sv) return; try { var p = JSON.parse(sv); delete p[n]; localStorage.setItem('labelPresets', JSON.stringify(p)); refreshPresetList(); alert('Template dihapus!'); } catch(e) {} }
+
+function resetLabelSettings() {
+  document.getElementById('labelWidthMM').value = '33'; document.getElementById('labelHeightMM').value = '15';
+  document.getElementById('labelGapMM').value = '2'; document.getElementById('labelDirection').value = '0';
+  document.getElementById('labelOffsetX').value = '20'; document.getElementById('labelOffsetY').value = '0';
+  document.getElementById('labelCols').value = '2'; document.getElementById('labelQty').value = '10';
+  document.getElementById('labelPrinterModel').value = 'AD240';
+  document.getElementById('showNama').checked = true; document.getElementById('showHarga').checked = true;
+  document.getElementById('showBarcode').checked = true; document.getElementById('showDate').checked = false;
+  document.getElementById('presetName').value = ''; hitungJumlahCetak();
+  alert('Pengaturan label direset ke default!');
+}
+
 async function cetakLabelQR(barcode) { bukaLabelDialog(barcode); }
