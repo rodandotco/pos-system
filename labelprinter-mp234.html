@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BeePRT No-Skip Test</title>
+  <title>BeePRT No-Skip Test v2</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
     body { background: #f0f2f5; padding: 20px; }
@@ -16,6 +16,7 @@
     .btn-primary { background: #00897b; }
     .btn-danger { background: #e53935; }
     .btn-test { background: #ff9800; }
+    .btn-new { background: #e91e63; }
     .led { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
     .led-green { background: #4caf50; }
     .led-red { background: #f44336; }
@@ -25,7 +26,7 @@
 </head>
 <body>
 <div class="container">
-  <h2>🐝 BeePRT No-Skip Test</h2>
+  <h2>🐝 BeePRT No-Skip Test v2</h2>
   
   <div id="statusBox" class="status disconnected">
     <span id="statusLed" class="led led-red"></span>
@@ -36,7 +37,7 @@
   <button class="btn btn-danger" onclick="disconnect()">Putus</button>
   
   <hr>
-  <p style="font-size:12px;color:#666;">Each test prints 2 copies of "HELLO" + barcode. Check which one DOES NOT skip rows.</p>
+  <p style="font-size:12px;color:#666;">Original tests - check for skip behavior</p>
   
   <button class="btn btn-test" onclick="testBeePRT(1)">🐝 Test 1: Only PRINT (no SIZE, no GAP)</button>
   <button class="btn btn-test" onclick="testBeePRT(2)">🐝 Test 2: PRINT without \r\n (just \n)</button>
@@ -48,6 +49,14 @@
   <button class="btn btn-test" onclick="testBeePRT(8)">🐝 Test 8: PRINT 1 with FORMFEED</button>
   <button class="btn btn-test" onclick="testBeePRT(9)">🐝 Test 9: SIZE + GAP 0 + CLS + PRINT 1</button>
   <button class="btn btn-test" onclick="testBeePRT(10)">🐝 Test 10: SIZE + GAP 0 + PRINT 1 (no CLS)</button>
+  
+  <hr>
+  <p style="font-size:12px;color:#e91e63;font-weight:bold;">NEW tests - no-skip solutions</p>
+  
+  <button class="btn btn-new" onclick="testBeePRT(11)">🆕 Test 11: One SIZE, multiple TEXT sets, one PRINT</button>
+  <button class="btn btn-new" onclick="testBeePRT(12)">🆕 Test 12: PRINT 2 (multiple copies in one command)</button>
+  <button class="btn btn-new" onclick="testBeePRT(13)">🆕 Test 13: CLS+TEXT+PRINT+CLS+TEXT+PRINT in one send</button>
+  <button class="btn btn-new" onclick="testBeePRT(14)">🆕 Test 14: ESC @ between each copy, one BLE send</button>
   
   <hr>
   <h3>Log</h3>
@@ -110,86 +119,131 @@ function disconnect() {
 
 function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
 
+async function sendCmd(cmd, label) {
+  var encoder = new TextEncoder();
+  var data = encoder.encode(cmd);
+  log(label + ': ' + data.byteLength + ' bytes');
+  for (var i = 0; i < data.byteLength; i += 20) {
+    var chunk = data.slice(i, Math.min(i + 20, data.byteLength));
+    try { await characteristic.writeValueWithoutResponse(chunk); }
+    catch(e) { await characteristic.writeValue(chunk); }
+    await sleep(80);
+  }
+}
+
 async function testBeePRT(testNum) {
   if (!device || !characteristic) { alert('Connect first!'); return; }
   
-  var encoder = new TextEncoder();
-  var cmd = '';
   var desc = '';
+  var cmd = '';
   
-  // Test 1: Only PRINT, no SIZE/GAP
   if (testNum === 1) {
     desc = 'PRINT only, no SIZE/GAP';
-    cmd = 'TEXT 10,10,"3",0,1,1,"HELLO1"\r\nBARCODE 10,40,"128",30,1,0,1,1,"123456"\r\nPRINT 1\r\n';
+    cmd = 'TEXT 10,10,"3",0,1,1,"T1-A"\r\nBARCODE 10,40,"128",30,1,0,1,1,"111"\r\nPRINT 1\r\n';
+    log('--- Test 1: ' + desc + ' ---');
+    await sendCmd(cmd, 'Copy1'); await sleep(1500);
+    await sendCmd(cmd, 'Copy2');
   }
-  // Test 2: \n instead of \r\n
   else if (testNum === 2) {
     desc = 'PRINT with \\n only';
-    cmd = 'TEXT 10,10,"3",0,1,1,"HELLO2"\nBARCODE 10,40,"128",30,1,0,1,1,"123456"\nPRINT 1\n';
+    cmd = 'TEXT 10,10,"3",0,1,1,"T2-A"\nBARCODE 10,40,"128",30,1,0,1,1,"222"\nPRINT 1\n';
+    log('--- Test 2: ' + desc + ' ---');
+    await sendCmd(cmd, 'Copy1'); await sleep(1500);
+    await sendCmd(cmd, 'Copy2');
   }
-  // Test 3: TEXT only, no PRINT
   else if (testNum === 3) {
     desc = 'TEXT only, no PRINT';
-    cmd = 'TEXT 10,10,"3",0,1,1,"HELLO3"\r\nBARCODE 10,40,"128",30,1,0,1,1,"123456"\r\n';
+    cmd = 'TEXT 10,10,"3",0,1,1,"T3-A"\r\nBARCODE 10,40,"128",30,1,0,1,1,"333"\r\n';
+    log('--- Test 3: ' + desc + ' ---');
+    await sendCmd(cmd, 'Copy1'); await sleep(1500);
+    await sendCmd(cmd, 'Copy2');
   }
-  // Test 4: SIZE + PRINT, no GAP/CLS
   else if (testNum === 4) {
     desc = 'SIZE + PRINT, no GAP/CLS';
-    cmd = 'SIZE 264,120\r\nTEXT 10,10,"3",0,1,1,"HELLO4"\r\nBARCODE 10,40,"128",30,1,0,1,1,"123456"\r\nPRINT 1\r\n';
+    cmd = 'SIZE 264,120\r\nTEXT 10,10,"3",0,1,1,"T4-A"\r\nBARCODE 10,40,"128",30,1,0,1,1,"444"\r\nPRINT 1\r\n';
+    log('--- Test 4: ' + desc + ' ---');
+    await sendCmd(cmd, 'Copy1'); await sleep(1500);
+    await sendCmd(cmd, 'Copy2');
   }
-  // Test 5: SIZE 0,0
   else if (testNum === 5) {
     desc = 'SIZE 0,0 (auto)';
-    cmd = 'SIZE 0,0\r\nTEXT 10,10,"3",0,1,1,"HELLO5"\r\nBARCODE 10,40,"128",30,1,0,1,1,"123456"\r\nPRINT 1\r\n';
+    cmd = 'SIZE 0,0\r\nTEXT 10,10,"3",0,1,1,"T5-A"\r\nBARCODE 10,40,"128",30,1,0,1,1,"555"\r\nPRINT 1\r\n';
+    log('--- Test 5: ' + desc + ' ---');
+    await sendCmd(cmd, 'Copy1'); await sleep(1500);
+    await sendCmd(cmd, 'Copy2');
   }
-  // Test 6: Raw text
   else if (testNum === 6) {
     desc = 'Raw text only';
-    cmd = 'HELLO6\n123456\n\n\n\n';
+    cmd = 'T6-A\n555\n\n\n\n';
+    log('--- Test 6: ' + desc + ' ---');
+    await sendCmd(cmd, 'Copy1'); await sleep(1500);
+    await sendCmd(cmd, 'Copy2');
   }
-  // Test 7: ESC @ only
   else if (testNum === 7) {
     desc = 'ESC @ reset + text';
-    cmd = '\x1B\x40HELLO7\n123456\n\n\n\n';
+    cmd = '\x1B\x40T7-A\n666\n\n\n\n';
+    log('--- Test 7: ' + desc + ' ---');
+    await sendCmd(cmd, 'Copy1'); await sleep(1500);
+    await sendCmd(cmd, 'Copy2');
   }
-  // Test 8: PRINT 1 + FORMFEED
   else if (testNum === 8) {
     desc = 'PRINT 1 + FORMFEED';
-    cmd = 'SIZE 264,120\r\nTEXT 10,10,"3",0,1,1,"HELLO8"\r\nBARCODE 10,40,"128",30,1,0,1,1,"123456"\r\nPRINT 1\r\nFORMFEED\r\n';
+    cmd = 'SIZE 264,120\r\nTEXT 10,10,"3",0,1,1,"T8-A"\r\nBARCODE 10,40,"128",30,1,0,1,1,"888"\r\nPRINT 1\r\nFORMFEED\r\n';
+    log('--- Test 8: ' + desc + ' ---');
+    await sendCmd(cmd, 'Copy1'); await sleep(1500);
+    await sendCmd(cmd, 'Copy2');
   }
-  // Test 9: SIZE + GAP 0 + CLS + PRINT
   else if (testNum === 9) {
     desc = 'SIZE+GAP 0+CLS+PRINT';
-    cmd = 'SIZE 264,120\r\nGAP 0,0\r\nCLS\r\nTEXT 10,10,"3",0,1,1,"HELLO9"\r\nBARCODE 10,40,"128",30,1,0,1,1,"123456"\r\nPRINT 1\r\n';
+    cmd = 'SIZE 264,120\r\nGAP 0,0\r\nCLS\r\nTEXT 10,10,"3",0,1,1,"T9-A"\r\nBARCODE 10,40,"128",30,1,0,1,1,"999"\r\nPRINT 1\r\n';
+    log('--- Test 9: ' + desc + ' ---');
+    await sendCmd(cmd, 'Copy1'); await sleep(1500);
+    await sendCmd(cmd, 'Copy2');
   }
-  // Test 10: SIZE + GAP 0 + PRINT (no CLS)
   else if (testNum === 10) {
     desc = 'SIZE+GAP 0+PRINT (no CLS)';
-    cmd = 'SIZE 264,120\r\nGAP 0,0\r\nTEXT 10,10,"3",0,1,1,"HELLO10"\r\nBARCODE 10,40,"128",30,1,0,1,1,"123456"\r\nPRINT 1\r\n';
+    cmd = 'SIZE 264,120\r\nGAP 0,0\r\nTEXT 10,10,"3",0,1,1,"T10-A"\r\nBARCODE 10,40,"128",30,1,0,1,1,"000"\r\nPRINT 1\r\n';
+    log('--- Test 10: ' + desc + ' ---');
+    await sendCmd(cmd, 'Copy1'); await sleep(1500);
+    await sendCmd(cmd, 'Copy2');
+  }
+  // ===== NEW TESTS =====
+  else if (testNum === 11) {
+    desc = 'One SIZE, 4 labels in one PRINT';
+    cmd = 'SIZE 264,120\r\nGAP 0,0\r\nCLS\r\n';
+    cmd += 'TEXT 10,10,"3",0,1,1,"T11-A"\r\nBARCODE 10,40,"128",30,1,0,1,1,"111"\r\n';
+    cmd += 'TEXT 280,10,"3",0,1,1,"T11-B"\r\nBARCODE 280,40,"128",30,1,0,1,1,"222"\r\n';
+    cmd += 'PRINT 1\r\n';
+    log('--- Test 11: ' + desc + ' ---');
+    await sendCmd(cmd, 'Single send (2 labels inside)');
+  }
+  else if (testNum === 12) {
+    desc = 'PRINT 2 command';
+    cmd = 'SIZE 264,120\r\nGAP 0,0\r\nCLS\r\n';
+    cmd += 'TEXT 10,10,"3",0,1,1,"T12"\r\nBARCODE 10,40,"128",30,1,0,1,1,"1212"\r\n';
+    cmd += 'PRINT 2\r\n';
+    log('--- Test 12: ' + desc + ' ---');
+    await sendCmd(cmd, 'Single send (PRINT 2)');
+  }
+  else if (testNum === 13) {
+    desc = 'CLS+TEXT+PRINT repeated in one send';
+    cmd = 'SIZE 264,120\r\nGAP 0,0\r\n';
+    cmd += 'CLS\r\nTEXT 10,10,"3",0,1,1,"T13-A"\r\nBARCODE 10,40,"128",30,1,0,1,1,"131"\r\nPRINT 1\r\n';
+    cmd += 'CLS\r\nTEXT 10,10,"3",0,1,1,"T13-B"\r\nBARCODE 10,40,"128",30,1,0,1,1,"132"\r\nPRINT 1\r\n';
+    log('--- Test 13: ' + desc + ' ---');
+    await sendCmd(cmd, 'Single send (2 prints inside)');
+  }
+  else if (testNum === 14) {
+    desc = 'ESC @ between copies, one BLE send';
+    cmd = '\x1B\x40SIZE 264,120\r\nGAP 0,0\r\nCLS\r\n';
+    cmd += 'TEXT 10,10,"3",0,1,1,"T14-A"\r\nBARCODE 10,40,"128",30,1,0,1,1,"141"\r\nPRINT 1\r\n';
+    cmd += '\x1B\x40SIZE 264,120\r\nGAP 0,0\r\nCLS\r\n';
+    cmd += 'TEXT 10,10,"3",0,1,1,"T14-B"\r\nBARCODE 10,40,"128",30,1,0,1,1,"142"\r\nPRINT 1\r\n';
+    log('--- Test 14: ' + desc + ' ---');
+    await sendCmd(cmd, 'Single send with ESC @ between');
   }
   
-  log('--- Test ' + testNum + ': ' + desc + ' ---');
-  log('CMD: ' + cmd.replace(/\r\n/g,'\\n').replace(/\n/g,'\\n').substring(0,80));
-  
-  // Send 2 copies to test skipping
-  for (var copy = 0; copy < 2; copy++) {
-    var data = encoder.encode(cmd);
-    log('Copy ' + (copy+1) + ': ' + data.byteLength + ' bytes');
-    
-    for (var i = 0; i < data.byteLength; i += 20) {
-      var chunk = data.slice(i, Math.min(i + 20, data.byteLength));
-      try { await characteristic.writeValueWithoutResponse(chunk); }
-      catch(e) { await characteristic.writeValue(chunk); }
-      await sleep(80);
-    }
-    
-    if (copy === 0) {
-      log('Waiting 1.5s... (check if first label skipped)');
-      await sleep(1500);
-    }
-  }
-  
-  log('DONE Test ' + testNum + ' - Check: Did it skip? Did it print?');
+  log('DONE Test ' + testNum);
 }
 </script>
 </body>
