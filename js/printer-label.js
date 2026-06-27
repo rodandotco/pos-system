@@ -96,53 +96,60 @@ async function cetakLabelLangsung(barcode) {
 
     console.log('Label - w:' + w + ' h:' + h + ' gap:' + gap + ' totalW:' + totalW + ' ox:' + ox + ' oy:' + oy + ' cols:' + cols + ' qty:' + qty + ' printCount:' + printCount);
 
-    // Build ONE command
+    // Calculate total width for ALL copies in one row
+    var totalCopiesWide = (totalW * printCount) + ((printCount - 1) * gap);
+    
     var cmd = '';
     cmd += '\x1B\x40\r\n';
-    cmd += 'SIZE ' + totalW + ',' + h + '\r\n';
+    cmd += 'SIZE ' + totalCopiesWide + ',' + h + '\r\n';
     cmd += 'GAP 0,0\r\n';
     cmd += 'CLS\r\n';
 
-    for (var col = 0; col < cols; col++) {
-      var x = (col * (w + gap)) + 5 + ox;
+    // Print all copies in one wide layout
+    for (var copy = 0; copy < printCount; copy++) {
+      var copyOffsetX = copy * (totalW + gap);
+      
+      for (var col = 0; col < cols; col++) {
+        var x = copyOffsetX + (col * (w + gap)) + 5 + ox;
 
-      // Product Name line 1 at y=5
-      if (showNama) {
-        var maxChars = 20;
-        var line1 = nama;
-        var line2 = '';
-        
-        if (nama.length > maxChars) {
-          var splitAt = nama.lastIndexOf(' ', maxChars);
-          if (splitAt === -1) splitAt = maxChars;
-          line1 = nama.substring(0, splitAt);
-          line2 = nama.substring(splitAt).trim();
+        // Product Name line 1 at y=5
+        if (showNama) {
+          var maxChars = 20;
+          var line1 = nama;
+          var line2 = '';
+          
+          if (nama.length > maxChars) {
+            var splitAt = nama.lastIndexOf(' ', maxChars);
+            if (splitAt === -1) splitAt = maxChars;
+            line1 = nama.substring(0, splitAt);
+            line2 = nama.substring(splitAt).trim();
+          }
+          
+          cmd += 'TEXT ' + x + ',5,"3",0,1,1,"' + line1 + '"\r\n';
+          
+          // Name line 2 at y=25 (if needed)
+          if (line2) {
+            cmd += 'TEXT ' + x + ',25,"3",0,1,1,"' + line2 + '"\r\n';
+          }
         }
-        
-        cmd += 'TEXT ' + x + ',5,"3",0,1,1,"' + line1 + '"\r\n';
-        
-        // Name line 2 at y=25 (if needed)
-        if (line2) {
-          cmd += 'TEXT ' + x + ',25,"3",0,1,1,"' + line2 + '"\r\n';
+
+        // Barcode & Price at y=43
+        if (showBarcode && showHarga) {
+          cmd += 'BARCODE ' + x + ',43,"128",30,0,0,1,2,"' + barcodeText + '"\r\n';
+          cmd += 'TEXT ' + (x + 150) + ',53,"3",0,1.3,1.3,"' + harga + '"\r\n';
+        } else if (showBarcode) {
+          cmd += 'BARCODE ' + x + ',43,"128",30,0,0,1,2,"' + barcodeText + '"\r\n';
+        } else if (showHarga) {
+          cmd += 'TEXT ' + x + ',43,"3",0,1.3,1.3,"' + harga + '"\r\n';
         }
-      }
 
-      // Barcode & Price at y=43
-      if (showBarcode && showHarga) {
-        cmd += 'BARCODE ' + x + ',43,"128",30,0,0,1,2,"' + barcodeText + '"\r\n';
-        cmd += 'TEXT ' + (x + 150) + ',53,"3",0,1.3,1.3,"' + harga + '"\r\n';
-      } else if (showBarcode) {
-        cmd += 'BARCODE ' + x + ',43,"128",30,0,0,1,2,"' + barcodeText + '"\r\n';
-      } else if (showHarga) {
-        cmd += 'TEXT ' + x + ',43,"3",0,1.3,1.3,"' + harga + '"\r\n';
+        // Barcode Number at y=80
+        cmd += 'TEXT ' + x + ',80,"3",0,1,1,"' + barcodeText + '"\r\n';
       }
-
-      // Barcode Number at y=80
-      cmd += 'TEXT ' + x + ',80,"3",0,1,1,"' + barcodeText + '"\r\n';
     }
 
-    // PRINT n copies
-    cmd += 'PRINT ' + printCount + '\r\n';
+    // PRINT just ONCE - all copies are in one wide layout
+    cmd += 'PRINT 1\r\n';
 
     // Save settings
     if (typeof updateSettings === 'function') {
@@ -160,7 +167,7 @@ async function cetakLabelLangsung(barcode) {
 
     // Send
     var data = encoder.encode(cmd);
-    console.log('Total bytes: ' + data.byteLength + ' | Print count: ' + printCount);
+    console.log('Total bytes: ' + data.byteLength + ' | Width: ' + totalCopiesWide + ' dots | PRINT 1');
     
     for (var i = 0; i < data.byteLength; i += 20) {
       var chunk = data.slice(i, Math.min(i + 20, data.byteLength));
