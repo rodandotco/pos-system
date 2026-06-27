@@ -76,7 +76,6 @@ async function cetakLabelLangsung(barcode) {
   var nama = (product.nama || 'Produk');
   var harga = 'Rp' + (product.harga_jual || 0).toLocaleString('id');
   var barcodeText = product.barcode || '';
-  var tgl = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 
   var w = mmToDotsLabel(parseFloat(document.getElementById('labelWidthMM').value) || 33);
   var h = mmToDotsLabel(parseFloat(document.getElementById('labelHeightMM').value) || 15);
@@ -90,7 +89,6 @@ async function cetakLabelLangsung(barcode) {
   var showNama = document.getElementById('showNama').checked;
   var showHarga = document.getElementById('showHarga').checked;
   var showBarcode = document.getElementById('showBarcode').checked;
-  var showDate = document.getElementById('showDate').checked;
 
   try {
     var encoder = new TextEncoder();
@@ -98,7 +96,7 @@ async function cetakLabelLangsung(barcode) {
 
     console.log('Label - w:' + w + ' h:' + h + ' gap:' + gap + ' totalW:' + totalW + ' ox:' + ox + ' oy:' + oy + ' cols:' + cols + ' qty:' + qty + ' printCount:' + printCount);
 
-    // Build ONE command with PRINT n
+    // Build ONE command
     var cmd = '';
     cmd += '\x1B\x40\r\n';
     cmd += 'SIZE ' + totalW + ',' + h + '\r\n';
@@ -107,9 +105,8 @@ async function cetakLabelLangsung(barcode) {
 
     for (var col = 0; col < cols; col++) {
       var x = (col * (w + gap)) + 5 + ox;
-      var y = 5 + oy;
 
-      // Product Name (split at 20 chars)
+      // Product Name line 1 at y=5
       if (showNama) {
         var maxChars = 20;
         var line1 = nama;
@@ -122,35 +119,26 @@ async function cetakLabelLangsung(barcode) {
           line2 = nama.substring(splitAt).trim();
         }
         
-        cmd += 'TEXT ' + x + ',' + y + ',"3",0,1,1,"' + line1 + '"\r\n';
+        cmd += 'TEXT ' + x + ',5,"3",0,1,1,"' + line1 + '"\r\n';
+        
+        // Name line 2 at y=25 (if needed)
         if (line2) {
-          y += 20;
-          cmd += 'TEXT ' + x + ',' + y + ',"3",0,1,1,"' + line2 + '"\r\n';
+          cmd += 'TEXT ' + x + ',25,"3",0,1,1,"' + line2 + '"\r\n';
         }
-        y += 30;
       }
 
-      // Barcode & Price
+      // Barcode & Price at y=43
       if (showBarcode && showHarga) {
-        cmd += 'BARCODE ' + x + ',' + y + ',"128",30,0,0,1,2,"' + barcodeText + '"\r\n';
-        cmd += 'TEXT ' + (x + 150) + ',' + (y + 10) + ',"3",0,1.3,1.3,"' + harga + '"\r\n';
-        y += 35;
+        cmd += 'BARCODE ' + x + ',43,"128",30,0,0,1,2,"' + barcodeText + '"\r\n';
+        cmd += 'TEXT ' + (x + 150) + ',53,"3",0,1.3,1.3,"' + harga + '"\r\n';
       } else if (showBarcode) {
-        cmd += 'BARCODE ' + x + ',' + y + ',"128",30,0,0,1,2,"' + barcodeText + '"\r\n';
-        y += 35;
+        cmd += 'BARCODE ' + x + ',43,"128",30,0,0,1,2,"' + barcodeText + '"\r\n';
       } else if (showHarga) {
-        cmd += 'TEXT ' + x + ',' + y + ',"3",0,1.3,1.3,"' + harga + '"\r\n';
-        y += 22;
+        cmd += 'TEXT ' + x + ',43,"3",0,1.3,1.3,"' + harga + '"\r\n';
       }
 
-      // Barcode Number
-      cmd += 'TEXT ' + x + ',' + y + ',"3",0,1,1,"' + barcodeText + '"\r\n';
-      y += 18;
-
-      // Date
-      if (showDate) {
-        cmd += 'TEXT ' + x + ',' + y + ',"3",0,1,1,"' + tgl + '"\r\n';
-      }
+      // Barcode Number at y=80
+      cmd += 'TEXT ' + x + ',80,"3",0,1,1,"' + barcodeText + '"\r\n';
     }
 
     // PRINT n copies
@@ -170,7 +158,7 @@ async function cetakLabelLangsung(barcode) {
       });
     }
 
-    // Send all at once
+    // Send
     var data = encoder.encode(cmd);
     console.log('Total bytes: ' + data.byteLength + ' | Print count: ' + printCount);
     
