@@ -1,69 +1,3 @@
-// ===================== PRINTER LABEL (BeePRT/PPLB) =====================
-var labelDevice = null;
-var labelCharacteristic = null;
-
-async function sambungPrinterLabel() {
-  try {
-    labelDevice = await navigator.bluetooth.requestDevice({
-      acceptAllDevices: true,
-      optionalServices: [
-        '000018f0-0000-1000-8000-00805f9b34fb',
-        '00001101-0000-1000-8000-00805f9b34fb',
-        '49535343-fe7d-4ae5-8fa9-9fafd205e455',
-        'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
-        '0000ff00-0000-1000-8000-00805f9b34fb'
-      ]
-    });
-    
-    var server = await labelDevice.gatt.connect();
-    var services = await server.getPrimaryServices();
-    
-    for (var i = 0; i < services.length; i++) {
-      try {
-        var chars = await services[i].getCharacteristics();
-        for (var j = 0; j < chars.length; j++) {
-          if (chars[j].properties.write || chars[j].properties.writeWithoutResponse) {
-            labelCharacteristic = chars[j];
-            updateLabelStatus(true);
-            alert('Label printer terhubung!');
-            return;
-          }
-        }
-      } catch (e) {}
-    }
-    
-    throw new Error('No writable characteristic found');
-  } catch (e) {
-    console.error(e);
-    updateLabelStatus(false);
-    alert('Gagal hubung label printer: ' + e.message);
-  }
-}
-
-async function putusPrinterLabel() {
-  if (labelDevice && labelDevice.gatt.connected) {
-    await labelDevice.gatt.disconnect();
-    labelDevice = null;
-    labelCharacteristic = null;
-    updateLabelStatus(false);
-  }
-}
-
-function updateLabelStatus(connected) {
-  var led = document.getElementById('labelStatusLed');
-  var text = document.getElementById('labelStatusText');
-  if (led) led.className = 'led ' + (connected ? 'led-green' : 'led-red');
-  if (text) text.textContent = connected ? 'Label printer terhubung' : 'Label printer tidak terhubung';
-  
-  var statusEl = document.getElementById('labelPrinterStatusMsg');
-  if (statusEl) {
-    var html = (connected ? '<span class="led led-green"></span> Label printer terhubung' : '<span class="led led-red"></span> Label printer tidak terhubung');
-    html += ' <button class="btn btn-sm" onclick="sambungPrinterLabel()" style="margin-left:8px;">🔗 Sambung</button>';
-    html += ' <button class="btn btn-sm btn-danger" onclick="putusPrinterLabel()">Putus</button>';
-    statusEl.innerHTML = html;
-  }
-}
-
 async function cetakLabelLangsung(barcode) {
   if (!labelDevice || !labelCharacteristic) {
     alert('Label printer tidak terhubung.');
@@ -103,44 +37,51 @@ async function cetakLabelLangsung(barcode) {
       var cmd = '';
       cmd += 'SIZE ' + totalW + ',' + h + '\r\n';
       cmd += 'CLS\r\n';
+
       for (var col = 0; col < cols; col++) {
         var x = (col * (w + gap)) + 5 + ox;
         var y = 5 + oy;
-        
-        // Product name
+
+        // ── Product Name ──────────────────────────
         if (showNama) {
-          cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + nama + '"\r\n';
+          cmd += 'TEXT ' + x + ',' + y + ',"3",0,1,1,"' + nama + '"\r\n';  // FIXED: font "1" → "3"
           y += 22;
         }
-	// ADD THIS to lower the barcode:
-	y += 10;  // Move barcode 15 dots down
-        
-        // Barcode (readable OFF) + Price (150 dots right)
+
+        // ── Barcode & Price ───────────────────────
         if (showBarcode && showHarga) {
-          cmd += 'BARCODE ' + x + ',' + y + ',"128",30,0,0,1,0,"' + barcodeText + '"\r\n';
-          cmd += 'TEXT ' + (x + 150) + ',' + (y + 10) + ',"1",0,1.3,1.3,"' + harga + '"\r\n';
+          // Barcode (no human-readable) + Price next to it
+          cmd += 'BARCODE ' + x + ',' + y + ',"128",30,0,0,1,2,"' + barcodeText + '"\r\n';  // FIXED: narrow=1, wide=2
+          cmd += 'TEXT ' + (x + 150) + ',' + (y + 10) + ',"3",0,1.3,1.3,"' + harga + '"\r\n';  // FIXED: font "3"
           y += 45;
+
         } else if (showBarcode) {
-          cmd += 'BARCODE ' + x + ',' + y + ',"128",30,1,0,1,1,"' + barcodeText + '"\r\n';
+          // Barcode only (no human-readable, we print it manually later)
+          cmd += 'BARCODE ' + x + ',' + y + ',"128",30,0,0,1,2,"' + barcodeText + '"\r\n';  // FIXED: narrow=1, wide=2, HR=0
           y += 45;
+
         } else if (showHarga) {
-          cmd += 'TEXT ' + x + ',' + y + ',"1",0,1.3,1.3,"' + harga + '"\r\n';
+          // Price only
+          cmd += 'TEXT ' + x + ',' + y + ',"3",0,1.3,1.3,"' + harga + '"\r\n';  // FIXED: font "3"
           y += 22;
         }
-        
-        // Barcode number (manual, clean)
-        cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + barcodeText + '"\r\n';
+
+        // ── Barcode Number (as text) ─────────────
+        // Always print manually — avoids double-print conflict
+        cmd += 'TEXT ' + x + ',' + y + ',"3",0,1,1,"' + barcodeText + '"\r\n';  // FIXED: font "3"
         y += 18;
-        
-        // Date (optional)
+
+        // ── Date ──────────────────────────────────
         if (showDate) {
-          cmd += 'TEXT ' + x + ',' + y + ',"1",0,1,1,"' + tgl + '"\r\n';
+          cmd += 'TEXT ' + x + ',' + y + ',"3",0,1,1,"' + tgl + '"\r\n';  // FIXED: font "3"
         }
       }
+
       cmd += 'PRINT 1\r\n';
       allData += cmd;
     }
 
+    // Save settings (if function exists)
     if (typeof updateSettings === 'function') {
       await updateSettings({
         label_width_mm: document.getElementById('labelWidthMM').value,
@@ -154,19 +95,18 @@ async function cetakLabelLangsung(barcode) {
       });
     }
 
+    // Send data over BLE
     var data = encoder.encode(allData);
-    for (var i = 0; i < data.byteLength; i += 20) {
-      var chunk = data.slice(i, Math.min(i + 20, data.byteLength));
+    for (var i = 0; i < data.byteLength; i += 256) {  // FIXED: chunk size 20 → 256
+      var chunk = data.slice(i, Math.min(i + 256, data.byteLength));
       await labelCharacteristic.writeValue(chunk);
       await sleepLabel(80);
     }
 
     alert('✅ Label dicetak! (' + qty + ' pcs, ' + printCount + 'x cetak)');
+
   } catch (e) {
     console.error(e);
     alert('Gagal cetak label: ' + e.message);
   }
 }
-
-function mmToDotsLabel(mm) { return Math.round(mm * 8); }
-function sleepLabel(ms) { return new Promise(function(resolve) { setTimeout(resolve, ms); }); }
