@@ -99,27 +99,40 @@ async function cetakLabelLangsung(barcode) {
     console.log('Label - w:' + w + ' h:' + h + ' gap:' + gap + ' totalW:' + totalW + ' ox:' + ox + ' oy:' + oy + ' cols:' + cols + ' qty:' + qty + ' printCount:' + printCount);
 
     for (var p = 0; p < printCount; p++) {
-      // Check connection before each print
+      // Check connection and reconnect if needed
       if (!labelDevice || !labelDevice.gatt.connected) {
         console.log('Reconnecting...');
         try {
           var server = await labelDevice.gatt.connect();
+          await sleepLabel(500);
+          
           var services = await server.getPrimaryServices();
-          for (var i = 0; i < services.length; i++) {
+          var found = false;
+          
+          for (var si = 0; si < services.length && !found; si++) {
             try {
-              var chars = await services[i].getCharacteristics();
-              for (var j = 0; j < chars.length; j++) {
-                if (chars[j].properties.write || chars[j].properties.writeWithoutResponse) {
-                  labelCharacteristic = chars[j];
-                  break;
+              var chars = await services[si].getCharacteristics();
+              for (var cj = 0; cj < chars.length && !found; cj++) {
+                if (chars[cj].properties.write || chars[cj].properties.writeWithoutResponse) {
+                  labelCharacteristic = chars[cj];
+                  found = true;
+                  console.log('Reconnected! Using characteristic:', chars[cj].uuid);
                 }
               }
-            } catch (e) {}
+            } catch (e) {
+              console.log('Error getting chars for service:', services[si].uuid);
+            }
           }
+          
+          if (!found) {
+            throw new Error('No writable characteristic found after reconnect');
+          }
+          
           await sleepLabel(500);
         } catch (e) {
           console.error('Reconnect failed:', e.message);
-          alert('Printer terputus! Silakan sambungkan ulang.');
+          updateLabelStatus(false);
+          alert('Printer terputus! Silakan klik Sambung ulang.');
           return;
         }
       }
