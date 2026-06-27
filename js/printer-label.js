@@ -101,6 +101,7 @@ async function cetakLabelLangsung(barcode) {
 
     for (var p = 0; p < printCount; p++) {
       var cmd = '';
+      cmd += '\x1B\x40\r\n';  // ESC @ - Reset printer
       cmd += 'SIZE ' + totalW + ',' + h + '\r\n';
       cmd += 'CLS\r\n';
 
@@ -108,7 +109,7 @@ async function cetakLabelLangsung(barcode) {
         var x = (col * (w + gap)) + 5 + ox;
         var y = 5 + oy;
 
-        // ── Product Name (auto split into 2 lines) ──
+        // ── Product Name (auto split) ──────────────
         if (showNama) {
           var maxChars = 14;
           var line1 = nama;
@@ -170,7 +171,7 @@ async function cetakLabelLangsung(barcode) {
       });
     }
 
-        // Send data over BLE
+    // Send data over BLE
     var data = encoder.encode(allData);
     console.log('Total bytes to send:', data.byteLength);
     
