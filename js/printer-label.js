@@ -1,4 +1,4 @@
-// ===================== PRINTER LABEL (BeePRT/PPLB) =====================
+// ===================== PRINTER LABEL (BeePRT - MP234) =====================
 var labelDevice = null;
 var labelCharacteristic = null;
 
@@ -14,10 +14,8 @@ async function sambungPrinterLabel() {
         '0000ff00-0000-1000-8000-00805f9b34fb'
       ]
     });
-    
     var server = await labelDevice.gatt.connect();
     var services = await server.getPrimaryServices();
-    
     for (var i = 0; i < services.length; i++) {
       try {
         var chars = await services[i].getCharacteristics();
@@ -31,7 +29,6 @@ async function sambungPrinterLabel() {
         }
       } catch (e) {}
     }
-    
     throw new Error('No writable characteristic found');
   } catch (e) {
     console.error(e);
@@ -54,7 +51,6 @@ function updateLabelStatus(connected) {
   var text = document.getElementById('labelStatusText');
   if (led) led.className = 'led ' + (connected ? 'led-green' : 'led-red');
   if (text) text.textContent = connected ? 'Label printer terhubung' : 'Label printer tidak terhubung';
-  
   var statusEl = document.getElementById('labelPrinterStatusMsg');
   if (statusEl) {
     var html = (connected ? '<span class="led led-green"></span> Label printer terhubung' : '<span class="led led-red"></span> Label printer tidak terhubung');
@@ -77,11 +73,11 @@ async function cetakLabelLangsung(barcode) {
   var harga = 'Rp' + (product.harga_jual || 0).toLocaleString('id');
   var barcodeText = product.barcode || '';
 
-  var w = mmToDotsLabel(parseFloat(document.getElementById('labelWidthMM').value) || 33);
-  var h = mmToDotsLabel(parseFloat(document.getElementById('labelHeightMM').value) || 15);
-  var gap = mmToDotsLabel(parseFloat(document.getElementById('labelGapMM').value) || 2);
-  var ox = mmToDotsLabel(parseFloat(document.getElementById('labelOffsetX').value) || 0);
-  var oy = mmToDotsLabel(parseFloat(document.getElementById('labelOffsetY').value) || 0);
+  var wMM = parseFloat(document.getElementById('labelWidthMM').value) || 33;
+  var hMM = parseFloat(document.getElementById('labelHeightMM').value) || 15;
+  var gapMM = parseFloat(document.getElementById('labelGapMM').value) || 2;
+  var oxMM = parseFloat(document.getElementById('labelOffsetX').value) || 0;
+  var oyMM = parseFloat(document.getElementById('labelOffsetY').value) || 0;
   var cols = parseInt(document.getElementById('labelCols').value) || 2;
   var printCount = parseInt(document.getElementById('labelPrintCount').value) || 1;
   var qty = parseInt(document.getElementById('labelQty').value) || 0;
@@ -90,66 +86,17 @@ async function cetakLabelLangsung(barcode) {
   var showHarga = document.getElementById('showHarga').checked;
   var showBarcode = document.getElementById('showBarcode').checked;
 
+  // Convert to dots for positioning
+  var w = mmToDotsLabel(wMM);
+  var gap = mmToDotsLabel(gapMM);
+  var ox = mmToDotsLabel(oxMM);
+  var oy = mmToDotsLabel(oyMM);
+  var totalWMM = cols === 2 ? (wMM * 2 + gapMM) : wMM;
+  var totalW = cols === 2 ? (w * 2 + gap) : w;
+
   try {
     var encoder = new TextEncoder();
-    var totalW = cols === 2 ? (w * 2 + gap) : w;
-
-    console.log('Label - w:' + w + ' h:' + h + ' gap:' + gap + ' totalW:' + totalW + ' ox:' + ox + ' oy:' + oy + ' cols:' + cols + ' qty:' + qty + ' printCount:' + printCount);
-
-    // Calculate total width for ALL copies in one row
-    var totalCopiesWide = (totalW * printCount) + ((printCount - 1) * gap);
-    
-    var cmd = '';
-    cmd += '\x1B\x40\r\n';
-    cmd += 'SIZE ' + totalCopiesWide + ',' + h + '\r\n';
-    cmd += 'GAP 0,0\r\n';
-    cmd += 'CLS\r\n';
-
-    // Print all copies in one wide layout
-    for (var copy = 0; copy < printCount; copy++) {
-      var copyOffsetX = copy * (totalW + gap);
-      
-      for (var col = 0; col < cols; col++) {
-        var x = copyOffsetX + (col * (w + gap)) + 5 + ox;
-
-        // Product Name line 1 at y=5
-        if (showNama) {
-          var maxChars = 20;
-          var line1 = nama;
-          var line2 = '';
-          
-          if (nama.length > maxChars) {
-            var splitAt = nama.lastIndexOf(' ', maxChars);
-            if (splitAt === -1) splitAt = maxChars;
-            line1 = nama.substring(0, splitAt);
-            line2 = nama.substring(splitAt).trim();
-          }
-          
-          cmd += 'TEXT ' + x + ',5,"3",0,1,1,"' + line1 + '"\r\n';
-          
-          // Name line 2 at y=25 (if needed)
-          if (line2) {
-            cmd += 'TEXT ' + x + ',25,"3",0,1,1,"' + line2 + '"\r\n';
-          }
-        }
-
-        // Barcode & Price at y=43
-        if (showBarcode && showHarga) {
-          cmd += 'BARCODE ' + x + ',43,"128",30,0,0,1,2,"' + barcodeText + '"\r\n';
-          cmd += 'TEXT ' + (x + 150) + ',53,"3",0,1.3,1.3,"' + harga + '"\r\n';
-        } else if (showBarcode) {
-          cmd += 'BARCODE ' + x + ',43,"128",30,0,0,1,2,"' + barcodeText + '"\r\n';
-        } else if (showHarga) {
-          cmd += 'TEXT ' + x + ',43,"3",0,1.3,1.3,"' + harga + '"\r\n';
-        }
-
-        // Barcode Number at y=80
-        cmd += 'TEXT ' + x + ',80,"3",0,1,1,"' + barcodeText + '"\r\n';
-      }
-    }
-
-    // PRINT just ONCE - all copies are in one wide layout
-    cmd += 'PRINT 1\r\n';
+    console.log('Label - wMM:' + wMM + ' hMM:' + hMM + ' gapMM:' + gapMM + ' totalWMM:' + totalWMM + ' cols:' + cols + ' qty:' + qty + ' printCount:' + printCount);
 
     // Save settings
     if (typeof updateSettings === 'function') {
@@ -165,18 +112,66 @@ async function cetakLabelLangsung(barcode) {
       });
     }
 
-    // Send
-    var data = encoder.encode(cmd);
-    console.log('Total bytes: ' + data.byteLength + ' | Width: ' + totalCopiesWide + ' dots | PRINT 1');
-    
-    for (var i = 0; i < data.byteLength; i += 20) {
-      var chunk = data.slice(i, Math.min(i + 20, data.byteLength));
-      await labelCharacteristic.writeValueWithoutResponse(chunk);
-      await sleepLabel(50);
+    // Send each copy
+    for (var copy = 0; copy < printCount; copy++) {
+      var cmd = '';
+      cmd += '\x1B\x40\r\n';
+      cmd += 'AUTOSENSE\r\n';
+      cmd += 'SIZE ' + totalWMM + ' mm,' + hMM + ' mm\r\n';
+      cmd += 'GAP 0 mm,0\r\n';
+      cmd += 'CLS\r\n';
+
+      for (var col = 0; col < cols; col++) {
+        var x = (col * (w + gap)) + 5 + ox;
+        var y = 5 + oy;
+
+        if (showNama) {
+          var maxChars = 20;
+          var line1 = nama;
+          var line2 = '';
+          if (nama.length > maxChars) {
+            var splitAt = nama.lastIndexOf(' ', maxChars);
+            if (splitAt === -1) splitAt = maxChars;
+            line1 = nama.substring(0, splitAt);
+            line2 = nama.substring(splitAt).trim();
+          }
+          cmd += 'TEXT ' + x + ',' + y + ',"3",0,1,1,"' + line1 + '"\r\n';
+          if (line2) {
+            y += 16;
+            cmd += 'TEXT ' + x + ',' + y + ',"3",0,1,1,"' + line2 + '"\r\n';
+          }
+          y += 20;
+        }
+
+        if (showBarcode && showHarga) {
+          cmd += 'BARCODE ' + x + ',43,"128",30,0,0,1,2,"' + barcodeText + '"\r\n';
+          cmd += 'TEXT ' + (x + 150) + ',53,"3",0,1.3,1.3,"' + harga + '"\r\n';
+        } else if (showBarcode) {
+          cmd += 'BARCODE ' + x + ',43,"128",30,0,0,1,2,"' + barcodeText + '"\r\n';
+        } else if (showHarga) {
+          cmd += 'TEXT ' + x + ',43,"3",0,1.3,1.3,"' + harga + '"\r\n';
+        }
+
+        cmd += 'TEXT ' + x + ',80,"3",0,1,1,"' + barcodeText + '"\r\n';
+      }
+
+      cmd += 'PRINT 1\r\n';
+
+      var data = encoder.encode(cmd);
+      console.log('Copy ' + (copy+1) + ': ' + data.byteLength + ' bytes');
+      
+      for (var i = 0; i < data.byteLength; i += 20) {
+        var chunk = data.slice(i, Math.min(i + 20, data.byteLength));
+        await labelCharacteristic.writeValueWithoutResponse(chunk);
+        await sleepLabel(80);
+      }
+
+      if (copy < printCount - 1) {
+        await sleepLabel(500);
+      }
     }
 
     alert('✅ Label dicetak! (' + qty + ' pcs, ' + printCount + 'x cetak)');
-
   } catch (e) {
     console.error(e);
     alert('Gagal cetak label: ' + e.message);
