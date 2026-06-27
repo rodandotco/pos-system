@@ -131,7 +131,7 @@ async function cetakLabelLangsung(barcode) {
       
       for (var i = 0; i < data.byteLength; i += 20) {
         var chunk = data.slice(i, Math.min(i + 20, data.byteLength));
-        await labelCharacteristic.writeValueWithoutResponse(chunk);
+        await labelCharacteristic.writeValue(chunk);
         await sleepLabel(80);
       }
 
