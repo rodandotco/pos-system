@@ -170,13 +170,27 @@ async function cetakLabelLangsung(barcode) {
       });
     }
 
-    // Send data over BLE (20 bytes per chunk for BLE compatibility)
+        // Send data over BLE
     var data = encoder.encode(allData);
+    console.log('Total bytes to send:', data.byteLength);
+    
     for (var i = 0; i < data.byteLength; i += 20) {
       var chunk = data.slice(i, Math.min(i + 20, data.byteLength));
-      await labelCharacteristic.writeValue(chunk);
-      await sleepLabel(80);
+      console.log('Sending chunk ' + Math.floor(i/20 + 1) + ': ' + chunk.byteLength + ' bytes');
+      try {
+        await labelCharacteristic.writeValueWithoutResponse(chunk);
+      } catch (e1) {
+        try {
+          await labelCharacteristic.writeValue(chunk);
+        } catch (e2) {
+          console.error('Write failed at chunk ' + Math.floor(i/20 + 1) + ':', e2.message);
+          throw e2;
+        }
+      }
+      await sleepLabel(100);
     }
+    
+    console.log('All data sent successfully!');
 
     alert('✅ Label dicetak! (' + qty + ' pcs, ' + printCount + 'x cetak)');
 
