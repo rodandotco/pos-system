@@ -98,55 +98,23 @@ async function cetakLabelLangsung(barcode) {
 
     console.log('Label - w:' + w + ' h:' + h + ' gap:' + gap + ' totalW:' + totalW + ' ox:' + ox + ' oy:' + oy + ' cols:' + cols + ' qty:' + qty + ' printCount:' + printCount);
 
+    // Build ALL prints as one continuous command
+    var allCmd = '';
+    
     for (var p = 0; p < printCount; p++) {
-      // Check connection and reconnect if needed
-      if (!labelDevice || !labelDevice.gatt.connected) {
-        console.log('Reconnecting...');
-        try {
-          var server = await labelDevice.gatt.connect();
-          await sleepLabel(500);
-          
-          var services = await server.getPrimaryServices();
-          var found = false;
-          
-          for (var si = 0; si < services.length && !found; si++) {
-            try {
-              var chars = await services[si].getCharacteristics();
-              for (var cj = 0; cj < chars.length && !found; cj++) {
-                if (chars[cj].properties.write || chars[cj].properties.writeWithoutResponse) {
-                  labelCharacteristic = chars[cj];
-                  found = true;
-                  console.log('Reconnected! Using characteristic:', chars[cj].uuid);
-                }
-              }
-            } catch (e) {
-              console.log('Error getting chars for service:', services[si].uuid);
-            }
-          }
-          
-          if (!found) {
-            throw new Error('No writable characteristic found after reconnect');
-          }
-          
-          await sleepLabel(500);
-        } catch (e) {
-          console.error('Reconnect failed:', e.message);
-          updateLabelStatus(false);
-          alert('Printer terputus! Silakan klik Sambung ulang.');
-          return;
-        }
-      }
-
-      var cmd = '';
-      cmd += '\x1B\x40\r\n';
-      cmd += 'SIZE ' + totalW + ',' + h + '\r\n';
-      cmd += 'CLS\r\n';
+      // Simple reset
+      allCmd += '\x1B\x40';
+      
+      // Build label
+      var labelCmd = '';
+      labelCmd += 'SIZE ' + totalW + ',' + h + '\r\n';
+      labelCmd += 'CLS\r\n';
 
       for (var col = 0; col < cols; col++) {
         var x = (col * (w + gap)) + 5 + ox;
         var y = 5 + oy;
 
-        // ── Product Name (auto split) ──────────────
+        // Product Name (auto split)
         if (showNama) {
           var maxChars = 14;
           var line1 = nama;
@@ -159,66 +127,42 @@ async function cetakLabelLangsung(barcode) {
             line2 = nama.substring(splitAt).trim();
           }
           
-          cmd += 'TEXT ' + x + ',' + y + ',"3",0,1,1,"' + line1 + '"\r\n';
+          labelCmd += 'TEXT ' + x + ',' + y + ',"3",0,1,1,"' + line1 + '"\r\n';
           if (line2) {
             y += 20;
-            cmd += 'TEXT ' + x + ',' + y + ',"3",0,1,1,"' + line2 + '"\r\n';
+            labelCmd += 'TEXT ' + x + ',' + y + ',"3",0,1,1,"' + line2 + '"\r\n';
           }
           y += 30;
         }
 
-        // ── Barcode & Price ───────────────────────
+        // Barcode & Price
         if (showBarcode && showHarga) {
-          cmd += 'BARCODE ' + x + ',' + y + ',"128",30,0,0,1,2,"' + barcodeText + '"\r\n';
-          cmd += 'TEXT ' + (x + 150) + ',' + (y + 10) + ',"3",0,1.3,1.3,"' + harga + '"\r\n';
+          labelCmd += 'BARCODE ' + x + ',' + y + ',"128",30,0,0,1,2,"' + barcodeText + '"\r\n';
+          labelCmd += 'TEXT ' + (x + 150) + ',' + (y + 10) + ',"3",0,1.3,1.3,"' + harga + '"\r\n';
           y += 35;
         } else if (showBarcode) {
-          cmd += 'BARCODE ' + x + ',' + y + ',"128",30,0,0,1,2,"' + barcodeText + '"\r\n';
+          labelCmd += 'BARCODE ' + x + ',' + y + ',"128",30,0,0,1,2,"' + barcodeText + '"\r\n';
           y += 35;
         } else if (showHarga) {
-          cmd += 'TEXT ' + x + ',' + y + ',"3",0,1.3,1.3,"' + harga + '"\r\n';
+          labelCmd += 'TEXT ' + x + ',' + y + ',"3",0,1.3,1.3,"' + harga + '"\r\n';
           y += 22;
         }
 
-        // ── Barcode Number ───────────────────────
-        cmd += 'TEXT ' + x + ',' + y + ',"3",0,1,1,"' + barcodeText + '"\r\n';
+        // Barcode Number
+        labelCmd += 'TEXT ' + x + ',' + y + ',"3",0,1,1,"' + barcodeText + '"\r\n';
         y += 18;
 
-        // ── Date ──────────────────────────────────
+        // Date
         if (showDate) {
-          cmd += 'TEXT ' + x + ',' + y + ',"3",0,1,1,"' + tgl + '"\r\n';
+          labelCmd += 'TEXT ' + x + ',' + y + ',"3",0,1,1,"' + tgl + '"\r\n';
         }
       }
 
-      cmd += 'PRINT 1\r\n';
-      
-      // Send this print job
-      var printData = encoder.encode(cmd);
-      console.log('Print ' + (p+1) + '/' + printCount + ': ' + printData.byteLength + ' bytes');
-      
-      for (var i = 0; i < printData.byteLength; i += 20) {
-        var chunk = printData.slice(i, Math.min(i + 20, printData.byteLength));
-        try {
-          await labelCharacteristic.writeValueWithoutResponse(chunk);
-        } catch (e1) {
-          try {
-            await labelCharacteristic.writeValue(chunk);
-          } catch (e2) {
-            console.error('Write failed:', e2.message);
-            throw e2;
-          }
-        }
-        await sleepLabel(100);
-      }
-      
-      // Wait between prints
-      if (p < printCount - 1) {
-        console.log('Waiting for next print...');
-        await sleepLabel(1000);
-      }
+      labelCmd += 'PRINT 1\r\n';
+      allCmd += labelCmd;
     }
 
-    // Save settings to Supabase
+    // Save settings
     if (typeof updateSettings === 'function') {
       await updateSettings({
         label_width_mm: document.getElementById('labelWidthMM').value,
@@ -230,6 +174,16 @@ async function cetakLabelLangsung(barcode) {
         label_cols: document.getElementById('labelCols').value,
         label_qty: document.getElementById('labelQty').value
       });
+    }
+
+    // Send all at once
+    var data = encoder.encode(allCmd);
+    console.log('Total bytes: ' + data.byteLength);
+    
+    for (var i = 0; i < data.byteLength; i += 20) {
+      var chunk = data.slice(i, Math.min(i + 20, data.byteLength));
+      await labelCharacteristic.writeValueWithoutResponse(chunk);
+      await sleepLabel(50);
     }
 
     alert('✅ Label dicetak! (' + qty + ' pcs, ' + printCount + 'x cetak)');
