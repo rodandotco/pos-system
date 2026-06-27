@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BeePRT No-Skip Test FINAL</title>
+  <title>BeePRT No-Skip Test FINAL v2</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
     body { background: #f0f2f5; padding: 20px; }
@@ -19,21 +19,23 @@
     .btn-new { background: #e91e63; }
     .btn-gap { background: #9c27b0; }
     .btn-cal { background: #00bcd4; }
+    .btn-win { background: #4caf50; }
     .led { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
     .led-green { background: #4caf50; }
     .led-red { background: #f44336; }
     .log { background: #263238; color: #aed581; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 10px; max-height: 300px; overflow-y: auto; margin-top: 12px; white-space: pre-wrap; }
     hr { margin: 12px 0; border: none; border-top: 1px solid #e0e0e0; }
-    .section-title { font-size: 12px; font-weight: bold; margin-top: 8px; }
-    .section-title.orange { color: #ff9800; }
-    .section-title.pink { color: #e91e63; }
-    .section-title.purple { color: #9c27b0; }
-    .section-title.cyan { color: #00bcd4; }
+    .section-title { font-size: 11px; font-weight: bold; margin-top: 8px; }
+    .orange { color: #ff9800; }
+    .pink { color: #e91e63; }
+    .purple { color: #9c27b0; }
+    .cyan { color: #00bcd4; }
+    .green { color: #4caf50; }
   </style>
 </head>
 <body>
 <div class="container">
-  <h2>🐝 BeePRT No-Skip Test</h2>
+  <h2>🐝 BeePRT No-Skip Test FINAL</h2>
   
   <div id="statusBox" class="status disconnected">
     <span id="statusLed" class="led led-red"></span>
@@ -45,25 +47,26 @@
   
   <hr>
   
-  <p class="section-title orange">Basic Tests</p>
+  <p class="section-title orange">Basic Tests (dots)</p>
   <button class="btn btn-test" onclick="testBeePRT(1)">Test 1: PRINT only</button>
-  <button class="btn btn-test" onclick="testBeePRT(4)">Test 4: SIZE + PRINT</button>
-  <button class="btn btn-test" onclick="testBeePRT(9)">Test 9: SIZE+GAP 0+CLS+PRINT (best quality)</button>
+  <button class="btn btn-test" onclick="testBeePRT(9)">Test 9: SIZE+GAP 0+CLS+PRINT (best dots)</button>
   
   <p class="section-title pink">Multi-Label Tests</p>
   <button class="btn btn-new" onclick="testBeePRT(11)">Test 11: 2 labels side by side, one PRINT</button>
-  <button class="btn btn-new" onclick="testBeePRT(12)">Test 12: PRINT 2</button>
   <button class="btn btn-new" onclick="testBeePRT(13)">Test 13: CLS+TEXT+PRINT repeated</button>
   
-  <p class="section-title purple">GAP/Height Tests</p>
+  <p class="section-title purple">GAP Tests</p>
   <button class="btn btn-gap" onclick="testBeePRT(15)">Test 15: SIZE h+gap (136), GAP 0</button>
-  <button class="btn btn-gap" onclick="testBeePRT(16)">Test 16: SIZE h+gap (136), no GAP</button>
-  <button class="btn btn-gap" onclick="testBeePRT(17)">Test 17: GAP 16 dots (match 2mm)</button>
+  <button class="btn btn-gap" onclick="testBeePRT(17)">Test 17: GAP 16 dots</button>
   
-  <p class="section-title cyan">Calibration Tests (mm units)</p>
-  <button class="btn btn-cal" onclick="testBeePRT(18)">Test 18: AUTOSENSE + GAP mm + SIZE mm</button>
-  <button class="btn btn-cal" onclick="testBeePRT(19)">Test 19: GAP 2mm in mm units</button>
-  <button class="btn btn-cal" onclick="testBeePRT(20)">Test 20: SIZE mm + GAP mm</button>
+  <p class="section-title cyan">mm Units (NO SKIP!)</p>
+  <button class="btn btn-cal" onclick="testBeePRT(18)">Test 18: AUTOSENSE + GAP mm + SIZE mm (NO SKIP)</button>
+  <button class="btn btn-cal" onclick="testBeePRT(20)">Test 20: SIZE mm + GAP mm (NO SKIP)</button>
+  
+  <p class="section-title green">WINNER? 2 columns + mm + NO SKIP</p>
+  <button class="btn btn-win" onclick="testBeePRT(21)">🏆 Test 21: SIZE 68mm + GAP 0mm + 2 cols</button>
+  <button class="btn btn-win" onclick="testBeePRT(22)">🏆 Test 22: AUTOSENSE + SIZE 68mm + 2 cols</button>
+  <button class="btn btn-win" onclick="testBeePRT(23)">🏆 Test 23: SIZE 544dots + GAP 2mm + 2 cols</button>
   
   <hr>
   <h3>Log</h3>
@@ -148,24 +151,16 @@ async function testBeePRT(testNum) {
     desc = 'PRINT only';
     cmd = 'TEXT 10,10,"3",0,1,1,"T1"\r\nBARCODE 10,40,"128",30,1,0,1,1,"111"\r\nPRINT 1\r\n';
   }
-  else if (testNum === 4) {
-    desc = 'SIZE+PRINT';
-    cmd = 'SIZE 264,120\r\nTEXT 10,10,"3",0,1,1,"T4"\r\nBARCODE 10,40,"128",30,1,0,1,1,"444"\r\nPRINT 1\r\n';
-  }
   else if (testNum === 9) {
     desc = 'SIZE+GAP 0+CLS+PRINT';
     cmd = 'SIZE 264,120\r\nGAP 0,0\r\nCLS\r\nTEXT 10,10,"3",0,1,1,"T9"\r\nBARCODE 10,40,"128",30,1,0,1,1,"999"\r\nPRINT 1\r\n';
   }
   else if (testNum === 11) {
-    desc = '2 labels side by side';
+    desc = '2 labels side by side (544 dots)';
     cmd = 'SIZE 544,120\r\nGAP 0,0\r\nCLS\r\n';
     cmd += 'TEXT 10,10,"3",0,1,1,"L11-A"\r\nBARCODE 10,40,"128",30,1,0,1,1,"111"\r\n';
     cmd += 'TEXT 290,10,"3",0,1,1,"L11-B"\r\nBARCODE 290,40,"128",30,1,0,1,1,"222"\r\n';
     cmd += 'PRINT 1\r\n';
-  }
-  else if (testNum === 12) {
-    desc = 'PRINT 2';
-    cmd = 'SIZE 264,120\r\nGAP 0,0\r\nCLS\r\nTEXT 10,10,"3",0,1,1,"T12"\r\nBARCODE 10,40,"128",30,1,0,1,1,"1212"\r\nPRINT 2\r\n';
   }
   else if (testNum === 13) {
     desc = 'CLS+TEXT+PRINT x2';
@@ -175,10 +170,6 @@ async function testBeePRT(testNum) {
   else if (testNum === 15) {
     desc = 'SIZE h+gap (136), GAP 0';
     cmd = 'SIZE 264,136\r\nGAP 0,0\r\nCLS\r\nTEXT 10,10,"3",0,1,1,"T15"\r\nBARCODE 10,40,"128",30,1,0,1,1,"1515"\r\nPRINT 1\r\n';
-  }
-  else if (testNum === 16) {
-    desc = 'SIZE h+gap (136), no GAP';
-    cmd = 'SIZE 264,136\r\nCLS\r\nTEXT 10,10,"3",0,1,1,"T16"\r\nBARCODE 10,40,"128",30,1,0,1,1,"1616"\r\nPRINT 1\r\n';
   }
   else if (testNum === 17) {
     desc = 'GAP 16 dots';
@@ -193,24 +184,43 @@ async function testBeePRT(testNum) {
     cmd += 'TEXT 10,10,"3",0,1,1,"T18"\r\nBARCODE 10,40,"128",30,1,0,1,1,"1818"\r\n';
     cmd += 'PRINT 1\r\n';
   }
-  else if (testNum === 19) {
-    desc = 'GAP 2mm in mm';
-    cmd = 'SIZE 264,120\r\nGAP 2 mm,0\r\nCLS\r\nTEXT 10,10,"3",0,1,1,"T19"\r\nBARCODE 10,40,"128",30,1,0,1,1,"1919"\r\nPRINT 1\r\n';
-  }
   else if (testNum === 20) {
-    desc = 'SIZE mm + GAP mm';
-    cmd = 'SIZE 33 mm,15 mm\r\nGAP 2 mm,0\r\nCLS\r\nTEXT 10,10,"3",0,1,1,"T20"\r\nBARCODE 10,40,"128",30,1,0,1,1,"2020"\r\nPRINT 1\r\n';
+    desc = 'SIZE mm + GAP mm (NO SKIP)';
+    cmd = 'SIZE 33 mm,15 mm\r\nGAP 2 mm,0\r\nCLS\r\n';
+    cmd += 'TEXT 10,10,"3",0,1,1,"T20"\r\nBARCODE 10,40,"128",30,1,0,1,1,"2020"\r\n';
+    cmd += 'PRINT 1\r\n';
+  }
+  else if (testNum === 21) {
+    desc = 'SIZE 68mm + GAP 0mm + 2 cols';
+    cmd = 'SIZE 68 mm,15 mm\r\nGAP 0 mm,0\r\nCLS\r\n';
+    cmd += 'TEXT 5,10,"3",0,1,1,"T21-A"\r\nBARCODE 5,40,"128",30,1,0,1,1,"211"\r\n';
+    cmd += 'TEXT 290,10,"3",0,1,1,"T21-B"\r\nBARCODE 290,40,"128",30,1,0,1,1,"212"\r\n';
+    cmd += 'PRINT 1\r\n';
+  }
+  else if (testNum === 22) {
+    desc = 'AUTOSENSE + SIZE 68mm + 2 cols';
+    cmd = '\x1B\x40\r\nAUTOSENSE\r\n';
+    cmd += 'SIZE 68 mm,15 mm\r\nGAP 0 mm,0\r\nCLS\r\n';
+    cmd += 'TEXT 5,10,"3",0,1,1,"T22-A"\r\nBARCODE 5,40,"128",30,1,0,1,1,"221"\r\n';
+    cmd += 'TEXT 290,10,"3",0,1,1,"T22-B"\r\nBARCODE 290,40,"128",30,1,0,1,1,"222"\r\n';
+    cmd += 'PRINT 1\r\n';
+  }
+  else if (testNum === 23) {
+    desc = 'SIZE 544dots + GAP 2mm + 2 cols';
+    cmd = 'SIZE 544,120\r\nGAP 2 mm,0\r\nCLS\r\n';
+    cmd += 'TEXT 5,10,"3",0,1,1,"T23-A"\r\nBARCODE 5,40,"128",30,1,0,1,1,"231"\r\n';
+    cmd += 'TEXT 290,10,"3",0,1,1,"T23-B"\r\nBARCODE 290,40,"128",30,1,0,1,1,"232"\r\n';
+    cmd += 'PRINT 1\r\n';
   }
   
   log('--- Test ' + testNum + ': ' + desc + ' ---');
   
-  // Send 2 copies with delay to test skipping
   await sendCmd(cmd, 'Copy 1');
   log('Waiting 2s...');
   await sleep(2000);
   await sendCmd(cmd, 'Copy 2');
   
-  log('DONE Test ' + testNum + ' | Prints? Skips?');
+  log('DONE Test ' + testNum + ' | Prints? Skips? Columns?');
 }
 </script>
 </body>
