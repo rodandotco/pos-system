@@ -91,11 +91,11 @@ async function cetakLabelLangsung(barcode) {
   var showHarga = document.getElementById('showHarga').checked;
   var showBarcode = document.getElementById('showBarcode').checked;
 
-  // Convert to dots for AD240
   var w = Math.round(wMM * 8);
   var h = Math.round(hMM * 8);
   var gap = Math.round(gapMM * 8);
   var ox = Math.round(oxMM * 8);
+  var oy = Math.round(oyMM * 8);
   var totalW = cols === 2 ? (w * 2 + gap) : w;
   var totalWMM = cols === 2 ? (wMM * 2 + gapMM) : wMM;
 
