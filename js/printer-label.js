@@ -102,7 +102,7 @@ async function cetakLabelLangsung(barcode) {
     var cmd = '';
     cmd += '\x1B\x40\r\n';
     cmd += 'SIZE ' + totalW + ',' + h + '\r\n';
-    cmd += 'GAP ' + gap + ',0\r\n';
+    cmd += 'GAP 0,0\r\n';
     cmd += 'CLS\r\n';
 
     for (var col = 0; col < cols; col++) {
