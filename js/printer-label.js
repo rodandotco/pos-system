@@ -116,7 +116,7 @@ async function cetakLabelLangsung(barcode) {
 
         // Product Name (auto split)
         if (showNama) {
-          var maxChars = 14;
+          var maxChars = 20;
           var line1 = nama;
           var line2 = '';
           
