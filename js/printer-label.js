@@ -73,7 +73,7 @@ async function cetakLabelLangsung(barcode) {
   var product = typeof getProductByBarcode === 'function' ? await getProductByBarcode(barcode) : null;
   if (!product) return alert('Produk tidak ditemukan');
 
-  var nama = (product.nama || 'Produk').substring(0, 20);
+  var nama = (product.nama || 'Produk');
   var harga = 'Rp' + (product.harga_jual || 0).toLocaleString('id');
   var barcodeText = product.barcode || '';
   var tgl = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -98,14 +98,11 @@ async function cetakLabelLangsung(barcode) {
 
     console.log('Label - w:' + w + ' h:' + h + ' gap:' + gap + ' totalW:' + totalW + ' ox:' + ox + ' oy:' + oy + ' cols:' + cols + ' qty:' + qty + ' printCount:' + printCount);
 
-    // Build ALL prints as one continuous command
     var allCmd = '';
     
     for (var p = 0; p < printCount; p++) {
-      // Simple reset
       allCmd += '\x1B\x40';
       
-      // Build label
       var labelCmd = '';
       labelCmd += 'SIZE ' + totalW + ',' + h + '\r\n';
       labelCmd += 'CLS\r\n';
@@ -114,7 +111,7 @@ async function cetakLabelLangsung(barcode) {
         var x = (col * (w + gap)) + 5 + ox;
         var y = 5 + oy;
 
-        // Product Name (auto split)
+        // Product Name (split at 20 chars)
         if (showNama) {
           var maxChars = 20;
           var line1 = nama;
@@ -162,7 +159,6 @@ async function cetakLabelLangsung(barcode) {
       allCmd += labelCmd;
     }
 
-    // Save settings
     if (typeof updateSettings === 'function') {
       await updateSettings({
         label_width_mm: document.getElementById('labelWidthMM').value,
@@ -176,7 +172,6 @@ async function cetakLabelLangsung(barcode) {
       });
     }
 
-    // Send all at once
     var data = encoder.encode(allCmd);
     console.log('Total bytes: ' + data.byteLength);
     
