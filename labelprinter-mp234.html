@@ -3,96 +3,53 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MP234 Hybrid Test</title>
+  <title>MP234 PPLB Quality Test</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
-    body { background: #f0f2f5; padding: 20px; min-height: 100vh; }
+    body { background: #f0f2f5; padding: 20px; }
     .container { max-width: 500px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
     h2 { color: #00695c; margin-bottom: 16px; }
     .status { padding: 10px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; }
     .connected { background: #e8f5e9; color: #2e7d32; }
     .disconnected { background: #fff3e0; color: #e65100; }
-    .form-group { margin-bottom: 10px; }
-    label { display: block; font-size: 13px; font-weight: 600; color: #455a64; margin-bottom: 4px; }
-    input, select { width: 100%; padding: 10px; border: 1.5px solid #e0e4e8; border-radius: 8px; font-size: 14px; }
-    .btn { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; margin: 4px; color: white; }
+    .btn { padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; margin: 4px; color: white; }
     .btn-primary { background: #00897b; }
     .btn-danger { background: #e53935; }
     .btn-info { background: #2196f3; }
     .btn-success { background: #4caf50; }
-    .btn-warning { background: #ff9800; }
     .btn-block { width: 100%; display: block; margin: 8px 0; }
-    .row { display: flex; gap: 8px; }
-    .row > * { flex: 1; }
     .led { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
     .led-green { background: #4caf50; }
     .led-red { background: #f44336; }
-    hr { margin: 16px 0; border: none; border-top: 1px solid #e0e0e0; }
-    .log { background: #263238; color: #aed581; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 11px; max-height: 300px; overflow-y: auto; margin-top: 12px; white-space: pre-wrap; }
+    .log { background: #263238; color: #aed581; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 11px; max-height: 200px; overflow-y: auto; margin-top: 12px; white-space: pre-wrap; }
   </style>
 </head>
 <body>
 <div class="container">
-  <h2>🧪 MP234 Hybrid Test</h2>
+  <h2>🧪 PPLB Quality Tests</h2>
   
   <div id="statusBox" class="status disconnected">
     <span id="statusLed" class="led led-red"></span>
     <span id="statusText">Disconnected</span>
   </div>
   
-  <div class="row">
-    <button class="btn btn-primary" onclick="connect()">🔗 Connect</button>
-    <button class="btn btn-danger" onclick="disconnect()">Putus</button>
-  </div>
+  <button class="btn btn-primary" onclick="connect()">🔗 Connect</button>
+  <button class="btn btn-danger" onclick="disconnect()">Putus</button>
   
   <hr>
   
-  <div class="row">
-    <div class="form-group"><label>Width (mm)</label><input type="number" id="lblW" value="33" step="0.5"></div>
-    <div class="form-group"><label>Height (mm)</label><input type="number" id="lblH" value="15" step="0.5"></div>
-    <div class="form-group"><label>Gap (mm)</label><input type="number" id="lblGap" value="2" step="0.5"></div>
-  </div>
-  
-  <div class="row">
-    <div class="form-group"><label>Offset X (mm)</label><input type="number" id="lblOX" value="20" step="0.5"></div>
-    <div class="form-group"><label>Offset Y (mm)</label><input type="number" id="lblOY" value="0" step="0.5"></div>
-    <div class="form-group"><label>Copies</label><input type="number" id="lblCopies" value="2" min="1" max="10"></div>
-  </div>
-  
-  <div class="row">
-    <div class="form-group"><label>Product Name</label><input type="text" id="lblName" value="Indomie Goreng"></div>
-    <div class="form-group"><label>Price</label><input type="text" id="lblPrice" value="Rp 3.500"></div>
-    <div class="form-group"><label>Barcode</label><input type="text" id="lblBarcode" value="899123456789"></div>
-  </div>
+  <button class="btn btn-info btn-block" onclick="testPPLB(1)">P1: Font 1, Size 1</button>
+  <button class="btn btn-info btn-block" onclick="testPPLB(2)">P2: Font 2, Size 1.5</button>
+  <button class="btn btn-info btn-block" onclick="testPPLB(3)">P3: Font 3, Size 1</button>
+  <button class="btn btn-info btn-block" onclick="testPPLB(4)">P4: Font 4, Size 1</button>
+  <button class="btn btn-info btn-block" onclick="testPPLB(5)">P5: Font 5, Size 1</button>
+  <button class="btn btn-info btn-block" onclick="testPPLB(6)">P6: Bold text simulation</button>
+  <button class="btn btn-info btn-block" onclick="testPPLB(7)">P7: Large text, small barcode</button>
   
   <hr>
   
-  <h3>ESC/POS Tests (Best Quality)</h3>
-  
-  <button class="btn btn-info btn-block" onclick="testEscPos(1)">🧪 E1: SIZE + CLS + TEXT + PRINT 1</button>
-  <button class="btn btn-info btn-block" onclick="testEscPos(2)">🧪 E2: SIZE + TEXT + PRINT 1 (NO CLS)</button>
-  <button class="btn btn-info btn-block" onclick="testEscPos(3)">🧪 E3: TEXT + PRINT 1 (NO SIZE, NO CLS)</button>
-  <button class="btn btn-info btn-block" onclick="testEscPos(4)">🧪 E4: SIZE + CLS + TEXT + PRINT 1 + FEED 0</button>
-  <button class="btn btn-info btn-block" onclick="testEscPos(5)">🧪 E5: SIZE + CLS + TEXT + PRINT 1 + BACKFEED</button>
-  
-  <hr>
-  
-  <h3>PPLB Tests (No Skip)</h3>
-  
-  <button class="btn btn-success btn-block" onclick="testPplb(1)">🧪 P1: Standard PPLB (! LABEL TEXT BARCODE PRINT)</button>
-  <button class="btn btn-success btn-block" onclick="testPplb(2)">🧪 P2: PPLB with ESC/POS TEXT commands</button>
-  
-  <hr>
-  
-  <h3>Plain Text Test</h3>
-  
-  <button class="btn btn-warning btn-block" onclick="testPlain()">🧪 T1: Plain text with manual spacing</button>
-  
-  <hr>
-  
-  <h3>Log</h3>
-  <div class="log" id="logBox">Ready. Connect printer first.</div>
-  <button class="btn btn-sm btn-danger" onclick="document.getElementById('logBox').innerHTML=''">Clear Log</button>
+  <div class="log" id="logBox">Ready.</div>
+  <button class="btn btn-sm btn-danger" onclick="document.getElementById('logBox').innerHTML=''">Clear</button>
 </div>
 
 <script>
@@ -101,55 +58,33 @@ var characteristic = null;
 
 function log(msg) {
   var box = document.getElementById('logBox');
-  var time = new Date().toLocaleTimeString('id-ID');
-  box.innerHTML += '[' + time + '] ' + msg + '\n';
+  box.innerHTML += '[' + new Date().toLocaleTimeString('id-ID') + '] ' + msg + '\n';
   box.scrollTop = box.scrollHeight;
 }
 
-function mmToDots(mm) { return Math.round(mm * 8); }
-
 async function connect() {
   try {
-    log('Scanning...');
     device = await navigator.bluetooth.requestDevice({
       acceptAllDevices: true,
-      optionalServices: [
-        '000018f0-0000-1000-8000-00805f9b34fb',
-        '00001101-0000-1000-8000-00805f9b34fb',
-        '49535343-fe7d-4ae5-8fa9-9fafd205e455',
-        'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
-        '0000ff00-0000-1000-8000-00805f9b34fb'
-      ]
+      optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb','00001101-0000-1000-8000-00805f9b34fb','49535343-fe7d-4ae5-8fa9-9fafd205e455','e7810a71-73ae-499d-8c15-faa9aef0c3f2','0000ff00-0000-1000-8000-00805f9b34fb']
     });
-    log('Device: ' + device.name);
-    
     var server = await device.gatt.connect();
-    log('GATT connected');
-    
     var services = await server.getPrimaryServices();
-    log('Services: ' + services.length);
-    
     for (var i = 0; i < services.length; i++) {
       try {
         var chars = await services[i].getCharacteristics();
         for (var j = 0; j < chars.length; j++) {
           if (chars[j].properties.write || chars[j].properties.writeWithoutResponse) {
             characteristic = chars[j];
-            log('  Using char: ' + chars[j].uuid.substring(0,8));
           }
         }
       } catch(e) {}
     }
-    
-    if (characteristic) {
-      document.getElementById('statusBox').className = 'status connected';
-      document.getElementById('statusLed').className = 'led led-green';
-      document.getElementById('statusText').textContent = 'Connected: ' + device.name;
-      log('READY!');
-    }
-  } catch(e) {
-    log('ERROR: ' + e.message);
-  }
+    document.getElementById('statusBox').className = 'status connected';
+    document.getElementById('statusLed').className = 'led led-green';
+    document.getElementById('statusText').textContent = 'Connected: ' + device.name;
+    log('Ready!');
+  } catch(e) { log('Error: ' + e.message); }
 }
 
 function disconnect() {
@@ -158,139 +93,55 @@ function disconnect() {
   document.getElementById('statusBox').className = 'status disconnected';
   document.getElementById('statusLed').className = 'led led-red';
   document.getElementById('statusText').textContent = 'Disconnected';
-  log('Disconnected');
 }
 
 function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
 
-function padRight(text, len) {
-  if (text.length > len) return text.substring(0, len);
-  return text + ' '.repeat(len - text.length);
-}
-
-async function testEscPos(mode) {
+async function testPPLB(mode) {
   if (!device || !characteristic) { alert('Connect first!'); return; }
   
-  var w = mmToDots(parseFloat(document.getElementById('lblW').value) || 33);
-  var h = mmToDots(parseFloat(document.getElementById('lblH').value) || 15);
-  var gap = mmToDots(parseFloat(document.getElementById('lblGap').value) || 2);
-  var ox = mmToDots(parseFloat(document.getElementById('lblOX').value) || 0);
-  var oy = mmToDots(parseFloat(document.getElementById('lblOY').value) || 0);
-  var copies = parseInt(document.getElementById('lblCopies').value) || 2;
-  var name = document.getElementById('lblName').value;
-  var price = document.getElementById('lblPrice').value;
-  var barcode = document.getElementById('lblBarcode').value;
-  
-  var totalW = (w * 2) + gap;
   var encoder = new TextEncoder();
-  var modeName = '';
+  var name = 'Indomie Goreng';
+  var price = 'Rp 3.500';
+  var barcode = '899123456789';
   
-  for (var copy = 0; copy < copies; copy++) {
-    var cmd = '\x1B\x40\r\n';
-    
-    if (mode === 1) {
-      modeName = 'E1: SIZE+CLS+TEXT+PRINT';
-      cmd += 'SIZE ' + totalW + ',' + h + '\r\n';
-      cmd += 'CLS\r\n';
-    } else if (mode === 2) {
-      modeName = 'E2: SIZE+TEXT+PRINT (NO CLS)';
-      cmd += 'SIZE ' + totalW + ',' + h + '\r\n';
-    } else if (mode === 3) {
-      modeName = 'E3: TEXT+PRINT (NO SIZE/CLS)';
-    } else if (mode === 4) {
-      modeName = 'E4: SIZE+CLS+TEXT+PRINT+FEED 0';
-      cmd += 'SIZE ' + totalW + ',' + h + '\r\n';
-      cmd += 'CLS\r\n';
-    } else if (mode === 5) {
-      modeName = 'E5: SIZE+CLS+TEXT+PRINT+BACKFEED';
-      cmd += 'SIZE ' + totalW + ',' + h + '\r\n';
-      cmd += 'CLS\r\n';
-    }
-    
-    // Column 1
-    cmd += 'TEXT ' + (5 + ox) + ',5,"3",0,1,1,"' + name + '"\r\n';
-    cmd += 'TEXT ' + (5 + ox) + ',43,"3",0,1,1,"' + price + '"\r\n';
-    cmd += 'BARCODE ' + (5 + ox) + ',55,"128",35,1,0,1,1,"' + barcode + '"\r\n';
-    
-    // Column 2
-    var x2 = w + gap + 5 + ox;
-    cmd += 'TEXT ' + x2 + ',5,"3",0,1,1,"' + name + '"\r\n';
-    cmd += 'TEXT ' + x2 + ',43,"3",0,1,1,"' + price + '"\r\n';
-    cmd += 'BARCODE ' + x2 + ',55,"128",35,1,0,1,1,"' + barcode + '"\r\n';
-    
-    cmd += 'PRINT 1\r\n';
-    
-    if (mode === 4) cmd += 'FEED 0\r\n';
-    if (mode === 5) cmd += 'BACKFEED\r\n';
-    
-    log(modeName + ' | Copy ' + (copy+1) + '/' + copies + ' | ' + cmd.length + ' chars');
-    
-    var data = encoder.encode(cmd);
-    for (var i = 0; i < data.byteLength; i += 20) {
-      var chunk = data.slice(i, Math.min(i + 20, data.byteLength));
-      try { await characteristic.writeValueWithoutResponse(chunk); }
-      catch(e) { await characteristic.writeValue(chunk); }
-      await sleep(80);
-    }
-    
-    if (copy < copies - 1) await sleep(500);
-  }
-  log('DONE: ' + modeName);
-}
-
-async function testPplb(mode) {
-  if (!device || !characteristic) { alert('Connect first!'); return; }
+  var fonts = [
+    { nameFont: 1, priceFont: 2, size: 1 },    // P1
+    { nameFont: 2, priceFont: 2, size: 1.5 },  // P2
+    { nameFont: 3, priceFont: 4, size: 1 },    // P3
+    { nameFont: 4, priceFont: 4, size: 1 },    // P4
+    { nameFont: 5, priceFont: 5, size: 1 },    // P5
+    { nameFont: 1, priceFont: 1, size: 2 },    // P6 - Bold sim (double print)
+    { nameFont: 5, priceFont: 5, size: 2 },    // P7 - Large
+  ];
   
-  var w = mmToDots(parseFloat(document.getElementById('lblW').value) || 33);
-  var h = mmToDots(parseFloat(document.getElementById('lblH').value) || 15);
-  var gap = mmToDots(parseFloat(document.getElementById('lblGap').value) || 2);
-  var ox = mmToDots(parseFloat(document.getElementById('lblOX').value) || 0);
-  var oy = mmToDots(parseFloat(document.getElementById('lblOY').value) || 0);
-  var copies = parseInt(document.getElementById('lblCopies').value) || 2;
-  var name = document.getElementById('lblName').value;
-  var price = document.getElementById('lblPrice').value;
-  var barcode = document.getElementById('lblBarcode').value;
+  var f = fonts[mode - 1];
   
-  var encoder = new TextEncoder();
-  var modeName = mode === 1 ? 'P1: Standard PPLB' : 'P2: PPLB+ESC/POS';
-  
-  for (var copy = 0; copy < copies; copy++) {
+  for (var copy = 0; copy < 2; copy++) {
     var cmd = '';
+    cmd += '! 0 200 200 120 1\r\n';
+    cmd += 'LABEL\r\n';
+    cmd += 'CONTRAST 3\r\n';
+    cmd += 'SPEED 2\r\n';
     
-    if (mode === 1) {
-      cmd += '! 0 200 200 ' + h + ' 1\r\n';
-      cmd += 'LABEL\r\n';
-      cmd += 'CONTRAST 2\r\n';
-      cmd += 'SPEED 3\r\n';
-      
-      cmd += 'TEXT ' + (5+ox) + ' 5 0 3 1 ' + name + '\r\n';
-      cmd += 'TEXT ' + (5+ox) + ' 43 0 4 2 ' + price + '\r\n';
-      cmd += 'BARCODE ' + (5+ox) + ' 60 0 128 2 1 ' + barcode + '\r\n';
-      
-      var x2 = w + gap + 5 + ox;
-      cmd += 'TEXT ' + x2 + ' 5 0 3 1 ' + name + '\r\n';
-      cmd += 'TEXT ' + x2 + ' 43 0 4 2 ' + price + '\r\n';
-      cmd += 'BARCODE ' + x2 + ' 60 0 128 2 1 ' + barcode + '\r\n';
-      
-      cmd += 'END\r\nFORM\r\nPRINT\r\n';
-    } else {
-      // PPLB header + ESC/POS TEXT commands
-      cmd += '! 0 200 200 ' + h + ' 1\r\n';
-      cmd += 'LABEL\r\n';
-      
-      cmd += 'TEXT ' + (5+ox) + ',5,"3",0,1,1,"' + name + '"\r\n';
-      cmd += 'TEXT ' + (5+ox) + ',43,"3",0,1,1,"' + price + '"\r\n';
-      cmd += 'BARCODE ' + (5+ox) + ',55,"128",35,1,0,1,1,"' + barcode + '"\r\n';
-      
-      var x2 = w + gap + 5 + ox;
-      cmd += 'TEXT ' + x2 + ',5,"3",0,1,1,"' + name + '"\r\n';
-      cmd += 'TEXT ' + x2 + ',43,"3",0,1,1,"' + price + '"\r\n';
-      cmd += 'BARCODE ' + x2 + ',55,"128",35,1,0,1,1,"' + barcode + '"\r\n';
-      
+    // Left
+    cmd += 'TEXT 10 5 0 ' + f.nameFont + ' ' + f.size + ' ' + name + '\r\n';
+    cmd += 'TEXT 10 45 0 ' + f.priceFont + ' ' + f.size + ' ' + price + '\r\n';
+    cmd += 'BARCODE 10 70 0 128 2 1 ' + barcode + '\r\n';
+    
+    // Right
+    cmd += 'TEXT 285 5 0 ' + f.nameFont + ' ' + f.size + ' ' + name + '\r\n';
+    cmd += 'TEXT 285 45 0 ' + f.priceFont + ' ' + f.size + ' ' + price + '\r\n';
+    cmd += 'BARCODE 285 70 0 128 2 1 ' + barcode + '\r\n';
+    
+    cmd += 'END\r\nFORM\r\nPRINT\r\n';
+    
+    if (mode === 6) {
+      // Print twice for bold effect
       cmd += 'END\r\nFORM\r\nPRINT\r\n';
     }
     
-    log(modeName + ' | Copy ' + (copy+1) + '/' + copies);
+    log('P' + mode + ' Copy ' + (copy+1) + ': ' + cmd.length + ' chars');
     
     var data = encoder.encode(cmd);
     for (var i = 0; i < data.byteLength; i += 20) {
@@ -300,40 +151,9 @@ async function testPplb(mode) {
       await sleep(80);
     }
     
-    if (copy < copies - 1) await sleep(500);
+    if (copy < 1) await sleep(300);
   }
-  log('DONE: ' + modeName);
-}
-
-async function testPlain() {
-  if (!device || !characteristic) { alert('Connect first!'); return; }
-  
-  var copies = parseInt(document.getElementById('lblCopies').value) || 2;
-  var name = document.getElementById('lblName').value;
-  var price = document.getElementById('lblPrice').value;
-  var barcode = document.getElementById('lblBarcode').value;
-  var encoder = new TextEncoder();
-  
-  for (var copy = 0; copy < copies; copy++) {
-    var cmd = '\x1B\x40\n';
-    cmd += padRight(name, 20) + '  ' + padRight(name, 20) + '\n';
-    cmd += padRight(price, 20) + '  ' + padRight(price, 20) + '\n';
-    cmd += padRight(barcode, 20) + '  ' + padRight(barcode, 20) + '\n';
-    cmd += '\n\n\n\n';
-    
-    log('Plain Text | Copy ' + (copy+1) + '/' + copies);
-    
-    var data = encoder.encode(cmd);
-    for (var i = 0; i < data.byteLength; i += 20) {
-      var chunk = data.slice(i, Math.min(i + 20, data.byteLength));
-      try { await characteristic.writeValueWithoutResponse(chunk); }
-      catch(e) { await characteristic.writeValue(chunk); }
-      await sleep(80);
-    }
-    
-    if (copy < copies - 1) await sleep(500);
-  }
-  log('DONE: Plain Text');
+  log('Done P' + mode);
 }
 </script>
 </body>
