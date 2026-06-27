@@ -1,4 +1,4 @@
-// ===================== PRINTER LABEL (AD240 + MP234) =====================
+// ===================== PRINTER LABEL (Main) =====================
 var labelDevice = null;
 var labelCharacteristic = null;
 
@@ -64,11 +64,6 @@ function updateLabelStatus(connected) {
   }
 }
 
-function getPrinterModel() {
-  var sel = document.getElementById('labelPrinterModel');
-  return sel ? sel.value : 'AD240';
-}
-
 async function cetakLabelLangsung(barcode) {
   if (!labelDevice || !labelCharacteristic) {
     alert('Label printer tidak terhubung.');
@@ -90,16 +85,17 @@ async function cetakLabelLangsung(barcode) {
   var cols = parseInt(document.getElementById('labelCols').value) || 2;
   var printCount = parseInt(document.getElementById('labelPrintCount').value) || 1;
   var qty = parseInt(document.getElementById('labelQty').value) || 0;
-  var model = getPrinterModel();
+  var model = document.getElementById('labelPrinterModel') ? document.getElementById('labelPrinterModel').value : 'AD240';
 
   var showNama = document.getElementById('showNama').checked;
   var showHarga = document.getElementById('showHarga').checked;
   var showBarcode = document.getElementById('showBarcode').checked;
 
-  var w = mmToDotsLabel(wMM);
-  var h = mmToDotsLabel(hMM);
-  var gap = mmToDotsLabel(gapMM);
-  var ox = mmToDotsLabel(oxMM);
+  // Convert to dots for AD240
+  var w = Math.round(wMM * 8);
+  var h = Math.round(hMM * 8);
+  var gap = Math.round(gapMM * 8);
+  var ox = Math.round(oxMM * 8);
   var totalW = cols === 2 ? (w * 2 + gap) : w;
   var totalWMM = cols === 2 ? (wMM * 2 + gapMM) : wMM;
 
@@ -125,57 +121,10 @@ async function cetakLabelLangsung(barcode) {
       var cmd = '';
       
       if (model === 'MP234') {
-        cmd += '\x1B\x40\r\n';
-        cmd += 'AUTOSENSE\r\n';
-        cmd += 'SIZE ' + totalWMM + ' mm,' + hMM + ' mm\r\n';
-        cmd += 'GAP 0 mm,0\r\n';
+        cmd = getMP234Command(totalWMM, hMM, wMM, gapMM, oxMM, oyMM, cols, nama, harga, barcodeText, showNama, showHarga, showBarcode);
       } else {
-        cmd += '\x1B\x40\r\n';
-        cmd += 'SIZE ' + totalW + ',' + h + '\r\n';
-        cmd += 'GAP 0,0\r\n';
+        cmd = getAD240Command(totalW, h, gap, ox, oy, cols, nama, harga, barcodeText, showNama, showHarga, showBarcode);
       }
-      
-      cmd += 'CLS\r\n';
-
-      for (var col = 0; col < cols; col++) {
-        var x;
-        
-        if (model === 'MP234') {
-          var xMM = (col * (wMM + gapMM)) + 2 + oxMM;
-          x = mmToDotsLabel(xMM);
-        } else {
-          x = (col * (w + gap)) + 5 + ox;
-        }
-
-        if (showNama) {
-          var maxChars = 20;
-          var line1 = nama;
-          var line2 = '';
-          if (nama.length > maxChars) {
-            var splitAt = nama.lastIndexOf(' ', maxChars);
-            if (splitAt === -1) splitAt = maxChars;
-            line1 = nama.substring(0, splitAt);
-            line2 = nama.substring(splitAt).trim();
-          }
-          cmd += 'TEXT ' + x + ',5,"3",0,1,1,"' + line1 + '"\r\n';
-          if (line2) {
-            cmd += 'TEXT ' + x + ',25,"3",0,1,1,"' + line2 + '"\r\n';
-          }
-        }
-
-        if (showBarcode && showHarga) {
-          cmd += 'BARCODE ' + x + ',43,"128",30,0,0,1,2,"' + barcodeText + '"\r\n';
-          cmd += 'TEXT ' + (x + 150) + ',53,"3",0,1.3,1.3,"' + harga + '"\r\n';
-        } else if (showBarcode) {
-          cmd += 'BARCODE ' + x + ',43,"128",30,0,0,1,2,"' + barcodeText + '"\r\n';
-        } else if (showHarga) {
-          cmd += 'TEXT ' + x + ',43,"3",0,1.3,1.3,"' + harga + '"\r\n';
-        }
-
-        cmd += 'TEXT ' + x + ',80,"3",0,1,1,"' + barcodeText + '"\r\n';
-      }
-
-      cmd += 'PRINT 1\r\n';
 
       var data = encoder.encode(cmd);
       console.log('Copy ' + (copy+1) + '/' + printCount + ': ' + data.byteLength + ' bytes');
@@ -198,5 +147,4 @@ async function cetakLabelLangsung(barcode) {
   }
 }
 
-function mmToDotsLabel(mm) { return Math.round(mm * 8); }
 function sleepLabel(ms) { return new Promise(function(resolve) { setTimeout(resolve, ms); }); }
