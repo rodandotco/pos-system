@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BeePRT No-Skip Test v3</title>
+  <title>BeePRT No-Skip Test FINAL</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
     body { background: #f0f2f5; padding: 20px; }
@@ -12,22 +12,28 @@
     .status { padding: 10px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; }
     .connected { background: #e8f5e9; color: #2e7d32; }
     .disconnected { background: #fff3e0; color: #e65100; }
-    .btn { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; margin: 6px 0; color: white; display: block; width: 100%; }
+    .btn { padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; margin: 4px 0; color: white; display: block; width: 100%; }
     .btn-primary { background: #00897b; }
     .btn-danger { background: #e53935; }
     .btn-test { background: #ff9800; }
     .btn-new { background: #e91e63; }
     .btn-gap { background: #9c27b0; }
+    .btn-cal { background: #00bcd4; }
     .led { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
     .led-green { background: #4caf50; }
     .led-red { background: #f44336; }
-    .log { background: #263238; color: #aed581; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 11px; max-height: 400px; overflow-y: auto; margin-top: 12px; white-space: pre-wrap; }
-    hr { margin: 16px 0; border: none; border-top: 1px solid #e0e0e0; }
+    .log { background: #263238; color: #aed581; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 10px; max-height: 300px; overflow-y: auto; margin-top: 12px; white-space: pre-wrap; }
+    hr { margin: 12px 0; border: none; border-top: 1px solid #e0e0e0; }
+    .section-title { font-size: 12px; font-weight: bold; margin-top: 8px; }
+    .section-title.orange { color: #ff9800; }
+    .section-title.pink { color: #e91e63; }
+    .section-title.purple { color: #9c27b0; }
+    .section-title.cyan { color: #00bcd4; }
   </style>
 </head>
 <body>
 <div class="container">
-  <h2>🐝 BeePRT No-Skip Test v3</h2>
+  <h2>🐝 BeePRT No-Skip Test</h2>
   
   <div id="statusBox" class="status disconnected">
     <span id="statusLed" class="led led-red"></span>
@@ -38,30 +44,30 @@
   <button class="btn btn-danger" onclick="disconnect()">Putus</button>
   
   <hr>
-  <p style="font-size:12px;color:#666;">Original tests</p>
   
-  <button class="btn btn-test" onclick="testBeePRT(1)">🐝 Test 1: Only PRINT</button>
-  <button class="btn btn-test" onclick="testBeePRT(4)">🐝 Test 4: SIZE + PRINT</button>
-  <button class="btn btn-test" onclick="testBeePRT(9)">🐝 Test 9: SIZE+GAP 0+CLS+PRINT (best so far)</button>
+  <p class="section-title orange">Basic Tests</p>
+  <button class="btn btn-test" onclick="testBeePRT(1)">Test 1: PRINT only</button>
+  <button class="btn btn-test" onclick="testBeePRT(4)">Test 4: SIZE + PRINT</button>
+  <button class="btn btn-test" onclick="testBeePRT(9)">Test 9: SIZE+GAP 0+CLS+PRINT (best quality)</button>
   
-  <hr>
-  <p style="font-size:12px;color:#e91e63;font-weight:bold;">Multi-label tests</p>
+  <p class="section-title pink">Multi-Label Tests</p>
+  <button class="btn btn-new" onclick="testBeePRT(11)">Test 11: 2 labels side by side, one PRINT</button>
+  <button class="btn btn-new" onclick="testBeePRT(12)">Test 12: PRINT 2</button>
+  <button class="btn btn-new" onclick="testBeePRT(13)">Test 13: CLS+TEXT+PRINT repeated</button>
   
-  <button class="btn btn-new" onclick="testBeePRT(11)">🆕 Test 11: 2 labels side by side, one PRINT</button>
-  <button class="btn btn-new" onclick="testBeePRT(12)">🆕 Test 12: PRINT 2</button>
-  <button class="btn btn-new" onclick="testBeePRT(13)">🆕 Test 13: CLS+TEXT+PRINT repeated</button>
-  <button class="btn btn-new" onclick="testBeePRT(14)">🆕 Test 14: ESC @ between copies</button>
+  <p class="section-title purple">GAP/Height Tests</p>
+  <button class="btn btn-gap" onclick="testBeePRT(15)">Test 15: SIZE h+gap (136), GAP 0</button>
+  <button class="btn btn-gap" onclick="testBeePRT(16)">Test 16: SIZE h+gap (136), no GAP</button>
+  <button class="btn btn-gap" onclick="testBeePRT(17)">Test 17: GAP 16 dots (match 2mm)</button>
   
-  <hr>
-  <p style="font-size:12px;color:#9c27b0;font-weight:bold;">GAP/Height tests - FIX THE SKIP</p>
-  
-  <button class="btn btn-gap" onclick="testBeePRT(15)">🟣 Test 15: SIZE h+gap (136), GAP 0</button>
-  <button class="btn btn-gap" onclick="testBeePRT(16)">🟣 Test 16: SIZE h+gap (136), no GAP cmd</button>
-  <button class="btn btn-gap" onclick="testBeePRT(17)">🟣 Test 17: GAP 16 (match physical 2mm)</button>
+  <p class="section-title cyan">Calibration Tests (mm units)</p>
+  <button class="btn btn-cal" onclick="testBeePRT(18)">Test 18: AUTOSENSE + GAP mm + SIZE mm</button>
+  <button class="btn btn-cal" onclick="testBeePRT(19)">Test 19: GAP 2mm in mm units</button>
+  <button class="btn btn-cal" onclick="testBeePRT(20)">Test 20: SIZE mm + GAP mm</button>
   
   <hr>
   <h3>Log</h3>
-  <div class="log" id="logBox">Ready. Connect printer first, then test.</div>
+  <div class="log" id="logBox">Ready. Connect printer first.</div>
 </div>
 
 <script>
@@ -123,7 +129,7 @@ function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
 async function sendCmd(cmd, label) {
   var encoder = new TextEncoder();
   var data = encoder.encode(cmd);
-  log(label + ': ' + data.byteLength + ' bytes | ' + cmd.replace(/\r\n/g,'\\n').substring(0,80));
+  log(label + ': ' + data.byteLength + ' bytes');
   for (var i = 0; i < data.byteLength; i += 20) {
     var chunk = data.slice(i, Math.min(i + 20, data.byteLength));
     try { await characteristic.writeValueWithoutResponse(chunk); }
@@ -166,39 +172,45 @@ async function testBeePRT(testNum) {
     cmd = 'SIZE 264,120\r\nGAP 0,0\r\nCLS\r\nTEXT 10,10,"3",0,1,1,"T13-A"\r\nBARCODE 10,40,"128",30,1,0,1,1,"131"\r\nPRINT 1\r\n';
     cmd += 'CLS\r\nTEXT 10,10,"3",0,1,1,"T13-B"\r\nBARCODE 10,40,"128",30,1,0,1,1,"132"\r\nPRINT 1\r\n';
   }
-  else if (testNum === 14) {
-    desc = 'ESC @ between copies';
-    cmd = '\x1B\x40SIZE 264,120\r\nGAP 0,0\r\nCLS\r\nTEXT 10,10,"3",0,1,1,"T14-A"\r\nBARCODE 10,40,"128",30,1,0,1,1,"141"\r\nPRINT 1\r\n';
-    cmd += '\x1B\x40SIZE 264,120\r\nGAP 0,0\r\nCLS\r\nTEXT 10,10,"3",0,1,1,"T14-B"\r\nBARCODE 10,40,"128",30,1,0,1,1,"142"\r\nPRINT 1\r\n';
-  }
   else if (testNum === 15) {
     desc = 'SIZE h+gap (136), GAP 0';
-    cmd = 'SIZE 264,136\r\nGAP 0,0\r\nCLS\r\n';
-    cmd += 'TEXT 10,10,"3",0,1,1,"T15-A"\r\nBARCODE 10,40,"128",30,1,0,1,1,"1515"\r\n';
-    cmd += 'PRINT 1\r\n';
+    cmd = 'SIZE 264,136\r\nGAP 0,0\r\nCLS\r\nTEXT 10,10,"3",0,1,1,"T15"\r\nBARCODE 10,40,"128",30,1,0,1,1,"1515"\r\nPRINT 1\r\n';
   }
   else if (testNum === 16) {
     desc = 'SIZE h+gap (136), no GAP';
-    cmd = 'SIZE 264,136\r\nCLS\r\n';
-    cmd += 'TEXT 10,10,"3",0,1,1,"T16-A"\r\nBARCODE 10,40,"128",30,1,0,1,1,"1616"\r\n';
-    cmd += 'PRINT 1\r\n';
+    cmd = 'SIZE 264,136\r\nCLS\r\nTEXT 10,10,"3",0,1,1,"T16"\r\nBARCODE 10,40,"128",30,1,0,1,1,"1616"\r\nPRINT 1\r\n';
   }
   else if (testNum === 17) {
-    desc = 'GAP 16 (match 2mm)';
-    cmd = 'SIZE 264,120\r\nGAP 16,0\r\nCLS\r\n';
-    cmd += 'TEXT 10,10,"3",0,1,1,"T17-A"\r\nBARCODE 10,40,"128",30,1,0,1,1,"1717"\r\n';
+    desc = 'GAP 16 dots';
+    cmd = 'SIZE 264,120\r\nGAP 16,0\r\nCLS\r\nTEXT 10,10,"3",0,1,1,"T17"\r\nBARCODE 10,40,"128",30,1,0,1,1,"1717"\r\nPRINT 1\r\n';
+  }
+  else if (testNum === 18) {
+    desc = 'AUTOSENSE + GAP mm + SIZE mm';
+    cmd = '\x1B\x40\r\nAUTOSENSE\r\n';
+    cmd += 'GAP 2 mm,0\r\n';
+    cmd += 'SIZE 33 mm,15 mm\r\n';
+    cmd += 'CLS\r\n';
+    cmd += 'TEXT 10,10,"3",0,1,1,"T18"\r\nBARCODE 10,40,"128",30,1,0,1,1,"1818"\r\n';
     cmd += 'PRINT 1\r\n';
+  }
+  else if (testNum === 19) {
+    desc = 'GAP 2mm in mm';
+    cmd = 'SIZE 264,120\r\nGAP 2 mm,0\r\nCLS\r\nTEXT 10,10,"3",0,1,1,"T19"\r\nBARCODE 10,40,"128",30,1,0,1,1,"1919"\r\nPRINT 1\r\n';
+  }
+  else if (testNum === 20) {
+    desc = 'SIZE mm + GAP mm';
+    cmd = 'SIZE 33 mm,15 mm\r\nGAP 2 mm,0\r\nCLS\r\nTEXT 10,10,"3",0,1,1,"T20"\r\nBARCODE 10,40,"128",30,1,0,1,1,"2020"\r\nPRINT 1\r\n';
   }
   
   log('--- Test ' + testNum + ': ' + desc + ' ---');
   
-  // Send 2 copies to test skipping
+  // Send 2 copies with delay to test skipping
   await sendCmd(cmd, 'Copy 1');
   log('Waiting 2s...');
   await sleep(2000);
   await sendCmd(cmd, 'Copy 2');
   
-  log('DONE Test ' + testNum + ' - Check: prints? skips? quality?');
+  log('DONE Test ' + testNum + ' | Prints? Skips?');
 }
 </script>
 </body>
