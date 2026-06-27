@@ -94,14 +94,38 @@ async function cetakLabelLangsung(barcode) {
 
   try {
     var encoder = new TextEncoder();
-    var allData = '';
     var totalW = cols === 2 ? (w * 2 + gap) : w;
 
     console.log('Label - w:' + w + ' h:' + h + ' gap:' + gap + ' totalW:' + totalW + ' ox:' + ox + ' oy:' + oy + ' cols:' + cols + ' qty:' + qty + ' printCount:' + printCount);
 
     for (var p = 0; p < printCount; p++) {
+      // Check connection before each print
+      if (!labelDevice || !labelDevice.gatt.connected) {
+        console.log('Reconnecting...');
+        try {
+          var server = await labelDevice.gatt.connect();
+          var services = await server.getPrimaryServices();
+          for (var i = 0; i < services.length; i++) {
+            try {
+              var chars = await services[i].getCharacteristics();
+              for (var j = 0; j < chars.length; j++) {
+                if (chars[j].properties.write || chars[j].properties.writeWithoutResponse) {
+                  labelCharacteristic = chars[j];
+                  break;
+                }
+              }
+            } catch (e) {}
+          }
+          await sleepLabel(500);
+        } catch (e) {
+          console.error('Reconnect failed:', e.message);
+          alert('Printer terputus! Silakan sambungkan ulang.');
+          return;
+        }
+      }
+
       var cmd = '';
-      cmd += '\x1B\x40\r\n';  // ESC @ - Reset printer
+      cmd += '\x1B\x40\r\n';
       cmd += 'SIZE ' + totalW + ',' + h + '\r\n';
       cmd += 'CLS\r\n';
 
@@ -154,7 +178,31 @@ async function cetakLabelLangsung(barcode) {
       }
 
       cmd += 'PRINT 1\r\n';
-      allData += cmd;
+      
+      // Send this print job
+      var printData = encoder.encode(cmd);
+      console.log('Print ' + (p+1) + '/' + printCount + ': ' + printData.byteLength + ' bytes');
+      
+      for (var i = 0; i < printData.byteLength; i += 20) {
+        var chunk = printData.slice(i, Math.min(i + 20, printData.byteLength));
+        try {
+          await labelCharacteristic.writeValueWithoutResponse(chunk);
+        } catch (e1) {
+          try {
+            await labelCharacteristic.writeValue(chunk);
+          } catch (e2) {
+            console.error('Write failed:', e2.message);
+            throw e2;
+          }
+        }
+        await sleepLabel(100);
+      }
+      
+      // Wait between prints
+      if (p < printCount - 1) {
+        console.log('Waiting for next print...');
+        await sleepLabel(1000);
+      }
     }
 
     // Save settings to Supabase
@@ -170,28 +218,6 @@ async function cetakLabelLangsung(barcode) {
         label_qty: document.getElementById('labelQty').value
       });
     }
-
-    // Send data over BLE
-    var data = encoder.encode(allData);
-    console.log('Total bytes to send:', data.byteLength);
-    
-    for (var i = 0; i < data.byteLength; i += 20) {
-      var chunk = data.slice(i, Math.min(i + 20, data.byteLength));
-      console.log('Sending chunk ' + Math.floor(i/20 + 1) + ': ' + chunk.byteLength + ' bytes');
-      try {
-        await labelCharacteristic.writeValueWithoutResponse(chunk);
-      } catch (e1) {
-        try {
-          await labelCharacteristic.writeValue(chunk);
-        } catch (e2) {
-          console.error('Write failed at chunk ' + Math.floor(i/20 + 1) + ':', e2.message);
-          throw e2;
-        }
-      }
-      await sleepLabel(100);
-    }
-    
-    console.log('All data sent successfully!');
 
     alert('✅ Label dicetak! (' + qty + ' pcs, ' + printCount + 'x cetak)');
 
