@@ -2,12 +2,12 @@
 function getAD240Command(totalW, h, gap, ox, oy, cols, nama, harga, barcodeText, showNama, showHarga, showBarcode) {
   var cmd = '';
   cmd += 'SIZE ' + totalW + ',' + h + '\r\n';
-  cmd += 'GAP 0,0\r\n';
+  cmd += 'GAP 16,0\r\n';
   cmd += 'CLS\r\n';
 
   for (var col = 0; col < cols; col++) {
     var w = totalW / cols;
-    var x = (col * (w + gap)) + 5 + ox;
+    var x = (col * (w + 16)) + 5 + ox;
 
     // Product Name (split at 20 chars)
     if (showNama) {
@@ -29,7 +29,7 @@ function getAD240Command(totalW, h, gap, ox, oy, cols, nama, harga, barcodeText,
     // Barcode & Price
     if (showBarcode && showHarga) {
       cmd += 'BARCODE ' + x + ',50,"128",32,0,0,1,2,"' + barcodeText + '"\r\n';
-      cmd += 'TEXT ' + (x + 120) + ',60,"3",0,1.3,1.3,"' + harga + '"\r\n';
+      cmd += 'TEXT ' + (x + 125) + ',60,"3",0,1.3,1.3,"' + harga + '"\r\n';
     } else if (showBarcode) {
       cmd += 'BARCODE ' + x + ',50,"128",32,0,0,1,2,"' + barcodeText + '"\r\n';
     } else if (showHarga) {
