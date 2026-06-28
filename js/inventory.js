@@ -15,11 +15,96 @@ async function cariAtauTambahProduk() {
   if (product) { isiFormProduk(product, false, canEdit, isAdmin); if (product.foto) { document.getElementById('fotoPreview').src = product.foto; document.getElementById('fotoPreviewContainer').style.display = 'block'; } else document.getElementById('fotoPreviewContainer').style.display = 'none'; }
   else { if (!canEdit) { alert('Produk tidak ditemukan'); tutupFormProduk(); return; } isiFormProduk({ barcode: barcode, nama: '', kategori: '', keterangan: '', harga_beli: 0, harga_jual: 0, min_stok: 10, diskon_persen: 0, diskon_min_qty: 0, stok: 0, foto: null }, true, true, isAdmin); document.getElementById('fotoPreviewContainer').style.display = 'none'; }
   if (canEdit) document.getElementById('prodNama').focus();
-  else { ['prodNama','prodKategori','prodKeterangan','prodHargaBeli','prodHargaJual','prodDiskonPersen','prodDiskonMinQty','prodMinStok','perubahanStok'].forEach(function(id){document.getElementById(id).readOnly=true;}); document.getElementById('btnSimpanProduk').style.display='none'; document.getElementById('btnHapusProduk').style.display='none'; document.getElementById('btnHapusFoto').style.display='none'; document.getElementById('prodFoto').disabled=true; }
+  else { ['prodNama','prodKategori','prodKeterangan','prodHargaBeli','prodHargaJual','prodDiskonPersen','prodDiskonMinQty','prodMinStok','perubahanStok'].forEach(function(id){document.getElementById(id).readOnly=true;}); document.getElementById('btnSimpanProduk').style.display='none'; document.getElementById('btnHapusProduk').style.display='none'; document.getElementById('btnHapusFoto').style.display='none'; }
 }
 
-function previewFoto() { if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'gudang')) return; var f = document.getElementById('prodFoto').files[0]; if (f) { var reader = new FileReader(); reader.onload = function(e) { document.getElementById('fotoPreview').src = e.target.result; document.getElementById('fotoPreviewContainer').style.display = 'block'; }; reader.readAsDataURL(f); fotoDihapus = false; } }
-function hapusFoto() { if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'gudang')) return; document.getElementById('fotoPreview').src = ''; document.getElementById('fotoPreviewContainer').style.display = 'none'; document.getElementById('prodFoto').value = ''; fotoDihapus = true; }
+// ===================== PHOTO UPLOAD WITH COMPRESSION =====================
+
+function ambilFotoDariKamera() {
+  document.getElementById('prodFotoCamera').click();
+}
+
+async function previewFotoDariKamera() {
+  var file = document.getElementById('prodFotoCamera').files[0];
+  if (!file) return;
+  await compressAndPreview(file);
+}
+
+async function previewFotoDariFile() {
+  var file = document.getElementById('prodFotoFile').files[0];
+  if (!file) return;
+  await compressAndPreview(file);
+}
+
+async function compressAndPreview(file) {
+  if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'gudang')) return;
+  
+  try {
+    var img = new Image();
+    var url = URL.createObjectURL(file);
+    
+    img.onload = async function() {
+      URL.revokeObjectURL(url);
+      
+      var maxWidth = 400;
+      var maxHeight = 400;
+      var width = img.width;
+      var height = img.height;
+      
+      if (width > maxWidth || height > maxHeight) {
+        if (width > height) {
+          height = Math.round((height / width) * maxWidth);
+          width = maxWidth;
+        } else {
+          width = Math.round((width / height) * maxHeight);
+          height = maxHeight;
+        }
+      }
+      
+      var canvas = document.getElementById('compressCanvas');
+      canvas.width = width;
+      canvas.height = height;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      var quality = 0.7;
+      var compressed = canvas.toDataURL('image/jpeg', quality);
+      
+      while (compressed.length > 2000000 && quality > 0.1) {
+        quality -= 0.1;
+        compressed = canvas.toDataURL('image/jpeg', quality);
+      }
+      
+      var sizeMB = (compressed.length / 1024 / 1024).toFixed(2);
+      console.log('Compressed photo: ' + sizeMB + ' MB');
+      
+      if (compressed.length > 2000000) {
+        alert('⚠️ Foto masih terlalu besar (' + sizeMB + ' MB). Coba resolusi lebih rendah.');
+        return;
+      }
+      
+      document.getElementById('fotoPreview').src = compressed;
+      document.getElementById('fotoPreviewContainer').style.display = 'block';
+      fotoDihapus = false;
+      window.tempCompressedPhoto = compressed;
+    };
+    
+    img.src = url;
+  } catch (e) {
+    console.error('Compress error:', e);
+    alert('Gagal memproses foto: ' + e.message);
+  }
+}
+
+function hapusFoto() {
+  if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'gudang')) return;
+  document.getElementById('fotoPreview').src = '';
+  document.getElementById('fotoPreviewContainer').style.display = 'none';
+  document.getElementById('prodFotoFile').value = '';
+  document.getElementById('prodFotoCamera').value = '';
+  window.tempCompressedPhoto = null;
+  fotoDihapus = true;
+}
 
 function isiFormProduk(produk, isNew, canEdit, isAdmin) {
   document.getElementById('formTitle').textContent = canEdit ? (isNew ? 'Tambah Baru' : 'Update') : 'Detail';
@@ -29,15 +114,20 @@ function isiFormProduk(produk, isNew, canEdit, isAdmin) {
   document.getElementById('prodMinStok').value = produk.min_stok || 10; document.getElementById('stokSaatIni').textContent = produk.stok || 0; document.getElementById('perubahanStok').value = 0; hitungStokAkhir();
   if (canEdit) {
     document.getElementById('btnHapusProduk').style.display = (isNew || !isAdmin) ? 'none' : 'inline-block'; document.getElementById('btnSimpanProduk').style.display = 'inline-block'; document.getElementById('btnHapusFoto').style.display = 'block';
-    ['prodNama','prodKategori','prodKeterangan','prodHargaBeli','prodHargaJual','prodDiskonPersen','prodDiskonMinQty','prodMinStok','perubahanStok','prodFoto'].forEach(function(id){document.getElementById(id).readOnly=false;document.getElementById(id).disabled=false;});
-    document.getElementById('btnSimpanProduk').onclick = async function() { if (!currentBarcode) return; var foto = produk.foto || null; if (fotoDihapus) foto = null; else { var fi = document.getElementById('prodFoto'); if (fi.files[0]) foto = await toBase64(fi.files[0]); }
+    ['prodNama','prodKategori','prodKeterangan','prodHargaBeli','prodHargaJual','prodDiskonPersen','prodDiskonMinQty','prodMinStok','perubahanStok'].forEach(function(id){document.getElementById(id).readOnly=false;document.getElementById(id).disabled=false;});
+    document.getElementById('btnSimpanProduk').onclick = async function() {
+      if (!currentBarcode) return;
+      var foto = produk.foto || null;
+      if (fotoDihapus) foto = null;
+      else if (window.tempCompressedPhoto) { foto = window.tempCompressedPhoto; window.tempCompressedPhoto = null; }
       var data = { barcode: currentBarcode, nama: document.getElementById('prodNama').value.trim(), kategori: document.getElementById('prodKategori').value.trim(), keterangan: document.getElementById('prodKeterangan').value.trim(), harga_beli: parseFloat(document.getElementById('prodHargaBeli').value) || 0, harga_jual: parseFloat(document.getElementById('prodHargaJual').value) || 0, diskon_persen: parseFloat(document.getElementById('prodDiskonPersen').value) || 0, diskon_min_qty: parseInt(document.getElementById('prodDiskonMinQty').value) || 0, min_stok: parseInt(document.getElementById('prodMinStok').value) || 10, stok: (parseInt(document.getElementById('stokSaatIni').textContent) || 0) + (parseInt(document.getElementById('perubahanStok').value) || 0), foto: foto };
-      try { await upsertProduct(data); alert('Disimpan'); tutupFormProduk(); refreshProductList(); } catch (e) { alert('Gagal: ' + e.message); } };
+      try { await upsertProduct(data); alert('Disimpan'); tutupFormProduk(); refreshProductList(); } catch (e) { alert('Gagal: ' + e.message); }
+    };
     document.getElementById('btnHapusProduk').onclick = async function() { if (confirm('Hapus?')) { await deleteProduct(currentBarcode); alert('Dihapus'); tutupFormProduk(); refreshProductList(); } };
   }
 }
 
-function tutupFormProduk() { document.getElementById('productForm').style.display = 'none'; document.getElementById('prodBarcode').value = ''; document.getElementById('prodBarcode').focus(); currentBarcode = null; document.getElementById('fotoPreviewContainer').style.display = 'none'; document.getElementById('prodFoto').value = ''; fotoDihapus = false; ['prodNama','prodKategori','prodKeterangan','prodHargaBeli','prodHargaJual','prodDiskonPersen','prodDiskonMinQty','prodMinStok','perubahanStok','prodFoto'].forEach(function(id){document.getElementById(id).readOnly=false;document.getElementById(id).disabled=false;}); document.getElementById('btnSimpanProduk').style.display='inline-block'; document.getElementById('btnHapusProduk').style.display='none'; document.getElementById('btnHapusFoto').style.display='block'; }
+function tutupFormProduk() { document.getElementById('productForm').style.display = 'none'; document.getElementById('prodBarcode').value = ''; document.getElementById('prodBarcode').focus(); currentBarcode = null; document.getElementById('fotoPreviewContainer').style.display = 'none'; document.getElementById('prodFotoFile').value = ''; document.getElementById('prodFotoCamera').value = ''; window.tempCompressedPhoto = null; fotoDihapus = false; ['prodNama','prodKategori','prodKeterangan','prodHargaBeli','prodHargaJual','prodDiskonPersen','prodDiskonMinQty','prodMinStok','perubahanStok'].forEach(function(id){document.getElementById(id).readOnly=false;document.getElementById(id).disabled=false;}); document.getElementById('btnSimpanProduk').style.display='inline-block'; document.getElementById('btnHapusProduk').style.display='none'; document.getElementById('btnHapusFoto').style.display='block'; }
 function hitungStokAkhir() { var a = parseInt(document.getElementById('stokSaatIni').textContent) || 0, b = parseInt(document.getElementById('perubahanStok').value) || 0; document.getElementById('stokAkhir').textContent = a + b; }
 
 function renderProductTable(products) {
@@ -76,19 +166,13 @@ function updateLabelDialogStatus() {
 async function bukaLabelDialog(barcode) {
   currentLabelBarcode = barcode;
   var s = await getSettings();
-  document.getElementById('labelWidthMM').value = s.label_width_mm || '33';
-  document.getElementById('labelHeightMM').value = s.label_height_mm || '15';
-  document.getElementById('labelGapMM').value = s.label_gap_mm || '2';
-  document.getElementById('labelDirection').value = s.label_direction || '0';
-  document.getElementById('labelOffsetX').value = s.label_offset_x || '20';
-  document.getElementById('labelOffsetY').value = s.label_offset_y || '0';
-  document.getElementById('labelCols').value = s.label_cols || '2';
-  document.getElementById('labelQty').value = s.label_qty || '10';
+  document.getElementById('labelWidthMM').value = s.label_width_mm || '33'; document.getElementById('labelHeightMM').value = s.label_height_mm || '15';
+  document.getElementById('labelGapMM').value = s.label_gap_mm || '2'; document.getElementById('labelDirection').value = s.label_direction || '0';
+  document.getElementById('labelOffsetX').value = s.label_offset_x || '20'; document.getElementById('labelOffsetY').value = s.label_offset_y || '0';
+  document.getElementById('labelCols').value = s.label_cols || '2'; document.getElementById('labelQty').value = s.label_qty || '10';
   document.getElementById('labelPrinterModel').value = s.label_printer_model || 'AD240';
-  document.getElementById('showNama').checked = true;
-  document.getElementById('showHarga').checked = true;
-  document.getElementById('showBarcode').checked = true;
-  document.getElementById('showDate').checked = false;
+  document.getElementById('showNama').checked = true; document.getElementById('showHarga').checked = true;
+  document.getElementById('showBarcode').checked = true; document.getElementById('showDate').checked = false;
   document.getElementById('presetName').value = '';
   hitungJumlahCetak(); refreshPresetList(); updateLabelDialogStatus();
   document.getElementById('labelPrintModal').style.display = 'flex';
