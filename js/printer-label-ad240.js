@@ -9,7 +9,7 @@ function getAD240Command(totalW, h, gap, ox, oy, cols, nama, harga, barcodeText,
     var w = totalW / cols;
     var x = (col * (w + gap)) + 5 + ox;
 
-    // Product Name (split at 20 chars) - same as MP234
+    // Product Name (split at 20 chars)
     if (showNama) {
       var maxChars = 20;
       var line1 = nama;
@@ -22,22 +22,22 @@ function getAD240Command(totalW, h, gap, ox, oy, cols, nama, harga, barcodeText,
       }
       cmd += 'TEXT ' + x + ',5,"3",0,1,1,"' + line1 + '"\r\n';
       if (line2) {
-        cmd += 'TEXT ' + x + ',25,"3",0,1,1,"' + line2 + '"\r\n';
+        cmd += 'TEXT ' + x + ',27,"3",0,1,1,"' + line2 + '"\r\n';
       }
     }
 
-    // Barcode & Price - same positions as MP234
+    // Barcode & Price
     if (showBarcode && showHarga) {
-      cmd += 'BARCODE ' + x + ',43,"128",30,0,0,1,2,"' + barcodeText + '"\r\n';
-      cmd += 'TEXT ' + (x + 150) + ',53,"3",0,1.3,1.3,"' + harga + '"\r\n';
+      cmd += 'BARCODE ' + x + ',47,"128",32,0,0,1,2,"' + barcodeText + '"\r\n';
+      cmd += 'TEXT ' + (x + 130) + ',57,"3",0,1.3,1.3,"' + harga + '"\r\n';
     } else if (showBarcode) {
-      cmd += 'BARCODE ' + x + ',43,"128",30,0,0,1,2,"' + barcodeText + '"\r\n';
+      cmd += 'BARCODE ' + x + ',47,"128",32,0,0,1,2,"' + barcodeText + '"\r\n';
     } else if (showHarga) {
-      cmd += 'TEXT ' + x + ',43,"3",0,1.3,1.3,"' + harga + '"\r\n';
+      cmd += 'TEXT ' + x + ',47,"3",0,1.3,1.3,"' + harga + '"\r\n';
     }
 
-    // Barcode Number - same position as MP234
-    cmd += 'TEXT ' + x + ',80,"3",0,1,1,"' + barcodeText + '"\r\n';
+    // Barcode Number
+    cmd += 'TEXT ' + x + ',85,"3",0,1,1,"' + barcodeText + '"\r\n';
   }
 
   cmd += 'PRINT 1\r\n';
