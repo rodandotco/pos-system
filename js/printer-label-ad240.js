@@ -28,16 +28,16 @@ function getAD240Command(totalW, h, gap, ox, oy, cols, nama, harga, barcodeText,
 
     // Barcode & Price
     if (showBarcode && showHarga) {
-      cmd += 'BARCODE ' + x + ',47,"128",32,0,0,1,2,"' + barcodeText + '"\r\n';
-      cmd += 'TEXT ' + (x + 130) + ',57,"3",0,1.3,1.3,"' + harga + '"\r\n';
+      cmd += 'BARCODE ' + x + ',50,"128",32,0,0,1,2,"' + barcodeText + '"\r\n';
+      cmd += 'TEXT ' + (x + 120) + ',60,"3",0,1.3,1.3,"' + harga + '"\r\n';
     } else if (showBarcode) {
-      cmd += 'BARCODE ' + x + ',47,"128",32,0,0,1,2,"' + barcodeText + '"\r\n';
+      cmd += 'BARCODE ' + x + ',50,"128",32,0,0,1,2,"' + barcodeText + '"\r\n';
     } else if (showHarga) {
-      cmd += 'TEXT ' + x + ',47,"3",0,1.3,1.3,"' + harga + '"\r\n';
+      cmd += 'TEXT ' + x + ',50,"3",0,1.3,1.3,"' + harga + '"\r\n';
     }
 
     // Barcode Number
-    cmd += 'TEXT ' + x + ',85,"3",0,1,1,"' + barcodeText + '"\r\n';
+    cmd += 'TEXT ' + x + ',88,"3",0,1,1,"' + barcodeText + '"\r\n';
   }
 
   cmd += 'PRINT 1\r\n';
