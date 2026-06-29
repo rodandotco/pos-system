@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Camera Barcode Scanner Test</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+    body { background: #000; min-height: 100vh; display: flex; flex-direction: column; }
+    .header { background: #00695c; color: white; padding: 12px 16px; text-align: center; font-size: 16px; font-weight: bold; }
+    .scanner-container { flex: 1; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+    #scannerVideo { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
+    .scan-frame { position: absolute; width: 250px; height: 250px; border: 3px solid #00ff00; border-radius: 16px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5); }
+    .scan-line { position: absolute; width: 200px; height: 2px; background: #ff0000; animation: scanLine 2s linear infinite; }
+    @keyframes scanLine { 0% { top: 20%; } 50% { top: 80%; } 100% { top: 20%; } }
+    .result-box { background: white; padding: 16px; margin: 0; }
+    .result-text { font-size: 18px; font-weight: bold; color: #00695c; word-break: break-all; text-align: center; }
+    .result-type { font-size: 12px; color: #666; text-align: center; margin-top: 4px; }
+    .btn-row { display: flex; gap: 8px; padding: 12px 16px; background: #f5f5f5; }
+    .btn { flex: 1; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; color: white; }
+    .btn-start { background: #00897b; }
+    .btn-stop { background: #e53935; }
+    .btn-switch { background: #ff9800; }
+    .btn-add { background: #4caf50; }
+    .log-box { background: #263238; color: #aed581; padding: 10px; font-family: monospace; font-size: 11px; max-height: 120px; overflow-y: auto; }
+    .status { padding: 8px 16px; text-align: center; font-size: 13px; background: #fff3e0; color: #e65100; }
+    .status.active { background: #e8f5e9; color: #2e7d32; }
+  </style>
+</head>
+<body>
+  <div class="header">📷 Camera Barcode Scanner</div>
+  
+  <div id="statusBar" class="status">Press "Start Scanner" to begin</div>
+  
+  <div class="scanner-container">
+    <video id="scannerVideo" autoplay playsinline></video>
+    <div class="scan-frame">
+      <div class="scan-line"></div>
+    </div>
+  </div>
+  
+  <div class="result-box">
+    <div class="result-type" id="resultType">-</div>
+    <div class="result-text" id="resultText">No barcode detected</div>
+  </div>
+  
+  <div class="btn-row">
+    <button class="btn btn-start" onclick="startScanner()" id="btnStart">▶ Start</button>
+    <button class="btn btn-stop" onclick="stopScanner()" id="btnStop" disabled>⏹ Stop</button>
+  </div>
+  <div class="btn-row" style="padding-top:0;">
+    <button class="btn btn-switch" onclick="switchCamera()">🔄 Switch Camera</button>
+    <button class="btn btn-add" onclick="addToCart()">➕ Add to Cart</button>
+  </div>
+  
+  <div class="log-box" id="logBox">Ready.</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
+<script>
+var scannerActive = false;
+var codeReader = null;
+var lastResult = '';
+var currentStream = null;
+var facingMode = 'environment'; // back camera
+
+function log(msg) {
+  var box = document.getElementById('logBox');
+  var time = new Date().toLocaleTimeString('id-ID');
+  box.innerHTML += '[' + time + '] ' + msg + '\n';
+  box.scrollTop = box.scrollHeight;
+}
+
+function updateStatus(msg, active) {
+  var bar = document.getElementById('statusBar');
+  bar.textContent = msg;
+  bar.className = active ? 'status active' : 'status';
+}
+
+async function startScanner() {
+  try {
+    log('Starting scanner...');
+    updateStatus('Starting camera...', false);
+    
+    // Stop any existing stream
+    if (currentStream) {
+      currentStream.getTracks().forEach(function(t) { t.stop(); });
+    }
+    
+    // Get camera stream
+    currentStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: facingMode, width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+    
+    var video = document.getElementById('scannerVideo');
+    video.srcObject = currentStream;
+    video.play();
+    
+    log('Camera started. Setting up ZXing...');
+    updateStatus('Camera ready. Scanning...', true);
+    
+    // Initialize ZXing
+    codeReader = new ZXing.BrowserMultiFormatReader();
+    
+    // Start decoding
+    codeReader.decodeFromVideoDevice(null, video, function(result, err) {
+      if (result) {
+        var text = result.getText();
+        var format = result.getBarcodeFormat();
+        
+        if (text !== lastResult) {
+          lastResult = text;
+          document.getElementById('resultText').textContent = text;
+          document.getElementById('resultType').textContent = 'Format: ' + format;
+          log('✅ Detected: ' + text + ' (' + format + ')');
+          
+          // Flash green
+          document.getElementById('resultText').style.color = '#4caf50';
+          setTimeout(function() {
+            document.getElementById('resultText').style.color = '#00695c';
+          }, 500);
+        }
+      }
+    });
+    
+    scannerActive = true;
+    document.getElementById('btnStart').disabled = true;
+    document.getElementById('btnStop').disabled = false;
+    log('Scanner active!');
+    
+  } catch(e) {
+    log('ERROR: ' + e.message);
+    updateStatus('Error: ' + e.message, false);
+    alert('Gagal mengakses kamera: ' + e.message + '\n\nPastikan:\n1. Gunakan HTTPS\n2. Izinkan akses kamera\n3. Kamera tidak digunakan aplikasi lain');
+  }
+}
+
+function stopScanner() {
+  if (codeReader) {
+    codeReader.reset();
+    codeReader = null;
+  }
+  if (currentStream) {
+    currentStream.getTracks().forEach(function(t) { t.stop(); });
+    currentStream = null;
+  }
+  scannerActive = false;
+  document.getElementById('btnStart').disabled = false;
+  document.getElementById('btnStop').disabled = true;
+  document.getElementById('resultText').textContent = 'No barcode detected';
+  document.getElementById('resultType').textContent = '-';
+  lastResult = '';
+  updateStatus('Scanner stopped', false);
+  log('Scanner stopped');
+}
+
+function switchCamera() {
+  facingMode = facingMode === 'environment' ? 'user' : 'environment';
+  log('Switching to ' + (facingMode === 'environment' ? 'back' : 'front') + ' camera...');
+  if (scannerActive) {
+    stopScanner();
+    setTimeout(function() { startScanner(); }, 500);
+  }
+}
+
+function addToCart() {
+  var barcode = document.getElementById('resultText').textContent;
+  if (barcode && barcode !== 'No barcode detected') {
+    log('📦 Add to cart: ' + barcode);
+    alert('Barcode: ' + barcode + '\n\n(Ready to add to cart)');
+    
+    // If POS page is open, try to add to cart
+    if (typeof tambahProdukDariScan === 'function') {
+      tambahProdukDariScan(barcode);
+    }
+  } else {
+    alert('Scan barcode terlebih dahulu!');
+  }
+}
+
+// Test if browser supports camera
+window.addEventListener('load', function() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    document.getElementById('statusBar').textContent = '⚠️ Camera not supported on this browser. Use Chrome.';
+    document.getElementById('statusBar').className = 'status';
+    document.getElementById('btnStart').disabled = true;
+    log('Camera API not supported');
+  } else {
+    log('Camera API supported ✅');
+  }
+});
+</script>
+</body>
+</html>
