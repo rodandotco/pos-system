@@ -1,4 +1,4 @@
-// ===================== INVENTORY.JS (FAST + STORAGE PHOTOS) =====================
+// ===================== INVENTORY.JS (FAST + STORAGE PHOTOS + UX) =====================
 function setupInventory() {
   document.getElementById('prodBarcode').onkeydown = function(e) { if (e.key === 'Enter') { e.preventDefault(); cariAtauTambahProduk(); } };
 }
@@ -77,7 +77,6 @@ async function hapusProdukDariDaftar(b) {
   setLocalProducts(cached); totalProducts = cached.length; loadProductPage();
   try {
     await supabaseClient.from('products').delete().eq('barcode', b);
-    // Delete photo from storage
     if (product && product.foto && product.foto.indexOf('supabase.co') !== -1) {
       var fileName = product.foto.split('/').pop();
       await supabaseClient.storage.from('product-photos').remove([fileName]);
@@ -140,7 +139,7 @@ async function cariAtauTambahProduk() {
   if (product) { isiFormProduk(product, false, canEdit, isAdmin); if (product.foto) { document.getElementById('fotoPreview').src=product.foto; document.getElementById('fotoPreviewContainer').style.display='block'; } else document.getElementById('fotoPreviewContainer').style.display='none'; }
   else { if (!canEdit) { alert('Produk tidak ditemukan'); tutupFormProduk(); return; } isiFormProduk({barcode:barcode,nama:'',kategori:'',keterangan:'',harga_beli:0,harga_jual:0,min_stok:10,diskon_persen:0,diskon_min_qty:0,stok:0,foto:null},true,true,isAdmin); document.getElementById('fotoPreviewContainer').style.display='none'; }
   if (canEdit) document.getElementById('prodNama').focus();
-  else { ['prodNama','prodKategori','prodKeterangan','prodHargaBeli','prodHargaJual','prodDiskonPersen','prodDiskonMinQty','prodMinStok','perubahanStok'].forEach(function(id){document.getElementById(id).readOnly=true;}); document.getElementById('btnSimpanProduk').style.display='none'; document.getElementById('btnHapusProduk').style.display='none'; document.getElementById('btnHapusFoto').style.display='none'; }
+  else { ['prodNama','prodKategori','prodKeterangan','prodHargaBeli','prodHargaJual','prodDiskonPersen','prodDiskonMinQty','prodMinStok','perubahanStok'].forEach(function(id){document.getElementById(id).readOnly=true;}); document.getElementById('btnSimpanProduk').style.display='none'; document.getElementById('btnBatalProduk').style.display='none'; document.getElementById('btnHapusProduk').style.display='none'; document.getElementById('btnHapusFoto').style.display='none'; }
 }
 
 // ===================== PHOTO UPLOAD (30KB TARGET - Storage) =====================
@@ -191,35 +190,158 @@ function isiFormProduk(produk, isNew, canEdit, isAdmin) {
   document.getElementById('prodDiskonPersen').value = produk.diskon_persen || 0; document.getElementById('prodDiskonMinQty').value = produk.diskon_min_qty || 0;
   document.getElementById('prodMinStok').value = produk.min_stok || 10; document.getElementById('stokSaatIni').textContent = produk.stok || 0; document.getElementById('perubahanStok').value = 0; hitungStokAkhir();
   if (canEdit) {
-    document.getElementById('btnHapusProduk').style.display = (isNew || !isAdmin) ? 'none' : 'inline-block'; document.getElementById('btnSimpanProduk').style.display = 'inline-block'; document.getElementById('btnHapusFoto').style.display = 'block';
+    document.getElementById('btnHapusProduk').style.display = (isNew || !isAdmin) ? 'none' : 'inline-block';
+    document.getElementById('btnSimpanProduk').style.display = 'inline-block';
+    document.getElementById('btnBatalProduk').style.display = 'inline-block';
+    document.getElementById('btnHapusFoto').style.display = 'block';
     ['prodNama','prodKategori','prodKeterangan','prodHargaBeli','prodHargaJual','prodDiskonPersen','prodDiskonMinQty','prodMinStok','perubahanStok'].forEach(function(id){document.getElementById(id).readOnly=false;document.getElementById(id).disabled=false;});
     document.getElementById('btnSimpanProduk').onclick = async function() {
       if (!currentBarcode) return;
       var foto = produk.foto || null;
       if (fotoDihapus) {
-        // Delete old photo from storage
         if (foto && foto.indexOf('supabase.co') !== -1) {
           try { var fn = foto.split('/').pop(); await supabaseClient.storage.from('product-photos').remove([fn]); } catch(e) {}
         }
         foto = null;
       } else if (window.tempCompressedPhoto) {
-        // Upload to storage instead of base64
         var storageUrl = await uploadPhotoToStorage(window.tempCompressedPhoto);
         if (storageUrl) foto = storageUrl;
-        else foto = window.tempCompressedPhoto; // fallback
+        else foto = window.tempCompressedPhoto;
         window.tempCompressedPhoto = null;
       }
       var data = { barcode: currentBarcode, nama: document.getElementById('prodNama').value.trim(), kategori: document.getElementById('prodKategori').value.trim(), keterangan: document.getElementById('prodKeterangan').value.trim(), harga_beli: parseFloat(document.getElementById('prodHargaBeli').value) || 0, harga_jual: parseFloat(document.getElementById('prodHargaJual').value) || 0, diskon_persen: parseFloat(document.getElementById('prodDiskonPersen').value) || 0, diskon_min_qty: parseInt(document.getElementById('prodDiskonMinQty').value) || 0, min_stok: parseInt(document.getElementById('prodMinStok').value) || 10, stok: (parseInt(document.getElementById('stokSaatIni').textContent) || 0) + (parseInt(document.getElementById('perubahanStok').value) || 0), foto: foto };
       try { await upsertProduct(data); updateLocalProduct(data); alert('Disimpan'); tutupFormProduk(); refreshProductList(); } catch (e) { alert('Gagal: ' + e.message); }
     };
+    document.getElementById('btnBatalProduk').onclick = function() { tutupFormProduk(); };
     document.getElementById('btnHapusProduk').onclick = async function() { if (confirm('Hapus?')) { await deleteProduct(currentBarcode); hapusProdukDariDaftar(currentBarcode); alert('Dihapus'); tutupFormProduk(); } };
   }
 }
 
-function tutupFormProduk() { document.getElementById('productForm').style.display = 'none'; document.getElementById('prodBarcode').value = ''; document.getElementById('prodBarcode').focus(); currentBarcode = null; document.getElementById('fotoPreviewContainer').style.display = 'none'; document.getElementById('prodFotoFile').value = ''; document.getElementById('prodFotoCamera').value = ''; window.tempCompressedPhoto = null; fotoDihapus = false; ['prodNama','prodKategori','prodKeterangan','prodHargaBeli','prodHargaJual','prodDiskonPersen','prodDiskonMinQty','prodMinStok','perubahanStok'].forEach(function(id){document.getElementById(id).readOnly=false;document.getElementById(id).disabled=false;}); document.getElementById('btnSimpanProduk').style.display='inline-block'; document.getElementById('btnHapusProduk').style.display='none'; document.getElementById('btnHapusFoto').style.display='block'; }
+function tutupFormProduk() {
+  document.getElementById('productForm').style.display = 'none';
+  document.getElementById('prodBarcode').value = '';
+  document.getElementById('prodBarcode').focus();
+  currentBarcode = null;
+  document.getElementById('fotoPreviewContainer').style.display = 'none';
+  document.getElementById('prodFotoFile').value = '';
+  document.getElementById('prodFotoCamera').value = '';
+  window.tempCompressedPhoto = null;
+  fotoDihapus = false;
+  ['prodNama','prodKategori','prodKeterangan','prodHargaBeli','prodHargaJual','prodDiskonPersen','prodDiskonMinQty','prodMinStok','perubahanStok'].forEach(function(id){document.getElementById(id).readOnly=false;document.getElementById(id).disabled=false;});
+  document.getElementById('btnSimpanProduk').style.display = 'inline-block';
+  document.getElementById('btnBatalProduk').style.display = 'inline-block';
+  document.getElementById('btnHapusProduk').style.display = 'none';
+  document.getElementById('btnHapusFoto').style.display = 'block';
+}
+
 function hitungStokAkhir() { var a = parseInt(document.getElementById('stokSaatIni').textContent) || 0, b = parseInt(document.getElementById('perubahanStok').value) || 0; document.getElementById('stokAkhir').textContent = a + b; }
 async function editProdukDariDaftar(b) { if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'gudang')) return; document.getElementById('prodBarcode').value = b; cariAtauTambahProduk(); }
 function generateBarcode() { var now = new Date(); document.getElementById('prodBarcode').value = now.getFullYear().toString().slice(-2) + ('0'+(now.getMonth()+1)).slice(-2) + ('0'+now.getDate()).slice(-2) + ('0'+now.getHours()).slice(-2) + ('0'+now.getMinutes()).slice(-2) + ('0'+now.getSeconds()).slice(-2); cariAtauTambahProduk(); }
+
+// ===================== CAMERA SCANNER (Auto-close + Beep) =====================
+var cameraScannerActiveInv = false;
+var cameraCodeReaderInv = null;
+var cameraStreamInv = null;
+var lastScannedBarcodeInv = '';
+
+function playBeep() {
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var osc = ctx.createOscillator(); var gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = 800; osc.type = 'square';
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.15);
+  } catch(e) {}
+}
+
+async function startCameraScannerInv() {
+  try {
+    if (cameraCodeReaderInv) { cameraCodeReaderInv.reset(); cameraCodeReaderInv = null; }
+    if (cameraStreamInv) { cameraStreamInv.getTracks().forEach(function(t){t.stop();}); cameraStreamInv = null; }
+    
+    var container = document.getElementById('cameraScannerContainerInv');
+    container.style.display = 'block';
+    container.style.cssText = 'margin-top:8px;position:relative;width:100%;max-width:300px;aspect-ratio:1/1;border-radius:12px;overflow:hidden;background:#000;margin-left:auto;margin-right:auto;';
+    
+    container.innerHTML = '<div style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:2;pointer-events:none;"><div style="position:absolute;top:15%;left:15%;right:15%;bottom:15%;border:3px solid #00ff00;border-radius:8px;"><div style="position:absolute;top:-3px;left:-3px;width:20px;height:20px;border-top:4px solid #00ff00;border-left:4px solid #00ff00;"></div><div style="position:absolute;top:-3px;right:-3px;width:20px;height:20px;border-top:4px solid #00ff00;border-right:4px solid #00ff00;"></div><div style="position:absolute;bottom:-3px;left:-3px;width:20px;height:20px;border-bottom:4px solid #00ff00;border-left:4px solid #00ff00;"></div><div style="position:absolute;bottom:-3px;right:-3px;width:20px;height:20px;border-bottom:4px solid #00ff00;border-right:4px solid #00ff00;"></div><div class="scan-line-inv" style="position:absolute;left:16%;right:16%;height:2px;background:#ff0000;animation:scanAnimInv 2s ease-in-out infinite;"></div></div></div><video id="cameraScannerVideoInv" autoplay playsinline style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;z-index:1;"></video><button class="btn btn-sm btn-danger" onclick="stopCameraScannerInv()" style="position:absolute;top:8px;right:8px;z-index:3;">✕ Stop</button>';
+    
+    // Add animation if not exists
+    if (!document.getElementById('scanAnimStyle')) {
+      var style = document.createElement('style');
+      style.id = 'scanAnimStyle';
+      style.textContent = '@keyframes scanAnimInv{0%{top:16%}50%{top:82%}100%{top:16%}}';
+      document.head.appendChild(style);
+    }
+    
+    cameraStreamInv = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 1280 } }
+    });
+    
+    var video = document.getElementById('cameraScannerVideoInv');
+    video.srcObject = cameraStreamInv;
+    video.play();
+    
+    cameraCodeReaderInv = new ZXing.BrowserMultiFormatReader();
+    cameraScannerActiveInv = false;
+    
+    cameraCodeReaderInv.decodeFromVideoDevice(null, video, function(result, err) {
+      if (result && !cameraScannerActiveInv) {
+        var text = result.getText();
+        if (text !== lastScannedBarcodeInv) {
+          lastScannedBarcodeInv = text;
+          
+          // Play beep
+          playBeep();
+          
+          // Fill barcode field
+          document.getElementById('prodBarcode').value = text;
+          
+          // Auto search product
+          if (typeof cariAtauTambahProduk === 'function') {
+            cariAtauTambahProduk();
+          }
+          
+          // Auto-close camera after 1 second
+          cameraScannerActiveInv = true;
+          setTimeout(function() {
+            stopCameraScannerInv();
+          }, 1000);
+        }
+      }
+    });
+    
+    console.log('Camera scanner started');
+  } catch(e) {
+    console.error('Camera error:', e);
+    alert('Gagal mengakses kamera: ' + e.message);
+    document.getElementById('cameraScannerContainerInv').style.display = 'none';
+  }
+}
+
+function stopCameraScannerInv() {
+  if (cameraCodeReaderInv) { cameraCodeReaderInv.reset(); cameraCodeReaderInv = null; }
+  if (cameraStreamInv) { cameraStreamInv.getTracks().forEach(function(t){t.stop();}); cameraStreamInv = null; }
+  var container = document.getElementById('cameraScannerContainerInv');
+  container.style.display = 'none';
+  container.innerHTML = '';
+  lastScannedBarcodeInv = '';
+  cameraScannerActiveInv = false;
+}
+
+// ===================== BLUETOOTH SCANNER =====================
+function activateBluetoothScannerInv() {
+  var input = document.getElementById('prodBarcode');
+  input.focus();
+  input.placeholder = 'Bluetooth scanner siap...';
+}
+
+// ===================== CLEAR BARCODE FIELD =====================
+function clearBarcodeField() {
+  document.getElementById('prodBarcode').value = '';
+  document.getElementById('prodBarcode').focus();
+}
 
 // ===================== LABEL PRINT DIALOG =====================
 function updateLabelDialogStatus() { var c = (typeof labelDevice !== 'undefined' && labelDevice && typeof labelCharacteristic !== 'undefined' && labelCharacteristic); var led = document.getElementById('labelStatusLed'), txt = document.getElementById('labelStatusText'); if (led) led.className = 'led ' + (c ? 'led-green' : 'led-red'); if (txt) txt.textContent = c ? 'Label printer terhubung' : 'Label printer tidak terhubung'; }
