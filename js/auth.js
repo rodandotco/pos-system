@@ -9,10 +9,7 @@ async function hashPassword(pwd) {
     return Array.from(new Uint8Array(h)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
   }
   var h = 0;
-  for (var i = 0; i < pwd.length; i++) {
-    h = ((h << 5) - h) + pwd.charCodeAt(i);
-    h |= 0;
-  }
+  for (var i = 0; i < pwd.length; i++) { h = ((h << 5) - h) + pwd.charCodeAt(i); h |= 0; }
   return 'fallback_' + Math.abs(h).toString(16);
 }
 
@@ -21,27 +18,25 @@ async function login() {
   var p = document.getElementById('loginPass').value;
   if (!u || !p) return;
 
+  // Clear error and cached data
+  document.getElementById('loginError').textContent = '';
+  localStorage.removeItem('cachedProducts');
+  localStorage.removeItem('cachedSettings');
   if (typeof cart !== 'undefined') cart = [];
   if (typeof totalDiskonValue !== 'undefined') totalDiskonValue = 0;
   if (typeof bayarValue !== 'undefined') bayarValue = 0;
   if (typeof renderCart === 'function') renderCart();
+  if (typeof lastSyncTime !== 'undefined') lastSyncTime = 0;
+  if (typeof cacheTimestamp !== 'undefined') cacheTimestamp = null;
+  if (typeof cachedProducts !== 'undefined') cachedProducts = null;
 
   var result = await supabaseClient.from('users').select('*').eq('username', u).single();
   var user = result.data;
   var error = result.error;
-  
-  if (error) {
-    document.getElementById('loginError').textContent = 'Error: ' + error.message;
-    return;
-  }
-  if (!user) {
-    document.getElementById('loginError').textContent = 'User tidak ditemukan';
-    return;
-  }
-  if (user.password_hash !== await hashPassword(p)) {
-    document.getElementById('loginError').textContent = 'Password salah';
-    return;
-  }
+
+  if (error) { document.getElementById('loginError').textContent = 'Error: ' + error.message; return; }
+  if (!user) { document.getElementById('loginError').textContent = 'User tidak ditemukan'; return; }
+  if (user.password_hash !== await hashPassword(p)) { document.getElementById('loginError').textContent = 'Password salah'; return; }
 
   currentUser = user;
   saveSession();
@@ -59,18 +54,22 @@ async function login() {
   if (activeTab === 'laporan') muatLaporan();
   aturHakAkses();
 
-  setTimeout(function() {
-    if (typeof checkAutoEmailReport === 'function') checkAutoEmailReport();
-  }, 2000);
-
-  setTimeout(function() {
-    if (typeof checkLowStockBanner === 'function') checkLowStockBanner();
-  }, 1500);
+  setTimeout(function() { if (typeof checkAutoEmailReport === 'function') checkAutoEmailReport(); }, 2000);
+  setTimeout(function() { if (typeof checkLowStockBanner === 'function') checkLowStockBanner(); }, 1500);
 }
 
 function logout() {
   clearSession();
   currentUser = null;
+
+  // Clear ALL caches
+  localStorage.removeItem('cachedProducts');
+  localStorage.removeItem('cachedSettings');
+  localStorage.removeItem('lastReportSent');
+  localStorage.removeItem('lastReportSchedule');
+  if (typeof lastSyncTime !== 'undefined') lastSyncTime = 0;
+  if (typeof cacheTimestamp !== 'undefined') cacheTimestamp = null;
+  if (typeof cachedProducts !== 'undefined') cachedProducts = null;
 
   if (typeof cart !== 'undefined') cart = [];
   if (typeof totalDiskonValue !== 'undefined') totalDiskonValue = 0;
@@ -81,60 +80,33 @@ function logout() {
   var el = document.getElementById('searchResults');
   if (el) { el.innerHTML = ''; el.style.display = 'none'; }
 
-  el = document.querySelector('#cartTable tbody');
-  if (el) el.innerHTML = '';
-  el = document.querySelector('#reportTable tbody');
-  if (el) el.innerHTML = '';
-  el = document.querySelector('#productListTable tbody');
-  if (el) el.innerHTML = '';
+  el = document.querySelector('#cartTable tbody'); if (el) el.innerHTML = '';
+  el = document.querySelector('#reportTable tbody'); if (el) el.innerHTML = '';
+  el = document.querySelector('#productListTable tbody'); if (el) el.innerHTML = '';
 
-  el = document.getElementById('totalTransaksi');
-  if (el) el.textContent = '0';
-  el = document.getElementById('totalPendapatan');
-  if (el) el.textContent = 'Rp 0';
+  el = document.getElementById('totalTransaksi'); if (el) el.textContent = '0';
+  el = document.getElementById('totalPendapatan'); if (el) el.textContent = 'Rp 0';
+  el = document.getElementById('productCount'); if (el) el.textContent = '0';
 
-  el = document.getElementById('productCount');
-  if (el) el.textContent = '0';
+  if (typeof chartInstance !== 'undefined' && chartInstance) { chartInstance.destroy(); chartInstance = null; }
+  if (typeof topProductsChart !== 'undefined' && topProductsChart) { topProductsChart.destroy(); topProductsChart = null; }
 
-  if (typeof chartInstance !== 'undefined' && chartInstance) {
-    chartInstance.destroy();
-    chartInstance = null;
-  }
-  if (typeof topProductsChart !== 'undefined' && topProductsChart) {
-    topProductsChart.destroy();
-    topProductsChart = null;
-  }
+  el = document.getElementById('lowStockBanner'); if (el) el.style.display = 'none';
+  el = document.getElementById('lowStockAlert'); if (el) el.style.display = 'none';
 
-  el = document.getElementById('lowStockBanner');
-  if (el) el.style.display = 'none';
-  el = document.getElementById('lowStockAlert');
-  if (el) el.style.display = 'none';
-
-  var ids = ['scanInputTrans', 'custName', 'invSearch', 'searchProduct', 'prodBarcode', 'prodNama', 'prodKategori', 'prodKeterangan', 'prodHargaBeli', 'prodHargaJual', 'perubahanStok', 'bayar', 'newUsername', 'newPassword'];
-  ids.forEach(function(id) {
-    var input = document.getElementById(id);
-    if (input) input.value = '';
-  });
+  ['scanInputTrans', 'custName', 'invSearch', 'searchProduct', 'prodBarcode', 'prodNama', 'prodKategori', 'prodKeterangan', 'prodHargaBeli', 'prodHargaJual', 'perubahanStok', 'bayar', 'newUsername', 'newPassword'].forEach(function(id) { var inp = document.getElementById(id); if (inp) inp.value = ''; });
 
   if (typeof invalidateSettingsCache === 'function') invalidateSettingsCache();
   if (typeof appSettings !== 'undefined') appSettings = {};
   if (typeof window.cachedSettings !== 'undefined') window.cachedSettings = null;
 
-  localStorage.removeItem('lastReportSent');
-  localStorage.removeItem('lastReportSchedule');
+  var display = document.getElementById('activeUserDisplay'); if (display) display.textContent = '-';
+  var roleDisplay = document.getElementById('activeUserRole'); if (roleDisplay) roleDisplay.textContent = '-';
 
-  // Clear active user display
-  var display = document.getElementById('activeUserDisplay');
-  if (display) display.textContent = '-';
-  var roleDisplay = document.getElementById('activeUserRole');
-  if (roleDisplay) roleDisplay.textContent = '-';
-
-  var tabs = document.querySelectorAll('.tab-btn');
-  tabs.forEach(function(b) { b.style.display = ''; });
-  var pages = document.querySelectorAll('.page');
-  pages.forEach(function(p) { p.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.style.display = ''; });
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
   document.getElementById('page-transaksi').classList.add('active');
-  tabs.forEach(function(b) { b.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
   var transTab = document.querySelector('.tab-btn[data-page="transaksi"]');
   if (transTab) transTab.classList.add('active');
   activeTab = 'transaksi';
@@ -142,15 +114,11 @@ function logout() {
   document.getElementById('loginOverlay').style.display = 'flex';
   document.getElementById('loginUser').value = '';
   document.getElementById('loginPass').value = '';
+  document.getElementById('loginError').textContent = '';
 }
 
-function saveSession() {
-  if (currentUser) localStorage.setItem('currentUser', JSON.stringify(currentUser));
-}
-
-function clearSession() {
-  localStorage.removeItem('currentUser');
-}
+function saveSession() { if (currentUser) localStorage.setItem('currentUser', JSON.stringify(currentUser)); }
+function clearSession() { localStorage.removeItem('currentUser'); }
 
 function checkSession() {
   var saved = localStorage.getItem('currentUser');
@@ -158,6 +126,13 @@ function checkSession() {
     try {
       currentUser = JSON.parse(saved);
       updateActiveUserDisplay();
+
+      // Clear product cache to force fresh data
+      localStorage.removeItem('cachedProducts');
+      if (typeof lastSyncTime !== 'undefined') lastSyncTime = 0;
+      if (typeof cacheTimestamp !== 'undefined') cacheTimestamp = null;
+      if (typeof cachedProducts !== 'undefined') cachedProducts = null;
+
       clearAllDisplayedData();
       document.getElementById('loginOverlay').style.display = 'none';
       applyRoleRestrictions();
@@ -169,16 +144,12 @@ function checkSession() {
       setDefaultDateFilter();
       if (activeTab === 'laporan') muatLaporan();
       aturHakAkses();
-      setTimeout(function() {
-        if (typeof checkAutoEmailReport === 'function') checkAutoEmailReport();
-      }, 2000);
-      setTimeout(function() {
-        if (typeof checkLowStockBanner === 'function') checkLowStockBanner();
-      }, 1500);
+
+      setTimeout(function() { if (typeof checkAutoEmailReport === 'function') checkAutoEmailReport(); }, 2000);
+      setTimeout(function() { if (typeof checkLowStockBanner === 'function') checkLowStockBanner(); }, 1500);
+
       return true;
-    } catch (e) {
-      clearSession();
-    }
+    } catch(e) { clearSession(); }
   }
   document.getElementById('loginOverlay').style.display = 'flex';
   document.getElementById('loginUser').value = '';
@@ -230,46 +201,20 @@ function applyRoleRestrictions() {
 
 function clearAllDisplayedData() {
   var el;
-  el = document.querySelector('#cartTable tbody');
-  if (el) el.innerHTML = '';
-  el = document.querySelector('#reportTable tbody');
-  if (el) el.innerHTML = '';
-  el = document.querySelector('#productListTable tbody');
-  if (el) el.innerHTML = '';
-  el = document.getElementById('totalTransaksi');
-  if (el) el.textContent = '0';
-  el = document.getElementById('totalPendapatan');
-  if (el) el.textContent = 'Rp 0';
-  el = document.getElementById('productCount');
-  if (el) el.textContent = '0';
-
-  if (typeof chartInstance !== 'undefined' && chartInstance) {
-    chartInstance.destroy();
-    chartInstance = null;
-  }
-  if (typeof topProductsChart !== 'undefined' && topProductsChart) {
-    topProductsChart.destroy();
-    topProductsChart = null;
-  }
-
-  el = document.getElementById('lowStockBanner');
-  if (el) el.style.display = 'none';
-  el = document.getElementById('lowStockAlert');
-  if (el) el.style.display = 'none';
-
-  var ids = ['scanInputTrans', 'custName', 'invSearch', 'searchProduct', 'prodBarcode', 'prodNama', 'prodKategori', 'prodKeterangan', 'prodHargaBeli', 'prodHargaJual', 'perubahanStok', 'bayar'];
-  ids.forEach(function(id) {
-    var input = document.getElementById(id);
-    if (input) input.value = '';
-  });
-
-  el = document.getElementById('searchResults');
-  if (el) { el.innerHTML = ''; el.style.display = 'none'; }
-  el = document.getElementById('productForm');
-  if (el) el.style.display = 'none';
-  el = document.getElementById('fotoPreviewContainer');
-  if (el) el.style.display = 'none';
-
+  el = document.querySelector('#cartTable tbody'); if (el) el.innerHTML = '';
+  el = document.querySelector('#reportTable tbody'); if (el) el.innerHTML = '';
+  el = document.querySelector('#productListTable tbody'); if (el) el.innerHTML = '';
+  el = document.getElementById('totalTransaksi'); if (el) el.textContent = '0';
+  el = document.getElementById('totalPendapatan'); if (el) el.textContent = 'Rp 0';
+  el = document.getElementById('productCount'); if (el) el.textContent = '0';
+  if (typeof chartInstance !== 'undefined' && chartInstance) { chartInstance.destroy(); chartInstance = null; }
+  if (typeof topProductsChart !== 'undefined' && topProductsChart) { topProductsChart.destroy(); topProductsChart = null; }
+  el = document.getElementById('lowStockBanner'); if (el) el.style.display = 'none';
+  el = document.getElementById('lowStockAlert'); if (el) el.style.display = 'none';
+  ['scanInputTrans', 'custName', 'invSearch', 'searchProduct', 'prodBarcode', 'prodNama', 'prodKategori', 'prodKeterangan', 'prodHargaBeli', 'prodHargaJual', 'perubahanStok', 'bayar'].forEach(function(id) { var inp = document.getElementById(id); if (inp) inp.value = ''; });
+  el = document.getElementById('searchResults'); if (el) { el.innerHTML = ''; el.style.display = 'none'; }
+  el = document.getElementById('productForm'); if (el) el.style.display = 'none';
+  el = document.getElementById('fotoPreviewContainer'); if (el) el.style.display = 'none';
   if (typeof invalidateSettingsCache === 'function') invalidateSettingsCache();
   if (typeof appSettings !== 'undefined') appSettings = {};
   if (typeof window.cachedSettings !== 'undefined') window.cachedSettings = null;
@@ -278,9 +223,7 @@ function clearAllDisplayedData() {
 function updateActiveUserDisplay() {
   var display = document.getElementById('activeUserDisplay');
   var roleDisplay = document.getElementById('activeUserRole');
-  if (display && currentUser) {
-    display.textContent = currentUser.username;
-  }
+  if (display && currentUser) display.textContent = currentUser.username;
   if (roleDisplay && currentUser) {
     var roleName = currentUser.role;
     if (roleName === 'admin') roleName = 'Admin';
@@ -291,6 +234,14 @@ function updateActiveUserDisplay() {
   }
 }
 
+// Clear login error when user types
+document.addEventListener('DOMContentLoaded', function() {
+  var loginUser = document.getElementById('loginUser');
+  var loginPass = document.getElementById('loginPass');
+  if (loginUser) loginUser.addEventListener('input', function() { document.getElementById('loginError').textContent = ''; });
+  if (loginPass) loginPass.addEventListener('input', function() { document.getElementById('loginError').textContent = ''; });
+});
+
 // ===================== USER MANAGEMENT =====================
 async function tambahUser() {
   if (!currentUser || currentUser.role !== 'admin') return;
@@ -298,11 +249,7 @@ async function tambahUser() {
   var p = document.getElementById('newPassword').value;
   var r = document.getElementById('newRole').value;
   if (!u || !p) return alert('Isi username dan password');
-  await supabaseClient.from('users').upsert({
-    username: u,
-    password_hash: await hashPassword(p),
-    role: r
-  });
+  await supabaseClient.from('users').upsert({ username: u, password_hash: await hashPassword(p), role: r });
   tampilkanUserList();
   document.getElementById('newUsername').value = '';
   document.getElementById('newPassword').value = '';
@@ -319,8 +266,7 @@ async function hapusUser(username) {
 function editUser(username) {
   if (!currentUser || currentUser.role !== 'admin') return;
   supabaseClient.from('users').select('*').eq('username', username).single().then(function(result) {
-    var u = result.data;
-    if (!u) return;
+    var u = result.data; if (!u) return;
     document.getElementById('editUsername').value = u.username;
     document.getElementById('editUsernameDisplay').value = u.username;
     document.getElementById('editRole').value = u.role;
@@ -349,18 +295,12 @@ async function tampilkanUserList() {
   var users = result.data;
   var tbody = document.getElementById('userListBody');
   tbody.innerHTML = '';
-  if (!users || !users.length) {
-    tbody.innerHTML = '<tr><td colspan="3">Belum ada</td></tr>';
-    return;
-  }
+  if (!users || !users.length) { tbody.innerHTML = '<tr><td colspan="3">Belum ada</td></tr>'; return; }
   users.forEach(function(u) {
     var row = tbody.insertRow();
     var html = '<td>' + u.username + '</td><td>' + u.role + '</td><td>';
     html += '<button class="btn-sm" onclick="editUser(\'' + u.username + '\')">✏️</button>';
-    if (u.username !== 'admin') {
-      html += ' <button class="btn-sm btn-danger" onclick="hapusUser(\'' + u.username + '\')">🗑</button>';
-    }
-    html += '</td>';
-    row.innerHTML = html;
+    if (u.username !== 'admin') html += ' <button class="btn-sm btn-danger" onclick="hapusUser(\'' + u.username + '\')">🗑</button>';
+    html += '</td>'; row.innerHTML = html;
   });
 }
