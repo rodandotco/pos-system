@@ -31,10 +31,8 @@
   <div id="page-transaksi" class="page active">
     <div id="lowStockBanner" style="display:none; background:#fff3e0; border:1px solid #ff9800; border-radius:8px; padding:10px; margin-bottom:12px; font-size:13px;">⚠️ <b>Stok Rendah:</b> <span id="lowStockBannerText"></span></div>
     <div class="form-group"><label>Nama Customer (opsional)</label><div style="position:relative; display:inline-block; width:200px;"><input type="text" id="custName" placeholder="Nama Customer" maxlength="25" style="width:100%; padding-right:25px; box-sizing:border-box;"><button class="clear-btn" onclick="document.getElementById('custName').value=''" style="position:absolute; right:0; top:50%; transform:translateY(-50%); border:none; background:transparent; cursor:pointer; padding:0 5px;">✕</button></div></div>
-    
     <div class="form-group"><label>Cari Produk</label><div style="position:relative; display:inline-block; width:200px;"><input type="text" id="searchProduct" placeholder="Nama / Barcode..." oninput="searchProductFn(this.value)" onfocus="searchProductFn(this.value)" autocomplete="off" maxlength="25" style="width:100%; padding-right:25px; box-sizing:border-box;"><button class="clear-btn" onclick="var s=document.getElementById('searchProduct'); if(s)s.value=''; var sr=document.getElementById('searchResults'); if(sr)sr.style.display='none';" style="position:absolute; right:0; top:50%; transform:translateY(-50%); border:none; background:transparent; cursor:pointer; padding:0 5px;">✕</button></div><div class="search-results" id="searchResults" style="display:none;"></div></div>
     
-    <!-- Scan Barcode with Camera + Bluetooth buttons -->
     <div class="form-group">
       <label>Scan Barcode</label>
       <div style="display:flex; gap:4px; align-items:center;">
@@ -42,10 +40,7 @@
         <button class="btn btn-sm" onclick="startCameraScanner()" title="Scan pakai kamera" style="padding:8px 10px; white-space:nowrap;">📷</button>
         <button class="btn btn-sm" onclick="activateBluetoothScanner()" title="Scan pakai Bluetooth scanner" style="padding:8px 10px; white-space:nowrap;">🔵</button>
       </div>
-      <div id="cameraScannerContainer" style="display:none; margin-top:8px; position:relative; border-radius:8px; overflow:hidden;">
-        <video id="cameraScannerVideo" autoplay playsinline style="width:100%; max-height:200px; object-fit:cover; background:#000;"></video>
-        <button class="btn btn-sm btn-danger" onclick="stopCameraScanner()" style="position:absolute; top:8px; right:8px;">✕ Stop</button>
-      </div>
+      <div id="cameraScannerContainer" style="display:none;"></div>
       <div id="bluetoothScannerStatus" style="display:none; margin-top:4px; font-size:12px; color:#00695c;"></div>
     </div>
 
@@ -62,21 +57,31 @@
     <div class="form-group">
       <label>Barcode</label>
       <div style="display:flex; gap:4px; align-items:center;">
-        <input type="text" id="prodBarcode" placeholder="Scan barcode..." autocomplete="off" style="flex:1; min-width:0;">
+        <div style="position:relative; flex:1; min-width:0;">
+          <input type="text" id="prodBarcode" placeholder="Scan barcode..." autocomplete="off" style="width:100%; padding-right:30px;">
+          <button class="clear-btn" onclick="clearBarcodeField()" style="position:absolute; right:2px; top:50%; transform:translateY(-50%); border:none; background:transparent; cursor:pointer; font-size:16px; color:#e53935;">✕</button>
+        </div>
         <button class="btn btn-sm" onclick="startCameraScannerInv()" title="Scan pakai kamera" style="padding:8px 10px; white-space:nowrap;">📷</button>
         <button class="btn btn-sm" onclick="activateBluetoothScannerInv()" title="Scan pakai Bluetooth scanner" style="padding:8px 10px; white-space:nowrap;">🔵</button>
         <button class="btn btn-sm" onclick="generateBarcode()" title="Generate barcode otomatis" style="padding:8px 10px; white-space:nowrap;">🔢</button>
       </div>
-      <div id="cameraScannerContainerInv" style="display:none; margin-top:8px; position:relative; border-radius:8px; overflow:hidden;">
-        <video id="cameraScannerVideoInv" autoplay playsinline style="width:100%; max-height:200px; object-fit:cover; background:#000;"></video>
-        <button class="btn btn-sm btn-danger" onclick="stopCameraScannerInv()" style="position:absolute; top:8px; right:8px;">✕ Stop</button>
-      </div>
+      <div id="cameraScannerContainerInv" style="display:none;"></div>
       <button class="btn" onclick="cariAtauTambahProduk()" style="margin-top:4px;">Cari / Tambah Produk</button>
     </div>
-    <div id="productForm" style="display:none;"><h3 id="formTitle"></h3><div id="fotoPreviewContainer" style="text-align:center; margin-bottom:12px; display:none;"><img id="fotoPreview" src="" alt="Foto Produk" style="max-width:150px; max-height:150px; border-radius:8px;"><button class="btn btn-sm btn-danger" id="btnHapusFoto" onclick="hapusFoto()">🗑 Hapus Foto</button></div><div class="form-group"><label>Nama Produk</label><input type="text" id="prodNama"></div><div class="form-group"><label>Kategori</label><input type="text" id="prodKategori"></div><div class="form-group"><label>Keterangan</label><input type="text" id="prodKeterangan"></div><div class="form-group"><label>Harga Beli</label><input type="number" id="prodHargaBeli" step="1"></div><div class="form-group"><label>Harga Jual</label><input type="number" id="prodHargaJual" step="1"></div><div class="form-group"><label>Harga Grosir (opsional)</label><div style="display:flex; gap:8px; align-items:center;"><span>Diskon</span><input type="number" id="prodDiskonPersen" placeholder="%" min="0" max="100" step="1" style="width:60px;"><span>% setiap pembelian</span><input type="number" id="prodDiskonMinQty" placeholder="Qty" min="0" step="1" style="width:60px;"><span>pcs</span></div><small style="color:#666;">Contoh: Diskon 5% setiap 12 pcs.</small></div>
+    <div id="productForm" style="display:none;">
+      <h3 id="formTitle"></h3>
+      <div id="fotoPreviewContainer" style="text-align:center; margin-bottom:12px; display:none;"><img id="fotoPreview" src="" alt="Foto Produk" style="max-width:150px; max-height:150px; border-radius:8px;"><button class="btn btn-sm btn-danger" id="btnHapusFoto" onclick="hapusFoto()">🗑 Hapus Foto</button></div>
+      <div class="form-group"><label>Nama Produk</label><input type="text" id="prodNama"></div>
+      <div class="form-group"><label>Kategori</label><input type="text" id="prodKategori"></div>
+      <div class="form-group"><label>Keterangan</label><input type="text" id="prodKeterangan"></div>
+      <div class="form-group"><label>Harga Beli</label><input type="number" id="prodHargaBeli" step="1"></div>
+      <div class="form-group"><label>Harga Jual</label><input type="number" id="prodHargaJual" step="1"></div>
+      <div class="form-group"><label>Harga Grosir (opsional)</label><div style="display:flex; gap:8px; align-items:center;"><span>Diskon</span><input type="number" id="prodDiskonPersen" placeholder="%" min="0" max="100" step="1" style="width:60px;"><span>% setiap pembelian</span><input type="number" id="prodDiskonMinQty" placeholder="Qty" min="0" step="1" style="width:60px;"><span>pcs</span></div><small style="color:#666;">Contoh: Diskon 5% setiap 12 pcs.</small></div>
       <div class="stok-info"><div class="form-group"><label>Minimum Stok</label><input type="number" id="prodMinStok" value="10" min="0" step="1"></div>Stok Saat Ini: <span id="stokSaatIni">0</span><br><label>Tambah/Kurangi Stok</label><input type="number" id="perubahanStok" value="0" oninput="hitungStokAkhir()"><br>Stok Akhir: <span id="stokAkhir">0</span></div>
-      <div class="form-group"><label>Foto</label><div style="display:flex; gap:8px; margin-bottom:8px;"><button class="btn btn-sm" onclick="ambilFotoDariKamera()">📷 Kamera</button><button class="btn btn-sm" onclick="document.getElementById('prodFotoFile').click()">📁 Pilih File</button></div><input type="file" id="prodFotoFile" accept="image/*" onchange="previewFotoDariFile()" style="display:none;"><input type="file" id="prodFotoCamera" accept="image/*" capture="environment" onchange="previewFotoDariKamera()" style="display:none;"><canvas id="compressCanvas" style="display:none;"></canvas><small style="color:#666;">Foto akan dikompresi otomatis (maks 2MB)</small></div>
-      <button class="btn" id="btnSimpanProduk">Simpan</button><button class="btn btn-danger" id="btnHapusProduk" style="display:none;">Hapus Produk</button>
+      <div class="form-group"><label>Foto</label><div style="display:flex; gap:8px; margin-bottom:8px;"><button class="btn btn-sm" onclick="ambilFotoDariKamera()">📷 Kamera</button><button class="btn btn-sm" onclick="document.getElementById('prodFotoFile').click()">📁 Pilih File</button></div><input type="file" id="prodFotoFile" accept="image/*" onchange="previewFotoDariFile()" style="display:none;"><input type="file" id="prodFotoCamera" accept="image/*" capture="environment" onchange="previewFotoDariKamera()" style="display:none;"><canvas id="compressCanvas" style="display:none;"></canvas><small style="color:#666;">Foto akan dikompresi otomatis (maks 30KB)</small></div>
+      <button class="btn" id="btnSimpanProduk">Simpan</button>
+      <button class="btn btn-danger" id="btnBatalProduk">Batal</button>
+      <button class="btn btn-danger" id="btnHapusProduk" style="display:none;">Hapus Produk</button>
     </div>
     <hr>
     <h3>Daftar Produk (<span id="productCount">0</span>)</h3>
@@ -111,13 +116,16 @@
 <!-- Login Overlay -->
 <div id="loginOverlay" class="overlay" style="display:flex;"><div class="login-box"><h2>Login</h2><input type="text" id="loginUser" placeholder="Username"><br><br><input type="password" id="loginPass" placeholder="Password"><br><br><button class="btn" onclick="login()">Masuk</button><p id="loginError" style="color:red;"></p></div></div>
 
-<!-- Modals remain the same as before -->
+<!-- Modal Edit User -->
 <div id="editUserModal" class="overlay" style="display:none;"><div class="modal-content"><h3>Edit User</h3><input type="hidden" id="editUsername"><input type="text" id="editUsernameDisplay" disabled><br><br><input type="password" id="editPassword" placeholder="Password baru"><br><br><select id="editRole"><option value="kasir">Kasir</option><option value="staff">Staff</option><option value="gudang">Gudang</option><option value="admin">Admin</option></select><br><br><button class="btn" onclick="simpanEditUser()">Simpan</button> <button class="btn btn-danger" onclick="document.getElementById('editUserModal').style.display='none'">Batal</button></div></div>
 
+<!-- Modal Detail Produk -->
 <div id="productDetailModal" class="overlay" style="display:none;"><div class="modal-content" style="text-align:center;"><h3 id="detailNama"></h3><img id="detailFoto" style="max-width:150px; display:none;"><br><p>Barcode: <span id="detailBarcode"></span></p><p>Kategori: <span id="detailKategori"></span></p><p>Keterangan: <span id="detailKeterangan"></span></p><p>Harga Jual: <span id="detailHargaJual"></span></p><p>Stok: <span id="detailStok"></span></p><button class="btn" onclick="document.getElementById('productDetailModal').style.display='none'">Tutup</button></div></div>
 
+<!-- Modal Pesanan Tersimpan -->
 <div id="pesananModal" class="overlay" style="display:none;"><div class="modal-content" style="max-width:500px;"><h3>📋 Pesanan Tersimpan</h3><div id="pesananList" style="max-height:400px; overflow-y:auto;"></div><button class="btn btn-danger" onclick="document.getElementById('pesananModal').style.display='none'">Tutup</button></div></div>
 
+<!-- Modal Label Printer Settings -->
 <div id="labelPrintModal" class="overlay" style="display:none;">
   <div class="modal-content" style="max-width:500px; max-height:90vh; overflow-y:auto;">
     <h3>🏷️ Manajemen Label</h3>
