@@ -4,7 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>RodanPOS</title>
-  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlBPUyBSZXRhaWwgQW5kYWwiLAogICJzaG9ydF9uYW1lIjogIlBPUyIsCiAgInN0YXJ0X3VybCI6ICIuLyIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiI2ZmZiIsCiAgInRoZW1lX2NvbG9yIjogIiMwMDk2ODgiLAogICJvcmllbnRhdGlvbiI6ICJwb3J0cmFpdCIsCiAgImljb25zIjogW3sKICAgICJzcmMiOiAiZGF0YTppbWFnZS9zdmcreG1sO2Jhc2U2NCxQSE4yWnlCNGJXeHVjejBpYUhSMGNEb3ZMM2QzZHk1M015NXZjbWN2TWpBd01DOXpkbWNpSUhSb1pXMWxMemd2UGo0OGRkM0QzWkdSMmR5QmhiV1E5SW1Gdkx6SXdNaUF5TURBeExURTBMVEF3SURBd09qSXdPakF4SWo0OFBDOG5KejQ4TDJKeVBtSnZjbVJsY2p3dlptbHVZMmhoY3k4KyIKICB9XQp9" />
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#009688">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="RodanPOS">
+  <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiB2aWV3Qm94PSIwIDAgMTkyIDE5MiI+PHJlY3Qgd2lkdGg9IjE5MiIgaGVpZ2h0PSIxOTIiIHJ4PSIzMiIgZmlsbD0iIzAwOTY4OCIvPjx0ZXh0IHg9Ijk2IiB5PSIxMjAiIGZvbnQtc2l6ZT0iODAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtd2VpZ2h0PSJib2xkIj5SJDwvdGV4dD48L3N2Zz4=">
+  
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -157,5 +165,45 @@
 <script src="js/laporan.js"></script>
 <script src="js/setting.js"></script>
 <script src="js/app.js"></script>
+
+<!-- PWA Install -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('/sw.js').then(function(reg) {
+        console.log('Service Worker registered');
+      }).catch(function(err) {
+        console.log('Service Worker failed:', err);
+      });
+    });
+  }
+
+  var deferredPrompt;
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    setTimeout(function() {
+      if (deferredPrompt && document.getElementById('loginOverlay').style.display === 'none') {
+        showInstallBanner();
+      }
+    }, 30000);
+  });
+
+  function showInstallBanner() {
+    var banner = document.createElement('div');
+    banner.id = 'installBanner';
+    banner.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#009688;color:white;padding:16px 24px;border-radius:12px;z-index:9999;display:flex;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);font-family:Arial,sans-serif;max-width:90%;';
+    banner.innerHTML = '<span>📱 <b>Install RodanPOS</b><br><small>Akses cepat dari home screen</small></span><button id="installBtn" style="background:white;color:#009688;border:none;padding:10px 20px;border-radius:8px;font-weight:bold;cursor:pointer;white-space:nowrap;">Install</button><button onclick="this.parentElement.remove()" style="background:none;border:none;color:white;font-size:20px;cursor:pointer;">✕</button>';
+    document.body.appendChild(banner);
+    document.getElementById('installBtn').addEventListener('click', function() {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function(result) {
+        console.log('PWA install:', result.outcome);
+        deferredPrompt = null;
+        banner.remove();
+      });
+    });
+  }
+</script>
 </body>
 </html>
