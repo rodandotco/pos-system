@@ -72,7 +72,167 @@ function aturHakAkses() {
 
 async function pilihFolder() { try { var d = await window.showDirectoryPicker(); workingDirHandle = d; document.getElementById('folderPath').textContent = d.name; alert('Folder dipilih!'); } catch (e) { if (e.name !== 'AbortError') alert('Gagal memilih folder'); } }
 
-async function backupData() { try { var zip = new JSZip(); var u = await supabaseClient.from('users').select('*'); var p = await supabaseClient.from('products').select('*'); var t = await supabaseClient.from('transactions').select('*'); var s = await supabaseClient.from('settings').select('*'); zip.file('users.json', JSON.stringify(u.data || [])); zip.file('products.json', JSON.stringify(p.data || [])); zip.file('transactions.json', JSON.stringify(t.data || [])); zip.file('settings.json', JSON.stringify(s.data || [])); var blob = await zip.generateAsync({ type: 'blob' }); var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'backup_' + new Date().toISOString().slice(0, 10) + '.zip'; a.click(); } catch (e) { alert('Gagal backup: ' + e.message); } }
+// ===================== BACKUP DATA (ENHANCED) =====================
+async function backupData() {
+  try {
+    var btn = document.getElementById('btnBackup');
+    var originalText = btn.textContent;
+    btn.textContent = '⏳ Memproses...';
+    btn.disabled = true;
 
-async function restoreData() { var inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.zip'; inp.onchange = async function(e) { var file = e.target.files[0]; if (!file) return; try { var zip = await JSZip.loadAsync(file); var rst = { users: 0, products: 0, transactions: 0, settings: 0 }; if (zip.files['users.json']) { var t = await zip.files['users.json'].async('text'); var u = JSON.parse(t); if (u.length > 0) { var r = await supabaseClient.from('users').upsert(u, { onConflict: 'username' }); if (!r.error) rst.users = u.length; } } if (zip.files['products.json']) { var t = await zip.files['products.json'].async('text'); var p = JSON.parse(t); if (p.length > 0) { var r = await supabaseClient.from('products').upsert(p, { onConflict: 'barcode' }); if (!r.error) rst.products = p.length; } } if (zip.files['transactions.json']) { var t = await zip.files['transactions.json'].async('text'); var tr = JSON.parse(t); if (tr.length > 0) { var r = await supabaseClient.from('transactions').upsert(tr, { onConflict: 'no_invoice' }); if (!r.error) rst.transactions = tr.length; } } if (zip.files['settings.json']) { var t = await zip.files['settings.json'].async('text'); var s = JSON.parse(t); if (s.length > 0) { var r = await supabaseClient.from('settings').upsert(s, { onConflict: 'id' }); if (!r.error) rst.settings = s.length; } } alert('Restore berhasil!\nUsers: ' + rst.users + '\nProducts: ' + rst.products + '\nTransactions: ' + rst.transactions + '\nSettings: ' + rst.settings); if (typeof invalidateSettingsCache === 'function') invalidateSettingsCache(); location.reload(); } catch (er) { alert('Gagal restore: ' + er.message); } }; inp.click(); }
-function resetDatabase() { if (confirm('Reset semua data?')) { alert('Fitur reset harus dilakukan melalui dashboard Supabase.'); } }
+    var zip = new JSZip();
+    var tables = [
+      { name: 'users', fn: supabaseClient.from('users').select('*') },
+      { name: 'products', fn: supabaseClient.from('products').select('*') },
+      { name: 'transactions', fn: supabaseClient.from('transactions').select('*') },
+      { name: 'settings', fn: supabaseClient.from('settings').select('*') },
+      { name: 'saved_orders', fn: supabaseClient.from('saved_orders').select('*') }
+    ];
+
+    var totalRows = 0;
+    
+    for (var i = 0; i < tables.length; i++) {
+      var result = await tables[i].fn;
+      if (result.data && result.data.length > 0) {
+        zip.file(tables[i].name + '.json', JSON.stringify(result.data, null, 2));
+        totalRows += result.data.length;
+      }
+    }
+
+    zip.file('backup-info.json', JSON.stringify({
+      version: '1.0',
+      timestamp: new Date().toISOString(),
+      total_rows: totalRows
+    }, null, 2));
+
+    var blob = await zip.generateAsync({ type: 'blob' });
+    var timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+    var filename = 'rodanpos-backup-' + timestamp + '.zip';
+    
+    // Download to computer
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    
+    // Upload to Supabase Storage
+    try {
+      var { data, error } = await supabaseClient.storage
+        .from('backups')
+        .upload(filename, blob, {
+          contentType: 'application/zip',
+          upsert: true
+        });
+      
+      if (error) {
+        console.error('Cloud upload error:', error.message);
+      } else {
+        console.log('Cloud backup uploaded: ' + filename);
+      }
+    } catch(e) {
+      console.error('Cloud backup failed:', e.message);
+    }
+
+    // Log backup
+    try {
+      await supabaseClient.from('backup_log').insert({
+        backup_type: 'manual',
+        file_name: filename,
+        file_size: blob.size,
+        rows_backed_up: totalRows,
+        status: 'success'
+      });
+    } catch(e) {
+      console.error('Backup log failed:', e.message);
+    }
+
+    alert('✅ Backup berhasil!\n\n📁 File: ' + filename + '\n📊 Total data: ' + totalRows + ' rows\n💾 Size: ' + (blob.size / 1024).toFixed(1) + ' KB\n\n☁️ Cloud backup: ' + 'Attempted');
+
+  } catch (e) {
+    alert('❌ Gagal backup: ' + e.message);
+  } finally {
+    var btn = document.getElementById('btnBackup');
+    if (btn) {
+      btn.textContent = '⬇ Backup (ZIP)';
+      btn.disabled = false;
+    }
+  }
+}
+
+// ===================== RESTORE DATA =====================
+async function restoreData() {
+  var inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = '.zip';
+  inp.onchange = async function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    try {
+      var zip = await JSZip.loadAsync(file);
+      var rst = { users: 0, products: 0, transactions: 0, settings: 0, saved_orders: 0 };
+
+      if (zip.files['users.json']) {
+        var t = await zip.files['users.json'].async('text');
+        var u = JSON.parse(t);
+        if (u.length > 0) {
+          var r = await supabaseClient.from('users').upsert(u, { onConflict: 'username' });
+          if (!r.error) rst.users = u.length;
+        }
+      }
+
+      if (zip.files['products.json']) {
+        var t = await zip.files['products.json'].async('text');
+        var p = JSON.parse(t);
+        if (p.length > 0) {
+          var r = await supabaseClient.from('products').upsert(p, { onConflict: 'barcode' });
+          if (!r.error) rst.products = p.length;
+        }
+      }
+
+      if (zip.files['transactions.json']) {
+        var t = await zip.files['transactions.json'].async('text');
+        var tr = JSON.parse(t);
+        if (tr.length > 0) {
+          var r = await supabaseClient.from('transactions').upsert(tr, { onConflict: 'no_invoice' });
+          if (!r.error) rst.transactions = tr.length;
+        }
+      }
+
+      if (zip.files['settings.json']) {
+        var t = await zip.files['settings.json'].async('text');
+        var s = JSON.parse(t);
+        if (s.length > 0) {
+          var r = await supabaseClient.from('settings').upsert(s, { onConflict: 'id' });
+          if (!r.error) rst.settings = s.length;
+        }
+      }
+
+      if (zip.files['saved_orders.json']) {
+        var t = await zip.files['saved_orders.json'].async('text');
+        var so = JSON.parse(t);
+        if (so.length > 0) {
+          var r = await supabaseClient.from('saved_orders').upsert(so, { onConflict: 'no_pesanan' });
+          if (!r.error) rst.saved_orders = so.length;
+        }
+      }
+
+      alert('✅ Restore berhasil!\n\nUsers: ' + rst.users + '\nProducts: ' + rst.products + '\nTransactions: ' + rst.transactions + '\nSettings: ' + rst.settings + '\nSaved Orders: ' + rst.saved_orders);
+      
+      if (typeof invalidateSettingsCache === 'function') invalidateSettingsCache();
+      location.reload();
+      
+    } catch (er) {
+      alert('❌ Gagal restore: ' + er.message);
+    }
+  };
+  inp.click();
+}
+
+function resetDatabase() {
+  if (confirm('⚠️ Reset semua data? Tindakan ini TIDAK BISA DIBATALKAN!\n\nKetik "RESET" untuk melanjutkan.')) {
+    var confirmInput = prompt('Ketik "RESET" untuk mengkonfirmasi:');
+    if (confirmInput === 'RESET') {
+      alert('Fitur reset harus dilakukan melalui dashboard Supabase.\n\nBuka: https://lrnuuhljvywbqsitpdrb.supabase.co');
+    }
+  }
+}
