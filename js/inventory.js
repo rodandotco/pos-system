@@ -238,13 +238,14 @@ function hitungStokAkhir() { var a = parseInt(document.getElementById('stokSaatI
 async function editProdukDariDaftar(b) { if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'gudang')) return; document.getElementById('prodBarcode').value = b; cariAtauTambahProduk(); }
 function generateBarcode() { var now = new Date(); document.getElementById('prodBarcode').value = now.getFullYear().toString().slice(-2) + ('0'+(now.getMonth()+1)).slice(-2) + ('0'+now.getDate()).slice(-2) + ('0'+now.getHours()).slice(-2) + ('0'+now.getMinutes()).slice(-2) + ('0'+now.getSeconds()).slice(-2); cariAtauTambahProduk(); }
 
-// ===================== CAMERA SCANNER (Auto-close + Beep) =====================
+// ===================== CAMERA SCANNER INV (HD + Zoom + Stop + Fixed Animation) =====================
 var cameraScannerActiveInv = false;
 var cameraCodeReaderInv = null;
 var cameraStreamInv = null;
 var lastScannedBarcodeInv = '';
+var currentZoomInv = 1;
 
-function playBeep() {
+function playBeepInv() {
   try {
     var ctx = new (window.AudioContext || window.webkitAudioContext)();
     var osc = ctx.createOscillator(); var gain = ctx.createGain();
@@ -256,6 +257,18 @@ function playBeep() {
   } catch(e) {}
 }
 
+function setZoomInv(value) {
+  currentZoomInv = parseFloat(value);
+  if (cameraStreamInv) {
+    var track = cameraStreamInv.getVideoTracks()[0];
+    if (track && 'zoom' in track.getCapabilities()) {
+      track.applyConstraints({ advanced: [{ zoom: currentZoomInv }] });
+    }
+  }
+  var el = document.getElementById('zoomValueInv');
+  if (el) el.textContent = currentZoomInv.toFixed(1) + 'x';
+}
+
 async function startCameraScannerInv() {
   try {
     if (cameraCodeReaderInv) { cameraCodeReaderInv.reset(); cameraCodeReaderInv = null; }
@@ -265,45 +278,62 @@ async function startCameraScannerInv() {
     container.style.display = 'block';
     container.style.cssText = 'margin-top:8px;position:relative;width:100%;max-width:300px;aspect-ratio:1/1;border-radius:12px;overflow:hidden;background:#000;margin-left:auto;margin-right:auto;';
     
-    container.innerHTML = '<div style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:2;pointer-events:none;"><div style="position:absolute;top:15%;left:15%;right:15%;bottom:15%;border:3px solid #00ff00;border-radius:8px;"><div style="position:absolute;top:-3px;left:-3px;width:20px;height:20px;border-top:4px solid #00ff00;border-left:4px solid #00ff00;"></div><div style="position:absolute;top:-3px;right:-3px;width:20px;height:20px;border-top:4px solid #00ff00;border-right:4px solid #00ff00;"></div><div style="position:absolute;bottom:-3px;left:-3px;width:20px;height:20px;border-bottom:4px solid #00ff00;border-left:4px solid #00ff00;"></div><div style="position:absolute;bottom:-3px;right:-3px;width:20px;height:20px;border-bottom:4px solid #00ff00;border-right:4px solid #00ff00;"></div><div class="scan-line-inv" style="position:absolute;left:16%;right:16%;height:2px;background:#ff0000;animation:scanAnimInv 2s ease-in-out infinite;"></div></div></div><video id="cameraScannerVideoInv" autoplay playsinline style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;z-index:1;"></video><button class="btn btn-sm btn-danger" onclick="stopCameraScannerInv()" style="position:absolute;top:8px;right:8px;z-index:3;">✕ Stop</button>';
+    container.innerHTML = 
+      '<div style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:2;pointer-events:none;">' +
+      '<div style="position:absolute;top:15%;left:15%;right:15%;bottom:15%;border:3px solid #00ff00;border-radius:8px;">' +
+      '<div style="position:absolute;top:-3px;left:-3px;width:20px;height:20px;border-top:4px solid #00ff00;border-left:4px solid #00ff00;"></div>' +
+      '<div style="position:absolute;top:-3px;right:-3px;width:20px;height:20px;border-top:4px solid #00ff00;border-right:4px solid #00ff00;"></div>' +
+      '<div style="position:absolute;bottom:-3px;left:-3px;width:20px;height:20px;border-bottom:4px solid #00ff00;border-left:4px solid #00ff00;"></div>' +
+      '<div style="position:absolute;bottom:-3px;right:-3px;width:20px;height:20px;border-bottom:4px solid #00ff00;border-right:4px solid #00ff00;"></div>' +
+      '<div class="scan-line-inv-fixed" style="position:absolute;left:16%;right:16%;height:2px;background:#ff0000;animation:scanAnimInvFixed 2s ease-in-out infinite;"></div>' +
+      '</div></div>' +
+      '<video id="cameraScannerVideoInv" autoplay playsinline style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;z-index:1;"></video>' +
+      '<button class="btn btn-sm btn-danger" onclick="stopCameraScannerInv()" style="position:absolute;top:8px;right:8px;z-index:3;padding:6px 12px;border-radius:6px;font-size:13px;">✕ Stop</button>' +
+      '<div style="position:absolute;bottom:8px;left:8px;right:8px;z-index:3;display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.6);border-radius:8px;padding:6px 10px;">' +
+      '<span style="color:white;font-size:11px;">🔍</span>' +
+      '<input type="range" id="zoomSliderInv" min="1" max="5" step="0.1" value="1" oninput="setZoomInv(this.value)" style="flex:1;height:4px;">' +
+      '<span id="zoomValueInv" style="color:white;font-size:11px;min-width:30px;">1.0x</span>' +
+      '</div>';
     
-    // Add animation if not exists
-    if (!document.getElementById('scanAnimStyle')) {
+    // Add unique animation for inventory scanner
+    if (!document.getElementById('scanAnimStyleInvFixed')) {
       var style = document.createElement('style');
-      style.id = 'scanAnimStyle';
-      style.textContent = '@keyframes scanAnimInv{0%{top:16%}50%{top:82%}100%{top:16%}}';
+      style.id = 'scanAnimStyleInvFixed';
+      style.textContent = '@keyframes scanAnimInvFixed{0%{top:16%}50%{top:82%}100%{top:16%}}';
       document.head.appendChild(style);
     }
     
     cameraStreamInv = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 1280 } }
+      video: { 
+        facingMode: 'environment', 
+        width: { ideal: 1920 }, 
+        height: { ideal: 1920 },
+        zoom: true
+      }
     });
     
     var video = document.getElementById('cameraScannerVideoInv');
     video.srcObject = cameraStreamInv;
     video.play();
     
+    currentZoomInv = 1;
     cameraCodeReaderInv = new ZXing.BrowserMultiFormatReader();
     cameraScannerActiveInv = false;
     
     cameraCodeReaderInv.decodeFromVideoDevice(null, video, function(result, err) {
       if (result && !cameraScannerActiveInv) {
         var text = result.getText();
-        if (text !== lastScannedBarcodeInv) {
+        if (text && text.length > 3 && text !== lastScannedBarcodeInv) {
           lastScannedBarcodeInv = text;
           
-          // Play beep
-          playBeep();
+          playBeepInv();
           
-          // Fill barcode field
           document.getElementById('prodBarcode').value = text;
           
-          // Auto search product
           if (typeof cariAtauTambahProduk === 'function') {
             cariAtauTambahProduk();
           }
           
-          // Auto-close camera after 1 second
           cameraScannerActiveInv = true;
           setTimeout(function() {
             stopCameraScannerInv();
@@ -312,7 +342,7 @@ async function startCameraScannerInv() {
       }
     });
     
-    console.log('Camera scanner started');
+    console.log('Inventory camera scanner started (HD + Zoom)');
   } catch(e) {
     console.error('Camera error:', e);
     alert('Gagal mengakses kamera: ' + e.message);
@@ -324,10 +354,13 @@ function stopCameraScannerInv() {
   if (cameraCodeReaderInv) { cameraCodeReaderInv.reset(); cameraCodeReaderInv = null; }
   if (cameraStreamInv) { cameraStreamInv.getTracks().forEach(function(t){t.stop();}); cameraStreamInv = null; }
   var container = document.getElementById('cameraScannerContainerInv');
-  container.style.display = 'none';
-  container.innerHTML = '';
+  if (container) {
+    container.style.display = 'none';
+    container.innerHTML = '';
+  }
   lastScannedBarcodeInv = '';
   cameraScannerActiveInv = false;
+  currentZoomInv = 1;
 }
 
 // ===================== BLUETOOTH SCANNER =====================
