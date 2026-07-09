@@ -28,6 +28,7 @@
     <button class="tab-btn" data-page="inventory">Inventory</button>
     <button class="tab-btn" data-page="laporan">Laporan</button>
     <button class="tab-btn" data-page="setting">Setting</button>
+    <button id="superAdminTab" class="tab-btn" onclick="document.getElementById('superAdminPanel').style.display='flex'; refreshSessions();" style="background:#6a1b9a;color:white;display:none;">🛡️ Admin</button>
     <button class="logout-btn" onclick="logout()">Logout</button>
   </div>
 
@@ -133,6 +134,23 @@
 <!-- Modal Pesanan Tersimpan -->
 <div id="pesananModal" class="overlay" style="display:none;"><div class="modal-content" style="max-width:500px;"><h3>📋 Pesanan Tersimpan</h3><div id="pesananList" style="max-height:400px; overflow-y:auto;"></div><button class="btn btn-danger" onclick="document.getElementById('pesananModal').style.display='none'">Tutup</button></div></div>
 
+<!-- Super Admin Panel -->
+<div id="superAdminPanel" class="overlay" style="display:none;">
+  <div class="modal-content" style="max-width:600px; max-height:80vh; overflow-y:auto;">
+    <h2>🛡️ Super Admin Dashboard</h2>
+    <div style="display:flex; gap:8px; margin-bottom:12px;">
+      <button class="btn btn-sm" onclick="refreshSessions()">🔄 Refresh</button>
+      <button class="btn btn-sm btn-danger" onclick="disconnectAllUsers()">🔌 Putuskan Semua</button>
+    </div>
+    <table class="user-table" style="width:100%;">
+      <thead><tr><th>User</th><th>Role</th><th>Device</th><th>Status</th><th>Last Ping</th><th>Aksi</th></tr></thead>
+      <tbody id="sessionsTableBody"></tbody>
+    </table>
+    <p style="font-size:11px; color:#999; margin-top:8px;">🟢 Online = < 1 menit | 🟡 Idle = 1-5 menit | 🔴 Offline = > 5 menit</p>
+    <button class="btn btn-danger" onclick="document.getElementById('superAdminPanel').style.display='none'" style="margin-top:8px; width:100%;">Tutup</button>
+  </div>
+</div>
+
 <!-- Modal Label Printer Settings -->
 <div id="labelPrintModal" class="overlay" style="display:none;">
   <div class="modal-content" style="max-width:500px; max-height:90vh; overflow-y:auto;">
@@ -155,6 +173,7 @@
 
 <script src="js/supabase-config.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/offline.js"></script>
 <script src="js/printer-struk.js"></script>
 <script src="js/printer-label-ad240.js"></script>
 <script src="js/printer-label-mp234.js"></script>
@@ -204,6 +223,56 @@
       });
     });
   }
+</script>
+
+<!-- Session Tracking -->
+<script>
+var _sessionStarted = false;
+var _sessionPing = null;
+
+function _startSession() {
+  if (_sessionStarted) return;
+  if (typeof currentUser === 'undefined' || !currentUser || !currentUser.username) return;
+  
+  _sessionStarted = true;
+  var uname = currentUser.username;
+  var ua = navigator.userAgent;
+  var browser = 'Chrome';
+  if (ua.indexOf('Safari') !== -1 && ua.indexOf('Chrome') === -1) browser = 'Safari';
+  else if (ua.indexOf('Firefox') !== -1) browser = 'Firefox';
+  else if (ua.indexOf('Edg') !== -1) browser = 'Edge';
+  var os = 'Windows';
+  if (ua.indexOf('Android') !== -1) os = 'Android';
+  else if (ua.indexOf('iPhone') !== -1) os = 'iPhone';
+  else if (ua.indexOf('Mac') !== -1) os = 'Mac';
+  var device = browser + '/' + os;
+  var now = new Date().toISOString();
+  
+  supabaseClient.from('active_sessions').delete().eq('username', uname).then(function() {
+    supabaseClient.from('active_sessions').insert({
+      username: uname,
+      role: currentUser.role,
+      device: device,
+      last_ping: now,
+      is_active: true,
+      login_time: now
+    });
+  });
+  
+  _sessionPing = setInterval(function() {
+    supabaseClient.from('active_sessions').update({
+      last_ping: new Date().toISOString(),
+      is_active: true
+    }).eq('username', uname);
+  }, 30000);
+}
+
+var _check = setInterval(function() {
+  if (typeof currentUser !== 'undefined' && currentUser && currentUser.username) {
+    clearInterval(_check);
+    _startSession();
+  }
+}, 1000);
 </script>
 </body>
 </html>
