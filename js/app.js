@@ -1,17 +1,21 @@
 // ===================== APP.JS =====================
-let activeTab = 'transaksi';
 
-// Service Worker
+// KILL OLD SERVICE WORKER
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('data:application/javascript;base64,self.addEventListener("fetch", e => { e.respondWith(fetch(e.request).catch(() => caches.match(e.request))) })').catch(() => {});
+  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+    registrations.forEach(function(registration) {
+      registration.unregister();
+    });
   });
 }
+
+let activeTab = 'transaksi';
 
 // Navigation
 document.querySelectorAll('.tab-btn').forEach(b => {
   b.addEventListener('click', () => {
     if (!currentUser) return;
+    if (!b.dataset.page) return;
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active'));
     document.getElementById('page-' + b.dataset.page).classList.add('active');
@@ -27,13 +31,12 @@ document.querySelectorAll('.tab-btn').forEach(b => {
   });
 });
 
-// Check session on load
 function initApp() {
   checkSession();
 }
 initApp();
 
-// ===================== BACK BUTTON - SIMPLE ALERT =====================
+// Back button
 let backCount = 0;
 let backTimer = null;
 
@@ -41,10 +44,8 @@ history.pushState(null, '', location.href);
 
 window.addEventListener('popstate', function(event) {
   history.pushState(null, '', location.href);
-  
   backCount++;
   clearTimeout(backTimer);
-  
   if (backCount === 1) {
     alert('ℹ️ Harap gunakan tombol LOGOUT\nuntuk keluar dari aplikasi');
   } else if (backCount === 2) {
@@ -57,15 +58,17 @@ window.addEventListener('popstate', function(event) {
     history.back();
     return;
   }
-  
-  backTimer = setTimeout(function() {
-    backCount = 0;
-  }, 3000);
+  backTimer = setTimeout(function() { backCount = 0; }, 3000);
 });
 
 document.addEventListener('visibilitychange', function() {
-  if (document.hidden) {
-    backCount = 0;
-    clearTimeout(backTimer);
-  }
+  if (document.hidden) { backCount = 0; clearTimeout(backTimer); }
 });
+
+// Start offline mode after login
+setTimeout(function() {
+  if (typeof initOfflineMode === 'function') {
+    console.log('App: Starting offline mode...');
+    initOfflineMode();
+  }
+}, 3000);
