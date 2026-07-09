@@ -115,6 +115,15 @@ async function login() {
     setTimeout(function() { if (typeof checkLowStockBanner === 'function') checkLowStockBanner(); }, 1500);
     
     resetInactivityTimer();
+
+    // Start offline mode
+    if (typeof initOfflineMode === 'function') {
+      initOfflineMode();
+    }
+
+    // Start session tracking
+    startSessionTracking();
+
   } catch(err) {
     errorEl.textContent = 'Error koneksi. Coba lagi.';
   }
@@ -162,6 +171,15 @@ function checkSession() {
     setTimeout(function() { if (typeof checkAutoEmailReport === 'function') checkAutoEmailReport(); }, 2000);
     setTimeout(function() { if (typeof checkLowStockBanner === 'function') checkLowStockBanner(); }, 1500);
     resetInactivityTimer();
+
+    // Start offline mode
+    if (typeof initOfflineMode === 'function') {
+      initOfflineMode();
+    }
+
+    // Start session tracking
+    startSessionTracking();
+
     return true;
   }
   document.getElementById('loginOverlay').style.display = 'flex';
@@ -181,6 +199,8 @@ document.addEventListener('keypress', resetInactivityTimer);
 document.addEventListener('touchstart', resetInactivityTimer);
 
 function logout() {
+  stopSessionTracking();
+  
   if (inactivityTimer) clearTimeout(inactivityTimer);
   clearSession(); currentUser = null; clearAllCaches();
   var el;
@@ -197,7 +217,13 @@ function logout() {
   ['scanInputTrans','custName','invSearch','searchProduct','prodBarcode','prodNama','prodKategori','prodKeterangan','prodHargaBeli','prodHargaJual','perubahanStok','bayar','newUsername','newPassword'].forEach(function(id){var i=document.getElementById(id);if(i)i.value='';});
   var d=document.getElementById('activeUserDisplay');if(d)d.textContent='-';
   var r=document.getElementById('activeUserRole');if(r)r.textContent='-';
-  document.querySelectorAll('.tab-btn').forEach(function(b){b.style.display='';});
+  document.querySelectorAll('.tab-btn').forEach(function(b){
+    if (b.id === 'superAdminTab') {
+      b.style.display = 'none';
+    } else {
+      b.style.display = '';
+    }
+  });
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   document.getElementById('page-transaksi').classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
@@ -256,6 +282,12 @@ function applyRoleRestrictions() {
   if(tT)tT.style.display='';if(tI)tI.style.display='';if(tL)tL.style.display='';if(tS)tS.style.display='';
   if(role==='gudang'){if(tT)tT.style.display='none';if(tL)tL.style.display='none';if(tS)tS.style.display='none';document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});if(tI)tI.classList.add('active');var iP=document.getElementById('page-inventory');if(iP)iP.classList.add('active');activeTab='inventory';}
   else if(role==='staff'){if(tI)tI.style.display='none';if(tL)tL.style.display='none';if(tS)tS.style.display='none';document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});if(tT)tT.classList.add('active');var tP=document.getElementById('page-transaksi');if(tP)tP.classList.add('active');activeTab='transaksi';}
+  
+  // Show/hide super admin tab
+  var adminTab = document.getElementById('superAdminTab');
+  if (adminTab) {
+    adminTab.style.display = (role === 'admin') ? '' : 'none';
+  }
 }
 
 document.addEventListener('DOMContentLoaded',function(){
@@ -263,6 +295,146 @@ document.addEventListener('DOMContentLoaded',function(){
   if(lu)lu.addEventListener('input',function(){document.getElementById('loginError').textContent='';});
   if(lp){lp.addEventListener('input',function(){document.getElementById('loginError').textContent='';});lp.addEventListener('keypress',function(e){if(e.key==='Enter')login();});}
 });
+
+// ===================== SESSION TRACKING =====================
+var sessionPingInterval = null;
+
+function startSessionTracking() {
+  if (!currentUser || !currentUser.username) return;
+  
+  var uname = currentUser.username;
+  var device = getDeviceInfo();
+  var now = new Date().toISOString();
+  
+  // Delete old, then insert
+  supabaseClient.from('active_sessions').delete().eq('username', uname).then(function() {
+    supabaseClient.from('active_sessions').insert({
+      username: uname,
+      role: currentUser.role,
+      device: device,
+      last_ping: now,
+      is_active: true,
+      login_time: now
+    });
+  });
+  
+  // Ping every 30 seconds
+  if (sessionPingInterval) clearInterval(sessionPingInterval);
+  sessionPingInterval = setInterval(function() {
+    supabaseClient.from('active_sessions').update({
+      last_ping: new Date().toISOString(),
+      is_active: true
+    }).eq('username', uname);
+  }, 30000);
+}
+
+function getDeviceInfo() {
+  var ua = navigator.userAgent;
+  var browser = 'Unknown';
+  var os = 'Unknown';
+  
+  if (ua.indexOf('Chrome') !== -1 && ua.indexOf('Edg') === -1) browser = 'Chrome';
+  else if (ua.indexOf('Safari') !== -1) browser = 'Safari';
+  else if (ua.indexOf('Firefox') !== -1) browser = 'Firefox';
+  else if (ua.indexOf('Edg') !== -1) browser = 'Edge';
+  
+  if (ua.indexOf('Android') !== -1) os = 'Android';
+  else if (ua.indexOf('iPhone') !== -1) os = 'iPhone';
+  else if (ua.indexOf('Windows') !== -1) os = 'Windows';
+  else if (ua.indexOf('Mac') !== -1) os = 'Mac';
+  
+  return browser + '/' + os;
+}
+
+function stopSessionTracking() {
+  if (sessionPingInterval) {
+    clearInterval(sessionPingInterval);
+    sessionPingInterval = null;
+  }
+  
+  if (currentUser && currentUser.username) {
+    supabaseClient.from('active_sessions').update({
+      is_active: false,
+      last_ping: new Date().toISOString()
+    }).eq('username', currentUser.username);
+  }
+}
+
+// ===================== SUPER ADMIN =====================
+async function refreshSessions() {
+  if (!currentUser || currentUser.role !== 'admin') return;
+  
+  try {
+    var result = await supabaseClient.from('active_sessions')
+      .select('*')
+      .order('last_ping', { ascending: false });
+    
+    var sessions = result.data || [];
+    var tbody = document.getElementById('sessionsTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    if (sessions.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Tidak ada sesi aktif</td></tr>';
+      return;
+    }
+    
+    sessions.forEach(function(s) {
+      var now = new Date();
+      var ping = new Date(s.last_ping);
+      var diffMin = Math.floor((now - ping) / 60000);
+      var status, statusColor;
+      
+      if (diffMin < 1 && s.is_active) { status = '🟢 Online'; statusColor = '#2e7d32'; }
+      else if (diffMin < 5 && s.is_active) { status = '🟡 Idle'; statusColor = '#f57f17'; }
+      else { status = '🔴 Offline'; statusColor = '#c62828'; }
+      
+      var row = tbody.insertRow();
+      row.innerHTML = 
+        '<td>' + s.username + '</td>' +
+        '<td>' + s.role + '</td>' +
+        '<td>' + (s.device || '-') + '</td>' +
+        '<td style="color:' + statusColor + ';font-weight:bold;">' + status + '</td>' +
+        '<td style="font-size:11px;">' + (diffMin < 1 ? 'Baru saja' : diffMin + ' menit lalu') + '</td>' +
+        '<td><button class="btn-sm btn-danger" onclick="forceDisconnect(\'' + s.username + '\')">🔌</button></td>';
+    });
+    
+  } catch(e) {
+    console.error('Failed to refresh sessions:', e);
+  }
+}
+
+async function forceDisconnect(username) {
+  if (!confirm('Putuskan ' + username + '?')) return;
+  
+  try {
+    await supabaseClient.from('active_sessions').update({
+      is_active: false,
+      last_ping: new Date().toISOString()
+    }).eq('username', username);
+    
+    alert('✅ ' + username + ' telah diputuskan.');
+    refreshSessions();
+  } catch(e) {
+    alert('❌ Gagal: ' + e.message);
+  }
+}
+
+async function disconnectAllUsers() {
+  if (!confirm('⚠️ Putuskan SEMUA user? Mereka harus login ulang.')) return;
+  
+  try {
+    await supabaseClient.from('active_sessions').update({
+      is_active: false,
+      last_ping: new Date().toISOString()
+    }).neq('username', currentUser.username);
+    
+    alert('✅ Semua user diputuskan (kecuali Anda).');
+    refreshSessions();
+  } catch(e) {
+    alert('❌ Gagal: ' + e.message);
+  }
+}
 
 // ---- USER MANAGEMENT ----
 async function tambahUser() {
