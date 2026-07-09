@@ -237,7 +237,14 @@ async function bayarDanCetak() {
   var items = cart.map(function(i) { return { barcode: i.barcode, nama: i.nama, harga: i.harga, qty: i.qty, subtotal: i.harga * i.qty, diskon: i.diskon || 0, netto: (i.harga * i.qty) - (i.diskon || 0) }; });
   try {
     for (var j = 0; j < cart.length; j++) { var pr = await supabaseClient.from('products').select('stok').eq('barcode', cart[j].barcode).single(); if (pr.data) { await supabaseClient.from('products').update({ stok: Math.max(0, pr.data.stok - cart[j].qty) }).eq('barcode', cart[j].barcode); } }
-    await insertTransaction({ no_invoice: no, tanggal: now.toISOString(), customer: cust, items: items, total: grandTotal, bayar: bayarValue, kembali: kembali, created_by: currentUser.username });
+    if (typeof isOnline !== 'undefined' && isOnline) {
+  await insertTransaction({ no_invoice: no, tanggal: now.toISOString(), customer: cust, items: items, total: grandTotal, bayar: bayarValue, kembali: kembali, created_by: currentUser.username });
+} else if (typeof isOnline !== 'undefined' && !isOnline) {
+  await queueOfflineTransaction({ customer: cust, items: items, total: grandTotal, bayar: bayarValue, kembali: kembali, created_by: currentUser.username });
+  alert('📱 Transaksi disimpan offline! Akan disinkronkan saat online.');
+} else {
+  await insertTransaction({ no_invoice: no, tanggal: now.toISOString(), customer: cust, items: items, total: grandTotal, bayar: bayarValue, kembali: kembali, created_by: currentUser.username });
+}
     var toko = appSettings; var lk = parseInt(toko.kertas_lebar) || 80;
     var mk = 3, xi = mk, xq = lk * 0.4, xh = lk * 0.65, xs = lk - mk;
     var th = 28; if (toko.logo) th = 40;
