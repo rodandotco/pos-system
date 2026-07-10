@@ -64,11 +64,3 @@ window.addEventListener('popstate', function(event) {
 document.addEventListener('visibilitychange', function() {
   if (document.hidden) { backCount = 0; clearTimeout(backTimer); }
 });
-
-// Start offline mode after login
-setTimeout(function() {
-  if (typeof initOfflineMode === 'function') {
-    console.log('App: Starting offline mode...');
-    initOfflineMode();
-  }
-}, 3000);
