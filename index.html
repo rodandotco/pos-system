@@ -238,6 +238,7 @@ var _sessionPing = null;
 function _startSession() {
   if (_sessionStarted) return;
   if (typeof currentUser === 'undefined' || !currentUser || !currentUser.username) return;
+  if (typeof supabaseClient === 'undefined' || !supabaseClient) return;
   
   _sessionStarted = true;
   var uname = currentUser.username;
@@ -264,6 +265,7 @@ function _startSession() {
     });
   });
   
+  if (_sessionPing) clearInterval(_sessionPing);
   _sessionPing = setInterval(function() {
     supabaseClient.from('active_sessions').update({
       last_ping: new Date().toISOString(),
@@ -272,14 +274,11 @@ function _startSession() {
   }, 30000);
 }
 
-var _check = setInterval(function() {
-  if (typeof currentUser !== 'undefined' && currentUser && currentUser.username && typeof supabaseClient !== 'undefined' && supabaseClient) {
-    clearInterval(_check);
-    setTimeout(function() {
-      _startSession();
-    }, 2000);
+setInterval(function() {
+  if (typeof currentUser !== 'undefined' && currentUser && currentUser.username && typeof supabaseClient !== 'undefined' && supabaseClient && !_sessionStarted) {
+    _startSession();
   }
-}, 1000);
+}, 2000);
 </script>
 </body>
 </html>
