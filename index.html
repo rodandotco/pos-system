@@ -201,11 +201,16 @@
   window.addEventListener('beforeinstallprompt', function(e) {
     e.preventDefault();
     deferredPrompt = e;
-    setTimeout(function() {
-      if (deferredPrompt && document.getElementById('loginOverlay').style.display === 'none') {
-        showInstallBanner();
-      }
-    }, 30000);
+    var lastPrompt = localStorage.getItem('pwaPromptDate');
+    var today = new Date().toDateString();
+    if (lastPrompt !== today) {
+      setTimeout(function() {
+        if (deferredPrompt && document.getElementById('loginOverlay').style.display === 'none') {
+          showInstallBanner();
+          localStorage.setItem('pwaPromptDate', today);
+        }
+      }, 30000);
+    }
   });
 
   function showInstallBanner() {
@@ -268,9 +273,11 @@ function _startSession() {
 }
 
 var _check = setInterval(function() {
-  if (typeof currentUser !== 'undefined' && currentUser && currentUser.username) {
+  if (typeof currentUser !== 'undefined' && currentUser && currentUser.username && typeof supabaseClient !== 'undefined' && supabaseClient) {
     clearInterval(_check);
-    _startSession();
+    setTimeout(function() {
+      _startSession();
+    }, 2000);
   }
 }, 1000);
 </script>
