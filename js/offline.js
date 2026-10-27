@@ -95,19 +95,40 @@ function hideOffBanner() {
   if (s) s.remove();
 }
 
-// Cache products
+// Cache products (FIX: ambil SEMUA produk, tidak mentok 1000)
 async function cacheProducts() {
   if (!isOnline) return;
   try {
-    var r = await supabaseClient.from('products').select('*');
-    if (r.data) {
+    var allProducts = [];
+    var pageSize = 1000;
+    var from = 0;
+    var hasMore = true;
+
+    while (hasMore) {
+      var r = await supabaseClient
+        .from('products')
+        .select('*')
+        .range(from, from + pageSize - 1);
+
+      if (r.error) throw r.error;
+
+      if (r.data && r.data.length > 0) {
+        allProducts = allProducts.concat(r.data);
+        from += pageSize;
+        hasMore = r.data.length === pageSize;
+      } else {
+        hasMore = false;
+      }
+    }
+
+    if (allProducts.length > 0) {
       var t = offlineDB.transaction('pr', 'readwrite');
       var s = t.objectStore('pr');
       s.clear();
-      r.data.forEach(function(p) { s.put(p); });
-      console.log('Cached ' + r.data.length + ' products');
+      allProducts.forEach(function(p) { s.put(p); });
+      console.log('Cached ' + allProducts.length + ' products');
     }
-  } catch(e) {}
+  } catch(e) { console.error('cacheProducts error:', e); }
 }
 
 // Queue offline tx
