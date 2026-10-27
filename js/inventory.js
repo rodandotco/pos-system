@@ -19,14 +19,43 @@ function setLocalProducts(products) {
 
 var lastSyncTime = 0, SYNC_INTERVAL = 60000;
 
+// ===================== SYNC PRODUCTS (FIX: ambil SEMUA produk, tidak mentok 1000) =====================
 async function syncProductsIfNeeded() {
   var now = Date.now();
   if (now - lastSyncTime < SYNC_INTERVAL && getLocalProducts()) return getLocalProducts();
+
   try {
-    var r = await supabaseClient.from('products').select('*').order('nama');
-    if (r.data) { setLocalProducts(r.data); lastSyncTime = now; }
-    return r.data || getLocalProducts() || [];
-  } catch(e) { return getLocalProducts() || []; }
+    var allProducts = [];
+    var pageSize = 1000;
+    var from = 0;
+    var hasMore = true;
+
+    while (hasMore) {
+      var r = await supabaseClient
+        .from('products')
+        .select('*')
+        .order('nama')
+        .range(from, from + pageSize - 1);
+
+      if (r.error) throw r.error;
+
+      if (r.data && r.data.length > 0) {
+        allProducts = allProducts.concat(r.data);
+        from += pageSize;
+        hasMore = r.data.length === pageSize;
+      } else {
+        hasMore = false;
+      }
+    }
+
+    setLocalProducts(allProducts);
+    lastSyncTime = now;
+    console.log('[syncProducts] Loaded ' + allProducts.length + ' products');
+    return allProducts;
+  } catch(e) {
+    console.error('[syncProducts] Error:', e);
+    return getLocalProducts() || [];
+  }
 }
 
 // ===================== FAST PRODUCT LIST =====================
